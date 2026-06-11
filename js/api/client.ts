@@ -77,8 +77,11 @@ interface ApiError extends Error {
     withMock(() => labFetch("/isa/" + project + "/bitacora"), "bitacora");
 
   const getTickets = (project: string, opts?: { estado?: string }) => {
-    const qs = opts && opts.estado ? "?estado=" + encodeURIComponent(opts.estado) : "";
-    return withMock(() => labFetch("/isa/" + project + "/tickets" + qs), "tickets");
+    let qs = "";
+    if (opts?.estado === "inactivo") qs = "?activo=false";
+    else if (opts?.estado === "activo") qs = "?activo=true";
+    else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
+    return withMock(() => labFetch("/tk/" + project + "/tickets" + qs), "tickets");
   };
 
   const getTicket = (project: string, iticket: string) =>
