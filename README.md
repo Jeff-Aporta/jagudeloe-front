@@ -18,6 +18,12 @@ Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyI
 
 **https://jeff-aporta.github.io/jagudeloe-front/**
 
+## Vista previa
+
+![Spaces PatyIA · bitácora ISA-DOC](./docs/gh-pages.png)
+
+> La UI carga en GH Pages; los datos requieren el Worker [`jagudeloe-back`](https://github.com/Jeff-Aporta/jagudeloe-back) desplegado.
+
 ## Qué hace
 
 - **Spaces**: PatyIA · ClientesIS (sidebar permanente).
