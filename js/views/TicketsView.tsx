@@ -27,8 +27,12 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
           React.createElement(MUI.Chip, { size: "small", label: "#" + (t.id || t.iticket || "?"), color: "primary" }),
           t.prioridad && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: t.prioridad })),
         React.createElement(MUI.Typography, { variant: "subtitle2" }, t.titulo || t.title || "(sin título)"),
-        t.descripcion && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary", sx: { mt: 0.5 } },
-          String(t.descripcion).slice(0, 240))));
+        (t as any).tiempoTotalMinutos != null && React.createElement(MUI.Chip, {
+          size: "small", variant: "outlined", sx: { mt: 0.5 },
+          label: (t as any).tiempoTotalMinutos + " min",
+        }),
+        ((t as any).resumen || t.descripcion) && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary", sx: { mt: 0.5 } },
+          String((t as any).resumen || t.descripcion).slice(0, 240))));
   }
 
   function TicketsView(props: TicketsViewProps) {

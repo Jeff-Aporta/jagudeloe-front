@@ -48,10 +48,12 @@ interface ApiError extends Error {
     const qs = opts && opts.estado ? "?estado=" + encodeURIComponent(opts.estado) : "";
     return labFetch("/isa/" + project + "/tickets" + qs);
   };
+  const getTicket = (project: string, iticket: string) =>
+    labFetch("/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
   const getChecks = (project: string) => labFetch("/isa/" + project + "/checks");
   const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
     labFetch("/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
 
   w.ISAJ = w.ISAJ || {};
-  w.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getChecks, setCheck };
+  w.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck };
 })();
