@@ -1,18 +1,16 @@
-# jagudeloe-front
+<p align="center">
+  <img src="https://api.iconify.design/mdi/notebook-outline.svg?color=%2337474f&width=96&height=96" width="96" height="96" alt="ISA-DOC" />
+</p>
 
-Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyIA** y **ClientesIS**. Organiza la información en *spaces* y subspaces: **bitácora** (markdown + SQL segmentado), **tickets** del entity store y **checks** de revisión — todo contra la BD `BD_ISADOC` vía el microservicio `jagudeloe`.
+<h1 align="center">jagudeloe-front</h1>
+
+<p align="center"><strong>ISA-DOC</strong> — bitácora, tickets tk_* y checks de revisión para PatyIA y ClientesIS.</p>
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f?logo=githubpages&logoColor=white)](https://jeff-aporta.github.io/jagudeloe-front/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![MUI](https://img.shields.io/badge/MUI-5-007FFF?logo=mui&logoColor=white)](https://mui.com/)
-[![Babel Standalone](https://img.shields.io/badge/Babel%20Standalone-7-F9DC3E?logo=babel&logoColor=black)](https://babeljs.io/)
 [![Marked](https://img.shields.io/badge/Marked-12-000000)](https://marked.js.org/)
-[![SignalR](https://img.shields.io/badge/SignalR-opcional-512BD4?logo=.net&logoColor=white)](https://github.com/dotnet/aspnetcore)
 [![Cloudflare Workers](https://img.shields.io/badge/API-Cloudflare%20Workers-F38020?logo=cloudflare&logoColor=white)](https://github.com/Jeff-Aporta/jagudeloe-back)
 [![Neon](https://img.shields.io/badge/BD-Neon%20BD__ISADOC-00E599?logo=neon&logoColor=black)](https://neon.tech/)
-[![system-login](https://img.shields.io/badge/auth-system--login-007FFF)](https://github.com/Jeff-Aporta/system-login-front)
-[![Sin build](https://img.shields.io/badge/build-sin%20paso%20de%20build-555)](https://github.com/Jeff-Aporta/jagudeloe-front)
 
 ## Demo
 
@@ -30,16 +28,18 @@ Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyI
 - **Bitácora**: layout + segmentos MD/SQL renderizados (Marked + estilos dedicados).
 - **Tickets**: consulta pública del entity store con filtro por estado.
 - **Checks**: revisados de bitácora; lectura pública, escritura con JWT.
-- **Estado en URL** (`?s=`) para space/subspace; almacenamiento extenso en localStorage / IndexedDB.
-- **Tema** dodgerblue dark/light y toggle **gateway local :8780 / producción** (enruta a jagudeloe).
+- **Estado en URL** (`?s=`) para space/subspace.
+- **Tema** dodgerblue dark/light y toggle **orquestador local / producción**.
 
-Sustituye el front legacy `ISA-JAGUDELOE`. Las peticiones pasan por **langlab gateway**, no por Azure.
+## Metadatos
+
+Icono: `mdi:notebook-outline` · tema `#37474f` · [`JeffAppMeta`](https://github.com/Jeff-Aporta/front-shared/blob/main/cdn/isa/js/core/app-meta.js).
 
 ## Desarrollo local
 
 ```bash
-cd ../../langlab/backend && npm run dev   # gateway :8780
-npx serve .                               # front + switch "Gateway local"
+npx serve .
+# main-orchestrator en :8780
 ```
 
 ## Repos relacionados
