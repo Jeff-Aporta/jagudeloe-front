@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://api.iconify.design/mdi/notebook-outline.svg?color=%2337474f&width=96&height=96" width="96" height="96" alt="ISA-DOC" />
+  <img src="https://api.iconify.design/mdi/notebook-outline.svg?color=%2337474f&width=96&height=96" width="96" height="96" alt="JAGUDELOE" />
 </p>
 
 <h1 align="center">jagudeloe-front</h1>
 
-<p align="center"><strong>ISA-DOC</strong> — bitácora, tickets tk_* y checks de revisión para PatyIA y ClientesIS.</p>
+<p align="center"><strong>JAGUDELOE</strong> — bitácora, tickets tk_* y checks de revisión para PatyIA y ClientesIS.</p>
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f?logo=githubpages&logoColor=white)](https://jeff-aporta.github.io/jagudeloe-front/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -18,7 +18,7 @@
 
 ## Vista previa
 
-![Spaces PatyIA · bitácora ISA-DOC](./docs/gh-pages.png)
+![Spaces PatyIA · bitácora JAGUDELOE](./docs/gh-pages.png)
 
 > La UI carga en GH Pages; los datos requieren el Worker [`jagudeloe-back`](https://github.com/Jeff-Aporta/jagudeloe-back) desplegado.
 
@@ -46,7 +46,7 @@ npx serve .
 
 | Repo | Rol |
 |------|-----|
-| [jagudeloe-back](https://github.com/Jeff-Aporta/jagudeloe-back) | API ISA-DOC (Worker) |
+| [jagudeloe-back](https://github.com/Jeff-Aporta/jagudeloe-back) | API JAGUDELOE (Worker) |
 | [jagudeloe-front](https://github.com/Jeff-Aporta/jagudeloe-front) | Este panel (GH Pages) |
 
 MIT · [Jeff-Aporta](https://github.com/Jeff-Aporta)

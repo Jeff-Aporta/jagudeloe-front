@@ -1,5 +1,5 @@
 /*
- * api/client — cliente HTTP del Worker jagudeloe (ISA-DOC) vía gateway langlab.
+ * api/client — cliente HTTP del Worker jagudeloe vía main-orchestrator.
  * GET = público (sin token). POST/PUT/DELETE = adjunta Authorization si hay sesión.
  * Rutas: /isa/{project}/{recurso}, /tk/…
  *

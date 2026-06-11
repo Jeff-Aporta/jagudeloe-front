@@ -1,7 +1,7 @@
 /*
  * ui/parts — componentes compartidos para las vistas:
  *  - MockBanner: aviso claro de "datos de ejemplo".
- *  - Accordion: acordeón anidado (imita ISA-DOC), controlado o no.
+ *  - Accordion: acordeón anidado, controlado o no.
  *  - MonthTree: navegador tipo árbol agrupado por mes (meses → ítems).
  */
 
