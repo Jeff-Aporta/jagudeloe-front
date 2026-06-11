@@ -1,4 +1,14 @@
 /* css/code — bloques de código SQL de la bitácora. */
+
+/* Editor CodeMirror del SqlBlock: altura automática y tipografía monoespaciada. */
+.sql-cm .CodeMirror {
+  height: auto;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.sql-cm .CodeMirror-scroll { min-height: 0; }
+
 pre.sql-body {
   margin: 0;
   white-space: pre-wrap;

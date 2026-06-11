@@ -1,7 +1,8 @@
 /*
- * views/BitacoraView — bitácora de un space. Navegador tipo árbol (mes → día) a la
- * izquierda y acordeones anidados (mes → día → contenido md/sql) a la derecha,
- * imitando ISA-DOC. Si el backend falla, el cliente entrega un MOCKUP (_mock).
+ * views/BitacoraView — bitácora de un space. Navegador en carpetas AÑO → MES → DÍA
+ * (solo números) a la izquierda; a la derecha se ve UN DÍA a la vez. El SQL se
+ * muestra con CodeMirror y se ejecuta solo con sesión/perfil, dirigido a su BD.
+ * Si el backend falla, el cliente entrega un MOCKUP (_mock).
  */
 
 interface LayoutNode {
@@ -11,6 +12,7 @@ interface LayoutNode {
   segmentId?: string;
   checkKey?: string;
 }
+interface DayEntry { id: string; date: string; title: string; children: LayoutNode[]; }
 interface BitacoraViewProps { project: string; reloadKey?: number; }
 
 (function () {
@@ -19,96 +21,80 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
   const UI = window.ISAJ.UI;
   const P = window.ISAJ.Parts;
 
-  function renderLeaf(node: LayoutNode, segments: Record<string, Record<string, string>>, key: string): ReactNode {
+  const reDate = /(\d{4}-\d{2}-\d{2})/;
+
+  function renderLeaf(node: LayoutNode, segments: Record<string, Record<string, string>>, project: string, key: string): ReactNode {
     if (node.type === "md") {
       const seg = segments[node.segmentId as string] || {};
-      const html = window.marked ? window.marked.parse(seg.md || seg.body || "") : (seg.md || "");
+      const raw = seg.markdown || seg.md || seg.body || "";
+      const html = window.marked ? window.marked.parse(raw) : raw;
       return React.createElement(MUI.Box, { key, className: "md-body", sx: { my: 1 }, dangerouslySetInnerHTML: { __html: html } });
     }
     if (node.type === "sql") {
       const s = segments[node.segmentId as string] || {};
-      return React.createElement(MUI.Box, { key, sx: { my: 1 } },
-        React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 0.5 } },
-          React.createElement(UI.Icon, { icon: "mdi:database-search-outline" }),
-          React.createElement(MUI.Typography, { variant: "subtitle2" }, s.title || node.checkKey || "Consulta")),
-        React.createElement("pre", { className: "sql-body" }, s.sql || s.body || "-- sin SQL"));
+      return React.createElement(P.SqlBlock, {
+        key, sql: s.sql || s.body || "-- sin SQL", title: s.title || node.checkKey || "Consulta",
+        dbTarget: s.dbTarget, project, segmentId: node.segmentId,
+      });
     }
     return null;
   }
 
   function BitacoraView(props: BitacoraViewProps) {
     const [state, setState] = React.useState<{ loading: boolean; error: string | null; data: Record<string, unknown> | null }>({ loading: true, error: null, data: null });
-    const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
     const [selected, setSelected] = React.useState<string | null>(null);
 
     React.useEffect(() => {
       let alive = true;
       setState({ loading: true, error: null, data: null });
+      setSelected(null);
       window.ISAJ.Api.getBitacora(props.project)
-        .then((d) => { if (alive) { setState({ loading: false, error: null, data: d as Record<string, unknown> }); } })
+        .then((d) => { if (alive) setState({ loading: false, error: null, data: d as Record<string, unknown> }); })
         .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), data: null }); });
       return () => { alive = false; };
     }, [props.project, props.reloadKey]);
 
-    // Abre el primer mes y su primer día al cargar.
     const data = state.data || {};
     const layout = (data.layout || data) as { nodes?: LayoutNode[] };
-    const months: LayoutNode[] = layout.nodes || [];
     const segments = (data.segments || {}) as Record<string, Record<string, string>>;
 
+    // Aplanar a lista de días con fecha YYYY-MM-DD
+    const days: DayEntry[] = [];
+    (layout.nodes || []).forEach((mo) => {
+      (mo.children || []).forEach((day) => {
+        const m = reDate.exec(day.title || "");
+        const date = m ? m[1] : "";
+        days.push({ id: date || (day.title || ""), date, title: day.title || "Día", children: day.children || [] });
+      });
+    });
+    days.sort((a, b) => (a.date < b.date ? 1 : -1)); // desc
+
+    // Seleccionar el más reciente al cargar
     React.useEffect(() => {
-      if (months.length) {
-        const init: Record<string, boolean> = { mo0: true };
-        if (months[0].children && months[0].children.length) init["d0_0"] = true;
-        setExpanded(init);
-      }
+      if (days.length && !selected) setSelected(days[0].id);
     }, [state.data]);
 
     if (state.loading) return UI.Loading ? React.createElement(UI.Loading, { label: "Cargando bitácora…" }) : React.createElement(MUI.CircularProgress, null);
     if (state.error) return UI.ErrorBox ? React.createElement(UI.ErrorBox, { message: state.error }) : React.createElement(MUI.Alert, { severity: "error" }, state.error);
-    if (!months.length) return React.createElement(MUI.Alert, { severity: "info" }, "La bitácora de " + props.project + " está vacía.");
+    if (!days.length) return React.createElement(MUI.Alert, { severity: "info" }, "La bitácora de " + props.project + " está vacía.");
 
     const isMock = !!data._mock;
+    const current = days.find((d) => d.id === selected) || days[0];
 
-    // Árbol: meses → días
-    const groups = months.map((mo, mi) => ({
-      id: "mo" + mi,
-      label: mo.title || "Mes",
-      count: (mo.children || []).length,
-      items: (mo.children || []).map((day, di) => ({ id: "d" + mi + "_" + di, label: day.title || "Día" })),
-    }));
-
-    function selectDay(dayId: string) {
-      const moId = "mo" + dayId.slice(1).split("_")[0];
-      setExpanded((e) => ({ ...e, [moId]: true, [dayId]: true }));
-      setSelected(dayId);
-      window.ISAJ.UrlState.merge({ sel: dayId });
-      setTimeout(() => { const el = document.getElementById(dayId); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
-    }
-    const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+    const treeItems = days.map((d) => ({ id: d.id, date: d.date, secondary: d.title.replace(reDate, "").replace(/^\s*[—-]\s*/, "").trim() }));
 
     const tree = React.createElement(MUI.Box, {
-      sx: { width: 300, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "auto", display: { xs: "none", md: "block" } },
-    }, React.createElement(P.MonthTree, { groups, selectedId: selected, onSelect: selectDay }));
+      sx: { width: 230, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "auto", display: { xs: "none", md: "block" } },
+    }, React.createElement(P.DateTree, { items: treeItems, selectedId: selected, onSelect: (id: string) => { setSelected(id); window.ISAJ.UrlState.merge({ sel: id }); }, mode: "day" }));
 
     const content = React.createElement(MUI.Box, { sx: { flex: 1, minWidth: 0, overflow: "auto", p: 2 } },
       isMock && React.createElement(P.MockBanner, null),
-      months.map((mo, mi) => {
-        const moId = "mo" + mi;
-        return React.createElement(P.Accordion, {
-          key: moId, nodeId: moId, level: 0, icon: "mdi:calendar-month-outline",
-          title: mo.title || "Mes", count: (mo.children || []).length,
-          expanded: !!expanded[moId], onToggle: () => toggle(moId),
-        },
-          (mo.children || []).map((day, di) => {
-            const dId = "d" + mi + "_" + di;
-            return React.createElement(P.Accordion, {
-              key: dId, nodeId: dId, level: 1, icon: "mdi:calendar-text-outline",
-              title: day.title || "Día",
-              expanded: !!expanded[dId], onToggle: () => toggle(dId),
-            }, (day.children || []).map((leaf, li) => renderLeaf(leaf, segments, dId + "-" + li)));
-          }));
-      }));
+      React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 2 } },
+        React.createElement(UI.Icon, { icon: "mdi:calendar-text-outline", size: 22 }),
+        React.createElement(MUI.Typography, { variant: "h6" }, current.title)),
+      current.children.length
+        ? current.children.map((leaf, i) => renderLeaf(leaf, segments, props.project, current.id + "-" + i))
+        : React.createElement(MUI.Typography, { color: "text.secondary" }, "Sin contenido para este día."));
 
     return React.createElement(MUI.Box, { sx: { display: "flex", height: "100%", minHeight: 0 } }, tree, content);
   }

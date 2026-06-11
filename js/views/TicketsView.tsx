@@ -1,12 +1,15 @@
 /*
- * views/TicketsView — tickets de un space (GET público). Kanban por estado.
+ * views/TicketsView — tickets de un space. Navegador en carpetas AÑO → MES → DÍA →
+ * ticket (solo números en las carpetas); a la derecha se ve UN TICKET a la vez.
+ * Si el backend falla, el cliente entrega un MOCKUP (_mock).
  */
 
 interface Ticket {
-  id?: string | number; iticket?: string | number;
-  titulo?: string; title?: string; descripcion?: string;
+  id?: string | number; iticket?: string | number; code?: string;
+  titulo?: string; title?: string; descripcion?: string; resumen?: string;
   estado?: string; status?: string; prioridad?: string;
-  tiempoTotalMinutos?: number; resumen?: string;
+  fecha?: string; fechaSolicitud?: string; solicitante?: string;
+  tiempoTotalMinutos?: number;
 }
 interface TicketsViewProps { project: string; reloadKey?: number; }
 
@@ -14,127 +17,104 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
   "use strict";
   const MUI = MaterialUI;
   const UI = window.ISAJ.UI;
+  const P = window.ISAJ.Parts;
 
   const ESTADO_COLOR: Record<string, string> = {
     abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error",
   };
+  const ABBR: Record<string, string> = {
+    ene: "01", feb: "02", mar: "03", abr: "04", may: "05", jun: "06",
+    jul: "07", ago: "08", sep: "09", oct: "10", nov: "11", dic: "12",
+  };
 
-  function TicketCard(t: Ticket, onOpen: (t: Ticket) => void) {
-    return React.createElement(MUI.Card, {
-      variant: "outlined", sx: { mb: 1, cursor: "pointer" },
-      onClick: () => onOpen(t),
-    },
-      React.createElement(MUI.CardContent, { sx: { py: 1.5 } },
-        React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 0.5 } },
-          React.createElement(MUI.Chip, { size: "small", label: "#" + (t.id || t.iticket || "?"), color: "primary" }),
-          t.prioridad && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: t.prioridad })),
-        React.createElement(MUI.Typography, { variant: "subtitle2" }, t.titulo || t.title || "(sin título)"),
-        t.tiempoTotalMinutos != null && React.createElement(MUI.Chip, {
-          size: "small", variant: "outlined", sx: { mt: 0.5 },
-          label: t.tiempoTotalMinutos + " min",
-        }),
-        (t.resumen || t.descripcion) && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary", sx: { mt: 0.5 } },
-          String(t.resumen || t.descripcion).slice(0, 240))));
+  function ticketId(t: Ticket): string { return String(t.code || t.iticket || t.id || ""); }
+
+  function dateOf(t: Ticket): string {
+    let m = /^(\d{4}-\d{2}-\d{2})/.exec(t.fecha || "");
+    if (m) return m[1];
+    m = /(\d{1,2})\/([a-záéíóú]+)\.?\/(\d{4})/i.exec(t.fechaSolicitud || "");
+    if (m) { const mm = ABBR[m[2].slice(0, 3).toLowerCase()]; if (mm) return m[3] + "-" + mm + "-" + m[1].padStart(2, "0"); }
+    return "";
   }
 
-  function TicketDetailDialog(props: { project: string; iticket: string | null; onClose: () => void }) {
-    const [state, setState] = React.useState<{ loading: boolean; error: string | null; ticket: Record<string, unknown> | null }>({ loading: false, error: null, ticket: null });
-
+  // Detalle de UN ticket (inline). Carga el detalle por API (con fallback mock).
+  function TicketDetail(props: { project: string; iticket: string }) {
+    const [state, setState] = React.useState<{ loading: boolean; error: string | null; tk: Record<string, unknown> | null }>({ loading: true, error: null, tk: null });
     React.useEffect(() => {
-      if (!props.iticket) return;
       let alive = true;
-      setState({ loading: true, error: null, ticket: null });
+      setState({ loading: true, error: null, tk: null });
       window.ISAJ.Api.getTicket(props.project, props.iticket)
-        .then((d) => {
-          const body = d as Record<string, unknown>;
-          const ticket = (body.ticket || body) as Record<string, unknown>;
-          if (alive) setState({ loading: false, error: null, ticket });
-        })
-        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), ticket: null }); });
+        .then((d) => { const b = d as Record<string, unknown>; if (alive) setState({ loading: false, error: null, tk: (b.ticket || b) as Record<string, unknown> }); })
+        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), tk: null }); });
       return () => { alive = false; };
     }, [props.project, props.iticket]);
 
-    if (!props.iticket) return null;
-    const tk = state.ticket;
-    return React.createElement(MUI.Dialog, { open: true, onClose: props.onClose, maxWidth: "md", fullWidth: true },
-      React.createElement(MUI.DialogTitle, null, props.iticket),
-      React.createElement(MUI.DialogContent, { dividers: true },
-        state.loading && (UI.Loading
-          ? React.createElement(UI.Loading, { label: "Cargando detalle…" })
-          : React.createElement(MUI.CircularProgress, null)),
-        state.error && (UI.ErrorBox
-          ? React.createElement(UI.ErrorBox, { message: state.error })
-          : React.createElement(MUI.Alert, { severity: "error" }, state.error)),
-        tk && React.createElement(MUI.Stack, { spacing: 2 },
-          React.createElement(MUI.Typography, { variant: "h6" }, String(tk.titulo || tk.title || "")),
-          tk.resumen && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary" }, String(tk.resumen)),
-          React.createElement(MUI.Stack, { direction: "row", spacing: 1, flexWrap: "wrap" },
-            tk.tiempoTotalMinutos != null && React.createElement(MUI.Chip, { size: "small", label: "Total " + String(tk.tiempoTotalMinutos) + " min" }),
-            tk.diligenciaMinutos != null && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: "Diligencia " + String(tk.diligenciaMinutos) + " min" }),
-            tk.commitMinutos != null && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: "Commits " + String(tk.commitMinutos) + " min" }),
-            tk.activo === false && React.createElement(MUI.Chip, { size: "small", color: "warning", label: "Inactivo" })),
-          Array.isArray(tk.contexts) && (tk.contexts as Record<string, unknown>[]).length > 0 && React.createElement(MUI.Box, null,
-            React.createElement(MUI.Typography, { variant: "subtitle2", gutterBottom: true }, "Contextos"),
-            (tk.contexts as Record<string, unknown>[]).map((ctx, i) => React.createElement(MUI.Paper, { key: i, variant: "outlined", sx: { p: 1.5, mb: 1 } },
-              React.createElement(MUI.Typography, { variant: "body2" }, String(ctx.asesorNombre || "—")),
-              ctx.bChecked && React.createElement(MUI.Chip, { size: "small", color: "success", label: "Revisado", sx: { ml: 1 } }),
-              Array.isArray(ctx.commits) && (ctx.commits as Record<string, unknown>[]).map((c, j) => React.createElement(MUI.Typography, {
-                key: j, variant: "caption", component: "div", color: "text.secondary",
-              }, String(c.hash) + " · " + String(c.minutos || 0) + " min · " + String(c.descripcion || "")))))),
-          tk.contentHtml && React.createElement(MUI.Box, {
-            className: "tk-content",
-            sx: { "& pre": { overflow: "auto", fontSize: "0.8rem" }, "& table": { width: "100%", borderCollapse: "collapse" } },
-            dangerouslySetInnerHTML: { __html: String(tk.contentHtml) },
-          }))),
-      React.createElement(MUI.DialogActions, null,
-        React.createElement(MUI.Button, { onClick: props.onClose }, "Cerrar")));
+    if (state.loading) return UI.Loading ? React.createElement(UI.Loading, { label: "Cargando ticket…" }) : React.createElement(MUI.CircularProgress, null);
+    if (state.error) return UI.ErrorBox ? React.createElement(UI.ErrorBox, { message: state.error }) : React.createElement(MUI.Alert, { severity: "error" }, state.error);
+    const tk = state.tk || {};
+    return React.createElement(MUI.Stack, { spacing: 2 },
+      tk._mock && React.createElement(P.MockBanner, null),
+      React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center" },
+        React.createElement(MUI.Chip, { size: "small", color: "primary", label: props.iticket }),
+        React.createElement(MUI.Typography, { variant: "h6" }, String(tk.titulo || tk.title || ""))),
+      tk.resumen && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary" }, String(tk.resumen)),
+      React.createElement(MUI.Stack, { direction: "row", spacing: 1, flexWrap: "wrap" },
+        tk.estado && React.createElement(MUI.Chip, { size: "small", color: ESTADO_COLOR[String(tk.estado)] || "default", label: String(tk.estado) }),
+        tk.tiempoTotalMinutos != null && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: "Total " + String(tk.tiempoTotalMinutos) + " min" }),
+        tk.solicitante && React.createElement(MUI.Chip, { size: "small", variant: "outlined", label: "Solicita: " + String(tk.solicitante) })),
+      tk.contentHtml && React.createElement(MUI.Box, {
+        className: "tk-content",
+        sx: { "& pre": { overflow: "auto", fontSize: "0.8rem" }, "& table": { width: "100%", borderCollapse: "collapse" } },
+        dangerouslySetInnerHTML: { __html: String(tk.contentHtml) },
+      }));
   }
 
   function TicketsView(props: TicketsViewProps) {
-    const [state, setState] = React.useState({ loading: true, error: null as string | null, rows: [] as Ticket[] });
-    const [openId, setOpenId] = React.useState<string | null>(null);
+    const [state, setState] = React.useState({ loading: true, error: null as string | null, rows: [] as Ticket[], mock: false });
+    const [selected, setSelected] = React.useState<string | null>(null);
 
     React.useEffect(() => {
       let alive = true;
-      setState({ loading: true, error: null, rows: [] });
+      setState({ loading: true, error: null, rows: [], mock: false });
+      setSelected(null);
       window.ISAJ.Api.getTickets(props.project)
         .then((d) => {
           const body = d as Record<string, unknown> | Ticket[] | null;
           const rows: Ticket[] = (body && !Array.isArray(body) && ((body.rows as Ticket[]) || (body.tickets as Ticket[]) || (body.items as Ticket[]))) || (Array.isArray(body) ? body : []);
-          if (alive) setState({ loading: false, error: null, rows });
+          const mock = !!(body && !Array.isArray(body) && body._mock);
+          if (alive) setState({ loading: false, error: null, rows, mock });
         })
-        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), rows: [] }); });
+        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), rows: [], mock: false }); });
       return () => { alive = false; };
     }, [props.project, props.reloadKey]);
 
-    if (state.loading) return UI.Loading
-      ? React.createElement(UI.Loading, { label: "Cargando tickets…" })
-      : React.createElement(MUI.CircularProgress, null);
-    if (state.error) return UI.ErrorBox
-      ? React.createElement(UI.ErrorBox, { message: state.error })
-      : React.createElement(MUI.Alert, { severity: "error" }, state.error);
-    if (!state.rows.length) return React.createElement(MUI.Alert, { severity: "info" }, "Sin tickets en " + props.project + ".");
+    const rows = state.rows.slice().sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
 
-    const groups: Record<string, Ticket[]> = {};
-    state.rows.forEach((t) => {
-      const e = (t.estado || t.status || "abierto").toLowerCase();
-      (groups[e] = groups[e] || []).push(t);
-    });
+    React.useEffect(() => {
+      if (rows.length && !selected) setSelected(ticketId(rows[0]));
+    }, [state.rows]);
 
-    function openTicket(t: Ticket) {
-      const id = String(t.iticket || t.id || "");
-      if (id) setOpenId(id);
-    }
+    if (state.loading) return UI.Loading ? React.createElement(UI.Loading, { label: "Cargando tickets…" }) : React.createElement(MUI.CircularProgress, null);
+    if (state.error) return UI.ErrorBox ? React.createElement(UI.ErrorBox, { message: state.error }) : React.createElement(MUI.Alert, { severity: "error" }, state.error);
+    if (!rows.length) return React.createElement(MUI.Alert, { severity: "info" }, "Sin tickets en " + props.project + ".");
 
-    return React.createElement(MUI.Box, null,
-      React.createElement(TicketDetailDialog, { project: props.project, iticket: openId, onClose: () => setOpenId(null) }),
-      React.createElement(MUI.Grid, { container: true, spacing: 2 },
-        Object.keys(groups).map((e) =>
-          React.createElement(MUI.Grid, { size: { xs: 12, sm: 6, md: 3 }, key: e },
-            React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 1 } },
-              React.createElement(MUI.Chip, { size: "small", color: ESTADO_COLOR[e] || "default", label: e }),
-              React.createElement(MUI.Typography, { variant: "caption", color: "text.secondary" }, groups[e].length)),
-            groups[e].map((t, i) => React.createElement(React.Fragment, { key: i }, TicketCard(t, openTicket)))))));
+    const treeItems = rows.map((t) => ({
+      id: ticketId(t), date: dateOf(t),
+      label: ticketId(t) + " · " + (t.titulo || t.title || ""),
+      secondary: t.estado || t.status,
+    }));
+
+    const tree = React.createElement(MUI.Box, {
+      sx: { width: 260, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "auto", display: { xs: "none", md: "block" } },
+    }, React.createElement(P.DateTree, { items: treeItems, selectedId: selected, onSelect: (id: string) => { setSelected(id); window.ISAJ.UrlState.merge({ sel: id }); }, mode: "items" }));
+
+    const content = React.createElement(MUI.Box, { sx: { flex: 1, minWidth: 0, overflow: "auto", p: 2 } },
+      state.mock && React.createElement(P.MockBanner, null),
+      selected
+        ? React.createElement(TicketDetail, { project: props.project, iticket: selected })
+        : React.createElement(MUI.Typography, { color: "text.secondary" }, "Selecciona un ticket en el navegador."));
+
+    return React.createElement(MUI.Box, { sx: { display: "flex", height: "100%", minHeight: 0 } }, tree, content);
   }
 
   window.ISAJ = window.ISAJ || ({} as IsajNs);

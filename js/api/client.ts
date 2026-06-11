@@ -22,9 +22,12 @@ interface ApiError extends Error {
   "use strict";
 
   async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
-    let headers: Record<string, string> = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
     const method = (opts.method || "GET").toUpperCase();
-    if (method !== "GET") headers = Object.assign(headers, window.ISAJ.Session.authHeader());
+    const headers: Record<string, string> = Object.assign({}, opts.headers || {});
+    if (method !== "GET" && method !== "HEAD") {
+      headers["Content-Type"] = headers["Content-Type"] || "application/json";
+      Object.assign(headers, window.ISAJ.Session.authHeader());
+    }
 
     const res = await fetch(window.ISAJ.Config.apiUrl(path), {
       method,
@@ -96,6 +99,10 @@ interface ApiError extends Error {
   const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
     labFetch("/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
 
+  // Ejecuta SQL contra la BD destino (paty|clientesis). Requiere sesión con perfil.
+  const execSql = (project: string, payload: { sql: string; dbTarget?: string; segmentId?: string }) =>
+    labFetch("/isa/" + project + "/sql", { method: "POST", body: payload });
+
   window.ISAJ = window.ISAJ || ({} as IsajNs);
-  window.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck };
+  window.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck, execSql };
 })();

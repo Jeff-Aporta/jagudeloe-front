@@ -10,6 +10,8 @@
     const [status, setStatus] = React.useState<SignalRStatus>("disconnected");
 
     React.useEffect(() => {
+      // Hub SignalR aún no existe en jagudeloe — evita 404 a /api/signalr vía orquestador.
+      return;
       if (!window.signalR || !window.ISAJ.Session.isLoggedIn()) return;
       let conn: SignalRHub | null = null;
       let stopped = false;
