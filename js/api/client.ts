@@ -16,21 +16,21 @@ interface ApiError extends Error {
 
 (function () {
   "use strict";
-  const w = window as any;
 
-  async function labFetch<T = any>(path: string, opts: FetchOpts = {}): Promise<T> {
+  async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
     let headers: Record<string, string> = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
     const method = (opts.method || "GET").toUpperCase();
-    if (method !== "GET") headers = Object.assign(headers, w.ISAJ.Session.authHeader());
+    if (method !== "GET") headers = Object.assign(headers, window.ISAJ.Session.authHeader());
 
-    const res = await fetch(w.ISAJ.Config.apiUrl(path), {
+    const res = await fetch(window.ISAJ.Config.apiUrl(path), {
       method,
       headers,
       body: opts.body != null ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined,
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
-      let msg = (data && (data as any).error) || ("HTTP " + res.status);
+      const errBody = data as { error?: string } | null;
+      let msg = (errBody && errBody.error) || ("HTTP " + res.status);
       if (res.status === 401) msg = "Sesión requerida o expirada.";
       if (res.status === 403) msg = "No tienes permiso para esta acción.";
       if (res.status === 404) msg = "Endpoint no disponible (¿backend desplegado?).";
@@ -54,6 +54,6 @@ interface ApiError extends Error {
   const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
     labFetch("/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
 
-  w.ISAJ = w.ISAJ || {};
-  w.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck };
+  window.ISAJ = window.ISAJ || ({} as IsajNs);
+  window.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck };
 })();

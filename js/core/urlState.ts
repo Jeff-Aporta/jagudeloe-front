@@ -81,7 +81,6 @@ type UrlStateMap = Record<string, StateValue>;
 
   window.addEventListener("popstate", () => { current = readUrl(); notify(); });
 
-  const w = window as any;
-  w.ISAJ = w.ISAJ || {};
-  w.ISAJ.UrlState = { get, merge, subscribe, boot: get(), MAX_VALUE };
+  window.ISAJ = window.ISAJ || ({} as IsajNs);
+  window.ISAJ.UrlState = { get, merge, subscribe, boot: get(), MAX_VALUE };
 })();

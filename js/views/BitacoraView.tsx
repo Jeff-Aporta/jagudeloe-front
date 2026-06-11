@@ -14,21 +14,19 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
 
 (function () {
   "use strict";
-  const React = (window as any).React;
-  const MUI = (window as any).MaterialUI;
-  const w = window as any;
-  const UI = w.ISAJ.UI;
+  const MUI = MaterialUI;
+  const UI = window.ISAJ.UI;
 
-  function renderNode(node: LayoutNode, segments: Record<string, any>, key: string): any {
+  function renderNode(node: LayoutNode, segments: Record<string, unknown>, key: string): ReactNode {
     if (!node) return null;
     if (node.type === "md") {
-      const seg = segments[node.segmentId as string] || {};
-      const html = w.marked ? w.marked.parse(seg.md || seg.body || "") : (seg.md || "");
+      const seg = (segments[node.segmentId as string] || {}) as Record<string, string>;
+      const html = window.marked ? window.marked.parse(seg.md || seg.body || "") : (seg.md || "");
       return React.createElement(MUI.Paper, { key, variant: "outlined", sx: { p: 2, my: 1 } },
         React.createElement("div", { className: "md-body", dangerouslySetInnerHTML: { __html: html } }));
     }
     if (node.type === "sql") {
-      const s = segments[node.segmentId as string] || {};
+      const s = (segments[node.segmentId as string] || {}) as Record<string, string>;
       return React.createElement(MUI.Paper, { key, variant: "outlined", sx: { p: 2, my: 1 } },
         React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 1 } },
           React.createElement(UI.Icon, { icon: "mdi:database-search-outline" }),
@@ -44,24 +42,28 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
   }
 
   function BitacoraView(props: BitacoraViewProps) {
-    const [state, setState] = React.useState({ loading: true, error: null as string | null, data: null as any });
+    const [state, setState] = React.useState<{ loading: boolean; error: string | null; data: Record<string, unknown> | null }>({ loading: true, error: null, data: null });
 
     React.useEffect(() => {
       let alive = true;
       setState({ loading: true, error: null, data: null });
-      w.ISAJ.Api.getBitacora(props.project)
-        .then((d: any) => { if (alive) setState({ loading: false, error: null, data: d }); })
-        .catch((e: any) => { if (alive) setState({ loading: false, error: e.message, data: null }); });
+      window.ISAJ.Api.getBitacora(props.project)
+        .then((d) => { if (alive) setState({ loading: false, error: null, data: d as Record<string, unknown> }); })
+        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), data: null }); });
       return () => { alive = false; };
     }, [props.project, props.reloadKey]);
 
-    if (state.loading) return React.createElement(UI.Loading, { label: "Cargando bitácora…" });
-    if (state.error) return React.createElement(UI.ErrorBox, { message: state.error });
+    if (state.loading) return UI.Loading
+      ? React.createElement(UI.Loading, { label: "Cargando bitácora…" })
+      : React.createElement(MUI.CircularProgress, null);
+    if (state.error) return UI.ErrorBox
+      ? React.createElement(UI.ErrorBox, { message: state.error })
+      : React.createElement(MUI.Alert, { severity: "error" }, state.error);
 
     const data = state.data || {};
-    const layout = data.layout || data;
-    const nodes: LayoutNode[] = (layout && layout.nodes) || [];
-    const segments = data.segments || {};
+    const layout = (data.layout || data) as { nodes?: LayoutNode[] };
+    const nodes: LayoutNode[] = layout.nodes || [];
+    const segments = (data.segments || {}) as Record<string, unknown>;
 
     if (!nodes.length) {
       return React.createElement(MUI.Alert, { severity: "info" }, "La bitácora de " + props.project + " está vacía.");
@@ -69,6 +71,6 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
     return React.createElement(MUI.Box, null, nodes.map((n, i) => renderNode(n, segments, "n" + i)));
   }
 
-  w.ISAJ = w.ISAJ || {};
-  w.ISAJ.BitacoraView = BitacoraView;
+  window.ISAJ = window.ISAJ || ({} as IsajNs);
+  window.ISAJ.BitacoraView = BitacoraView;
 })();

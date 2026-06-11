@@ -31,14 +31,14 @@ Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyI
 - **Tickets**: consulta pública del entity store con filtro por estado.
 - **Checks**: revisados de bitácora; lectura pública, escritura con JWT.
 - **Estado en URL** (`?s=`) para space/subspace; almacenamiento extenso en localStorage / IndexedDB.
-- **Tema** dodgerblue dark/light y toggle **local :8787 / online**.
+- **Tema** dodgerblue dark/light y toggle **local :8783 / online**.
 
 Sustituye el front legacy `ISA-JAGUDELOE` y deja de depender de langlab Azure para datos ISA.
 
 ## Desarrollo local
 
 ```bash
-cd ../back && npm run dev    # Worker :8787
+cd ../backend && npm run dev    # Worker :8783
 npx serve .                  # front + switch "local"
 ```
 

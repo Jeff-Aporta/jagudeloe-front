@@ -56,9 +56,8 @@
     }));
   }
 
-  const w = window as any;
-  w.ISAJ = w.ISAJ || {};
-  w.ISAJ.Storage = {
+  window.ISAJ = window.ISAJ || ({} as IsajNs);
+  window.ISAJ.Storage = {
     local: { get: lsGet, set: lsSet, del: lsDel },
     big: { get: idbGet, set: idbSet, del: idbDel },
   };

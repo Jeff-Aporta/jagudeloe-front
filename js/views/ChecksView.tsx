@@ -12,47 +12,50 @@ interface ChecksViewProps { project: string; reloadKey?: number; }
 
 (function () {
   "use strict";
-  const React = (window as any).React;
-  const MUI = (window as any).MaterialUI;
-  const w = window as any;
-  const UI = w.ISAJ.UI;
+  const MUI = MaterialUI;
+  const UI = window.ISAJ.UI;
 
   function ChecksView(props: ChecksViewProps) {
     const [state, setState] = React.useState({ loading: true, error: null as string | null, rows: [] as CheckRow[] });
     const [busy, setBusy] = React.useState<Record<string, boolean>>({});
 
     function load() {
-      setState((s: any) => Object.assign({}, s, { loading: true, error: null }));
-      w.ISAJ.Api.getChecks(props.project)
-        .then((d: any) => {
-          const rows: CheckRow[] = (d && (d.rows || d.checks)) || (Array.isArray(d) ? d : []);
+      setState((s) => ({ ...s, loading: true, error: null }));
+      window.ISAJ.Api.getChecks(props.project)
+        .then((d) => {
+          const body = d as Record<string, unknown> | CheckRow[] | null;
+          const rows: CheckRow[] = (body && !Array.isArray(body) && ((body.rows as CheckRow[]) || (body.checks as CheckRow[]))) || (Array.isArray(body) ? body : []);
           setState({ loading: false, error: null, rows });
         })
-        .catch((e: any) => setState({ loading: false, error: e.message, rows: [] }));
+        .catch((e) => setState({ loading: false, error: e instanceof Error ? e.message : String(e), rows: [] }));
     }
     React.useEffect(load, [props.project, props.reloadKey]);
 
     function toggle(row: CheckRow) {
-      if (!w.ISAJ.Session.isLoggedIn()) return;
+      if (!window.ISAJ.Session.isLoggedIn()) return;
       const key = (row.revisadoKey || row.REVISADOKEY) as string;
-      setBusy((b: any) => Object.assign({}, b, { [key]: true }));
+      setBusy((b) => ({ ...b, [key]: true }));
       const next = !(row.checked != null ? row.checked : row.BCHECKED);
-      w.ISAJ.Api.setCheck(props.project, key, next)
+      window.ISAJ.Api.setCheck(props.project, key, next)
         .then(load)
-        .catch((e: any) => setState((s: any) => Object.assign({}, s, { error: e.message })))
-        .finally(() => setBusy((b: any) => { const n = Object.assign({}, b); delete n[key]; return n; }));
+        .catch((e) => setState((s) => ({ ...s, error: e instanceof Error ? e.message : String(e) })))
+        .finally(() => setBusy((b) => { const n = { ...b }; delete n[key]; return n; }));
     }
 
-    if (state.loading) return React.createElement(UI.Loading, { label: "Cargando checks…" });
-    if (state.error) return React.createElement(UI.ErrorBox, { message: state.error });
+    if (state.loading) return UI.Loading
+      ? React.createElement(UI.Loading, { label: "Cargando checks…" })
+      : React.createElement(MUI.CircularProgress, null);
+    if (state.error) return UI.ErrorBox
+      ? React.createElement(UI.ErrorBox, { message: state.error })
+      : React.createElement(MUI.Alert, { severity: "error" }, state.error);
     if (!state.rows.length) return React.createElement(MUI.Alert, { severity: "info" }, "Sin checks en " + props.project + ".");
 
-    const canEdit = w.ISAJ.Session.isLoggedIn();
+    const canEdit = window.ISAJ.Session.isLoggedIn();
     return React.createElement(MUI.Box, null,
       !canEdit && React.createElement(MUI.Alert, { severity: "info", sx: { mb: 2 } },
         "Inicia sesión para marcar checks. En modo lectura solo puedes consultarlos."),
       React.createElement(MUI.List, { component: MUI.Paper, variant: "outlined" },
-        state.rows.map((row: CheckRow, i: number) => {
+        state.rows.map((row, i) => {
           const key = (row.revisadoKey || row.REVISADOKEY) as string;
           const checked = row.checked != null ? row.checked : row.BCHECKED;
           return React.createElement(MUI.ListItem, {
@@ -68,6 +71,6 @@ interface ChecksViewProps { project: string; reloadKey?: number; }
         })));
   }
 
-  w.ISAJ = w.ISAJ || {};
-  w.ISAJ.ChecksView = ChecksView;
+  window.ISAJ = window.ISAJ || ({} as IsajNs);
+  window.ISAJ.ChecksView = ChecksView;
 })();
