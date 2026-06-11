@@ -29,8 +29,32 @@ interface SpaceDef { id: string; label: string; icon: string; }
     const [space, setSpace] = React.useState(SPACES.some((s) => s.id === bootSpace) ? bootSpace : "patyia");
     const [sub, setSub] = React.useState(SUBSPACES.some((s) => s.id === bootSub) ? bootSub : "bitacora");
     const [reloadKey, setReload] = React.useState(0);
+    const skipToastRef = React.useRef<Record<string, number>>({});
 
     React.useEffect(() => { window.ISAJ.UrlState.merge({ space, sub }); }, [space, sub]);
+
+    window.ISAJ.useRealtimeNotifications({
+      project: space,
+      onChecksUpdated: (msg) => {
+        setReload((k) => k + 1);
+        const last = skipToastRef.current[msg.revisadoKey] || 0;
+        if (Date.now() - last < 2500) return;
+        const label = msg.checked ? "marcado" : "desmarcado";
+        window.ISAJ.Toast?.show({
+          message: "Check actualizado: " + msg.revisadoKey + " (" + label + ")",
+          severity: "info",
+        });
+      },
+    });
+
+    React.useEffect(() => {
+      function onLocal(e: Event) {
+        const key = (e as CustomEvent).detail?.revisadoKey;
+        if (key) skipToastRef.current[key] = Date.now();
+      }
+      window.addEventListener("isaj:checks-local", onLocal);
+      return () => window.removeEventListener("isaj:checks-local", onLocal);
+    }, []);
 
     React.useEffect(() => {
       return window.ISAJ.UrlState.subscribe((s) => {

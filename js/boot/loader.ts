@@ -6,7 +6,7 @@
     "js/core/urlState.ts",
     "js/core/storage.ts",
     "js/api/client.ts",
-    "js/ui/signalr.tsx",
+    "js/ui/realtime.tsx",
     "js/ui/parts.tsx",
     "js/views/BitacoraView.tsx",
     "js/views/TicketsView.tsx",

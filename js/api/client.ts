@@ -1,7 +1,7 @@
 /*
  * api/client — cliente HTTP del Worker jagudeloe vía main-orchestrator.
  * GET = público (sin token). POST/PUT/DELETE = adjunta Authorization si hay sesión.
- * Rutas: /isa/{project}/{recurso}, /tk/…
+ * Rutas: /api/isa/{project}/{recurso}, /api/tk/…
  *
  * FALLBACK: si el backend falla (red/CORS/404/500), se devuelven MOCKUPS definidos
  * en js/mocks/*.json, marcados con `_mock: true` para que la UI los muestre como
@@ -70,22 +70,22 @@ interface ApiError extends Error {
     }
   }
 
-  const getSpaces = () => labFetch("/isa/spaces");
+  const getSpaces = () => labFetch("/api/isa/spaces");
   const ping = () => getSpaces();
 
   const getBitacora = (project: string) =>
-    withMock(() => labFetch("/isa/" + project + "/bitacora"), "bitacora");
+    withMock(() => labFetch("/api/isa/" + project + "/bitacora"), "bitacora");
 
   const getTickets = (project: string, opts?: { estado?: string }) => {
     let qs = "";
     if (opts?.estado === "inactivo") qs = "?activo=false";
     else if (opts?.estado === "activo") qs = "?activo=true";
     else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
-    return withMock(() => labFetch("/tk/" + project + "/tickets" + qs), "tickets");
+    return withMock(() => labFetch("/api/tk/" + project + "/tickets" + qs), "tickets");
   };
 
   const getTicket = (project: string, iticket: string) =>
-    withMock(async () => labFetch("/tk/" + project + "/tickets/" + encodeURIComponent(iticket)), "tickets")
+    withMock(async () => labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket)), "tickets")
       .then((d) => {
         const body = d as Record<string, unknown>;
         // Si vino del mock (lista), extrae el ticket pedido y añade contenido de ejemplo.
@@ -97,14 +97,13 @@ interface ApiError extends Error {
       });
 
   const getChecks = (project: string) =>
-    withMock(() => labFetch("/isa/" + project + "/checks"), "checks");
+    withMock(() => labFetch("/api/isa/" + project + "/checks"), "checks");
 
   const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
-    labFetch("/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
+    labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
 
-  // Ejecuta SQL contra la BD destino (paty|clientesis). Requiere sesión con perfil.
   const execSql = (project: string, payload: { sql: string; dbTarget?: string; segmentId?: string }) =>
-    labFetch("/isa/" + project + "/sql", { method: "POST", body: payload });
+    labFetch("/api/isa/" + project + "/sql", { method: "POST", body: payload });
 
   window.ISAJ = window.ISAJ || ({} as IsajNs);
   window.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck, execSql };

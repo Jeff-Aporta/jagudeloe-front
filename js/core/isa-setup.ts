@@ -5,5 +5,6 @@
     theme: { lsKey: "jagudeloe:theme" },
     widgets: { targetStyle: "chip" },
     session: true,
+    realtime: true,
   });
 })();

@@ -38,6 +38,9 @@ interface ChecksViewProps { project: string; reloadKey?: number; }
       const key = (row.revisadoKey || row.REVISADOKEY) as string;
       setBusy((b) => ({ ...b, [key]: true }));
       const next = !(row.checked != null ? row.checked : row.BCHECKED);
+      try {
+        window.dispatchEvent(new CustomEvent("isaj:checks-local", { detail: { revisadoKey: key } }));
+      } catch { /* ignore */ }
       window.ISAJ.Api.setCheck(props.project, key, next)
         .then(load)
         .catch((e) => setState((s) => ({ ...s, error: e instanceof Error ? e.message : String(e) })))
