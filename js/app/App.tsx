@@ -1,5 +1,5 @@
 /*
- * app/App — raíz de ISA-JAGUDELOE. Notion-like: spaces (proyectos) → subspaces
+ * app/App — raíz de jagudeloe (ISA-DOC). Notion-like: spaces (proyectos) → subspaces
  * (bitácora/tickets/checks). El estado de navegación va en el query param `s`.
  */
 
