@@ -22,8 +22,13 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
   const P = window.ISAJ.Parts;
 
   const reDate = /(\d{4}-\d{2}-\d{2})/;
+  // Máximo 2 líneas por título (line-clamp CSS).
+  const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
 
-  function renderLeaf(node: LayoutNode, segments: Record<string, Record<string, string>>, project: string, key: string): ReactNode {
+  // Render recursivo: contenedores (day/group/section) muestran su título y recursan;
+  // hojas md/sql renderizan su contenido. Soporta el anidamiento de ISA-DOC (día → sección → md).
+  function renderNode(node: LayoutNode, segments: Record<string, Record<string, string>>, project: string, key: string, depth: number): ReactNode {
+    if (!node) return null;
     if (node.type === "md") {
       const seg = segments[node.segmentId as string] || {};
       const raw = seg.markdown || seg.md || seg.body || "";
@@ -36,6 +41,14 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
         key, sql: s.sql || s.body || "-- sin SQL", title: s.title || node.checkKey || "Consulta",
         dbTarget: s.dbTarget, project, segmentId: node.segmentId,
       });
+    }
+    if (node.type === "day" || node.type === "group" || node.type === "section") {
+      return React.createElement(MUI.Box, { key, sx: { my: 1.5, pl: depth ? 1.5 : 0, borderLeft: depth ? 2 : 0, borderColor: "divider" } },
+        node.title && React.createElement(MUI.Typography, {
+          variant: depth >= 1 ? "subtitle2" : "subtitle1",
+          sx: Object.assign({ color: "primary.main", fontWeight: 600, mb: 0.5 }, clamp2),
+        }, node.title),
+        (node.children || []).map((c, i) => renderNode(c, segments, project, key + "-" + i, depth + 1)));
     }
     return null;
   }
@@ -89,11 +102,11 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
 
     const content = React.createElement(MUI.Box, { sx: { flex: 1, minWidth: 0, overflow: "auto", p: 2 } },
       isMock && React.createElement(P.MockBanner, null),
-      React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mb: 2 } },
-        React.createElement(UI.Icon, { icon: "mdi:calendar-text-outline", size: 22 }),
-        React.createElement(MUI.Typography, { variant: "h6" }, current.title)),
+      React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "flex-start", sx: { mb: 2 } },
+        React.createElement(UI.Icon, { icon: "mdi:calendar-text-outline", size: 22, style: { flexShrink: 0, marginTop: 2 } }),
+        React.createElement(MUI.Typography, { variant: "h6", sx: clamp2 }, current.title)),
       current.children.length
-        ? current.children.map((leaf, i) => renderLeaf(leaf, segments, props.project, current.id + "-" + i))
+        ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0))
         : React.createElement(MUI.Typography, { color: "text.secondary" }, "Sin contenido para este día."));
 
     return React.createElement(MUI.Box, { sx: { display: "flex", height: "100%", minHeight: 0 } }, tree, content);
