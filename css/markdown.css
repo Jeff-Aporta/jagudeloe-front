@@ -1,0 +1,8 @@
+/* css/markdown — render de segmentos markdown de la bitácora. */
+.md-body { line-height: 1.6; word-break: break-word; }
+.md-body h1, .md-body h2, .md-body h3 { color: #1e90ff; margin: 0.6em 0 0.3em; }
+.md-body code { background: rgba(30, 144, 255, 0.12); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+.md-body pre { background: rgba(30, 144, 255, 0.08); padding: 12px; border-radius: 8px; overflow: auto; }
+.md-body a { color: #1e90ff; }
+.md-body table { border-collapse: collapse; }
+.md-body th, .md-body td { border: 1px solid rgba(30, 144, 255, 0.3); padding: 4px 8px; }

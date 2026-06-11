@@ -1,0 +1,18 @@
+/* Layout: body fijo; scroll solo en paneles (.app-scroll). */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; }
+#root {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbars discretas en tono dodgerblue */
+* { scrollbar-width: thin; scrollbar-color: rgba(30, 144, 255, 0.5) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgba(30, 144, 255, 0.45); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(30, 144, 255, 0.7); }
