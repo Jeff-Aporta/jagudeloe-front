@@ -6,6 +6,28 @@
 
 <p align="center"><strong>JAGUDELOE</strong> — bitácora, tickets tk_* y checks de revisión para PatyIA y ClientesIS.</p>
 
+## Arquitectura (checks en tiempo real)
+
+```mermaid
+flowchart LR
+  subgraph clients [Front]
+    J[jagudeloe-front]
+  end
+  subgraph orch [main-orchestrator]
+    WS["/api/ws"]
+    DO[SocketHub DO]
+    PX[proxy]
+  end
+  subgraph back [Workers]
+    CH[jagudeloe POST /api/isa/.../checks]
+    TK[jagudeloe-tks /api/tk/*]
+  end
+  J -->|WebSocket wss| WS --> DO
+  J -->|REST| PX --> CH & TK
+  PX -->|checks.updated broadcast| DO
+  DO -->|push| J
+```
+
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f?logo=githubpages&logoColor=white)](https://jeff-aporta.github.io/jagudeloe-front/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Marked](https://img.shields.io/badge/Marked-12-000000)](https://marked.js.org/)
