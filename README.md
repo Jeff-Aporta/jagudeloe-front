@@ -1,27 +1,46 @@
 # jagudeloe-front
 
-Panel ISA-DOC (GitHub Pages) — bitácora, tickets y checks por proyecto.
+Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyIA** y **ClientesIS**. Organiza la información en *spaces* y subspaces: **bitácora** (markdown + SQL segmentado), **tickets** del entity store y **checks** de revisión — todo contra la BD `BD_ISADOC` vía el microservicio `jagudeloe`.
+
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f?logo=githubpages&logoColor=white)](https://jeff-aporta.github.io/jagudeloe-front/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MUI](https://img.shields.io/badge/MUI-5-007FFF?logo=mui&logoColor=white)](https://mui.com/)
+[![Babel Standalone](https://img.shields.io/badge/Babel%20Standalone-7-F9DC3E?logo=babel&logoColor=black)](https://babeljs.io/)
+[![Marked](https://img.shields.io/badge/Marked-12-000000)](https://marked.js.org/)
+[![SignalR](https://img.shields.io/badge/SignalR-opcional-512BD4?logo=.net&logoColor=white)](https://github.com/dotnet/aspnetcore)
+[![Cloudflare Workers](https://img.shields.io/badge/API-Cloudflare%20Workers-F38020?logo=cloudflare&logoColor=white)](https://github.com/Jeff-Aporta/jagudeloe-back)
+[![Neon](https://img.shields.io/badge/BD-Neon%20BD__ISADOC-00E599?logo=neon&logoColor=black)](https://neon.tech/)
+[![system-login](https://img.shields.io/badge/auth-system--login-007FFF)](https://github.com/Jeff-Aporta/system-login-front)
+[![Sin build](https://img.shields.io/badge/build-sin%20paso%20de%20build-555)](https://github.com/Jeff-Aporta/jagudeloe-front)
 
 ## Demo
 
-`https://jeff-aporta.github.io/jagudeloe-front/`
+**https://jeff-aporta.github.io/jagudeloe-front/**
 
-## Local
+## Qué hace
 
-1. API: `cd ../back && npm run dev` (puerto 8787).
-2. Front: servir esta carpeta (`npx serve .`) y activar switch **local** en la barra.
+- **Spaces**: PatyIA · ClientesIS (sidebar permanente).
+- **Bitácora**: layout + segmentos MD/SQL renderizados (Marked + estilos dedicados).
+- **Tickets**: consulta pública del entity store con filtro por estado.
+- **Checks**: revisados de bitácora; lectura pública, escritura con JWT.
+- **Estado en URL** (`?s=`) para space/subspace; almacenamiento extenso en localStorage / IndexedDB.
+- **Tema** dodgerblue dark/light y toggle **local :8787 / online**.
 
-## Auth
+Sustituye el front legacy `ISA-JAGUDELOE` y deja de depender de langlab Azure para datos ISA.
 
-Login vía **system-login** (`system-login:session` en sessionStorage).  
-GET de datos ISA es público; POST checks requiere JWT.
+## Desarrollo local
 
-## API
+```bash
+cd ../back && npm run dev    # Worker :8787
+npx serve .                  # front + switch "local"
+```
 
-Worker **jagudeloe** — `https://jagudeloe.jeffaporta.workers.dev`  
-Neon **BD_ISADOC** (sin migración).
+## Repos relacionados
 
-## Deploy
+| Repo | Rol |
+|------|-----|
+| [jagudeloe-back](https://github.com/Jeff-Aporta/jagudeloe-back) | API ISA-DOC (privado) |
+| [jagudeloe-front](https://github.com/Jeff-Aporta/jagudeloe-front) | Este panel (público, GH Pages) |
 
-Repo público `jagudeloe-front` — GitHub Pages desde rama `main`, carpeta raíz.  
-Incluir `.nojekyll` en la raíz.
+MIT · [Jeff-Aporta](https://github.com/Jeff-Aporta)
