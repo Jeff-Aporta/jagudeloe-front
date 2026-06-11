@@ -16,7 +16,7 @@
       try {
         const base = window.ISAJ.Config.base?.() || "";
         conn = new window.signalR.HubConnectionBuilder()
-          .withUrl(base + "/api", {
+          .withUrl(base + "/api/signalr", {
             accessTokenFactory: () => {
               const s = window.ISAJ.Session.current();
               return s ? s.token : "";

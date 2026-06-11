@@ -1,0 +1,9 @@
+{
+  "_mock": true,
+  "rows": [
+    { "id": "TK-000001", "titulo": "Ejemplo: ajuste de reporte", "estado": "cerrado", "fecha": "2026-06-10", "solicitante": "Ejemplo", "resumen": "Ticket de muestra para visualizar la interfaz mientras se arregla el backend.", "tiempoTotalMinutos": 90 },
+    { "id": "TK-000002", "titulo": "Ejemplo: nueva validación", "estado": "en-progreso", "fecha": "2026-06-04", "solicitante": "Ejemplo", "resumen": "Otro ticket de muestra en el mes actual.", "tiempoTotalMinutos": 45 },
+    { "id": "TK-000003", "titulo": "Ejemplo: corrección de cálculo", "estado": "abierto", "fecha": "2026-05-22", "solicitante": "Ejemplo", "resumen": "Ticket de muestra en un mes anterior.", "tiempoTotalMinutos": 120 },
+    { "id": "TK-000004", "titulo": "Ejemplo: soporte a usuario", "estado": "cerrado", "fecha": "2026-05-08", "solicitante": "Ejemplo", "resumen": "Otro ticket de muestra del mes anterior.", "tiempoTotalMinutos": 30 }
+  ]
+}

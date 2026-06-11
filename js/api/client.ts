@@ -1,7 +1,11 @@
 /*
- * api/client — cliente HTTP del Worker jagudeloe (ISA-DOC).
+ * api/client — cliente HTTP del Worker jagudeloe (ISA-DOC) vía gateway langlab.
  * GET = público (sin token). POST/PUT/DELETE = adjunta Authorization si hay sesión.
- * Rutas: /isa/{project}/{recurso}.
+ * Rutas: /isa/{project}/{recurso}, /tk/…
+ *
+ * FALLBACK: si el backend falla (red/CORS/404/500), se devuelven MOCKUPS definidos
+ * en js/mocks/*.json, marcados con `_mock: true` para que la UI los muestre como
+ * datos de ejemplo mientras se arregla el back.
  */
 
 interface FetchOpts {
@@ -41,16 +45,54 @@ interface ApiError extends Error {
     return data as T;
   }
 
-  const ping = () => labFetch("/health");
+  /** Carga un mockup local (js/mocks/<name>.json) y lo marca como ejemplo. */
+  async function loadMock<T = Record<string, unknown>>(name: string): Promise<T> {
+    const res = await fetch("js/mocks/" + name + ".json", { cache: "no-store" });
+    if (!res.ok) throw new Error("Mock " + name + " no disponible");
+    const data = (await res.json()) as Record<string, unknown>;
+    data._mock = true;
+    return data as T;
+  }
+
+  /** Intenta el backend; si falla, cae al mockup (sin romper la UI). */
+  async function withMock<T = Record<string, unknown>>(real: () => Promise<T>, mock: string): Promise<T> {
+    try {
+      return await real();
+    } catch (e) {
+      try {
+        return await loadMock<T>(mock);
+      } catch {
+        throw e; // si ni el mock carga, propaga el error original
+      }
+    }
+  }
+
   const getSpaces = () => labFetch("/isa/spaces");
-  const getBitacora = (project: string) => labFetch("/isa/" + project + "/bitacora");
+  const ping = () => getSpaces();
+
+  const getBitacora = (project: string) =>
+    withMock(() => labFetch("/isa/" + project + "/bitacora"), "bitacora");
+
   const getTickets = (project: string, opts?: { estado?: string }) => {
     const qs = opts && opts.estado ? "?estado=" + encodeURIComponent(opts.estado) : "";
-    return labFetch("/isa/" + project + "/tickets" + qs);
+    return withMock(() => labFetch("/isa/" + project + "/tickets" + qs), "tickets");
   };
+
   const getTicket = (project: string, iticket: string) =>
-    labFetch("/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
-  const getChecks = (project: string) => labFetch("/isa/" + project + "/checks");
+    withMock(async () => labFetch("/tk/" + project + "/tickets/" + encodeURIComponent(iticket)), "tickets")
+      .then((d) => {
+        const body = d as Record<string, unknown>;
+        // Si vino del mock (lista), extrae el ticket pedido y añade contenido de ejemplo.
+        if (body._mock && Array.isArray(body.rows)) {
+          const found = (body.rows as Record<string, unknown>[]).find((t) => String(t.id) === String(iticket)) || (body.rows as Record<string, unknown>[])[0] || {};
+          return Object.assign({ _mock: true, contentHtml: "<p><em>Contenido de ejemplo del ticket.</em> Reemplazar por el detalle real del backend.</p>" }, found);
+        }
+        return body;
+      });
+
+  const getChecks = (project: string) =>
+    withMock(() => labFetch("/isa/" + project + "/checks"), "checks");
+
   const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
     labFetch("/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
 

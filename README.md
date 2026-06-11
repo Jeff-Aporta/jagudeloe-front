@@ -31,22 +31,22 @@ Panel **ISA-DOC** tipo Notion para documentación operativa de proyectos **PatyI
 - **Tickets**: consulta pública del entity store con filtro por estado.
 - **Checks**: revisados de bitácora; lectura pública, escritura con JWT.
 - **Estado en URL** (`?s=`) para space/subspace; almacenamiento extenso en localStorage / IndexedDB.
-- **Tema** dodgerblue dark/light y toggle **local :8783 / online**.
+- **Tema** dodgerblue dark/light y toggle **gateway local :8780 / producción** (enruta a jagudeloe).
 
-Sustituye el front legacy `ISA-JAGUDELOE` y deja de depender de langlab Azure para datos ISA.
+Sustituye el front legacy `ISA-JAGUDELOE`. Las peticiones pasan por **langlab gateway**, no por Azure.
 
 ## Desarrollo local
 
 ```bash
-cd ../backend && npm run dev    # Worker :8783
-npx serve .                  # front + switch "local"
+cd ../../langlab/backend && npm run dev   # gateway :8780
+npx serve .                               # front + switch "Gateway local"
 ```
 
 ## Repos relacionados
 
 | Repo | Rol |
 |------|-----|
-| [jagudeloe-back](https://github.com/Jeff-Aporta/jagudeloe-back) | API ISA-DOC (privado) |
-| [jagudeloe-front](https://github.com/Jeff-Aporta/jagudeloe-front) | Este panel (público, GH Pages) |
+| [jagudeloe-back](https://github.com/Jeff-Aporta/jagudeloe-back) | API ISA-DOC (Worker) |
+| [jagudeloe-front](https://github.com/Jeff-Aporta/jagudeloe-front) | Este panel (GH Pages) |
 
 MIT · [Jeff-Aporta](https://github.com/Jeff-Aporta)
