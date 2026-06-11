@@ -4,29 +4,12 @@
 
 <h1 align="center">jagudeloe-front</h1>
 
-<p align="center"><strong>JAGUDELOE</strong> — bitácora, tickets tk_* y checks de revisión para PatyIA y ClientesIS.</p>
+<p align="center"><strong>JAGUDELOE</strong> — bitácora, tickets y revisión para PatyIA y ClientesIS.</p>
 
 ## Arquitectura (checks en tiempo real)
+![Diagrama de arquitectura](https://mermaid.ink/img/JSV7aW5pdDogeyJmbG93Y2hhcnQiOiB7ImN1cnZlIjogInN0ZXBBZnRlciIsICJodG1sTGFiZWxzIjogdHJ1ZSwgIm5vZGVTcGFjaW5nIjogNDQsICJyYW5rU3BhY2luZyI6IDUyLCAicGFkZGluZyI6IDE4fX19JSUKZmxvd2NoYXJ0IExSCiAgc3ViZ3JhcGggY2xpZW50cyBbRnJvbnRdCiAgICBKW2phZ3VkZWxvZS1mcm9udF0KICBlbmQKICBzdWJncmFwaCBvcmNoIFttYWluLW9yY2hlc3RyYXRvcl0KICAgIFdTWyIvYXBpL3dzIl0KICAgIERPW1NvY2tldEh1YiBET10KICAgIFBYW3Byb3h5XQogIGVuZAogIHN1YmdyYXBoIGJhY2sgW1dvcmtlcnNdCiAgICBDSFtqYWd1ZGVsb2UgUE9TVCAvYXBpL2lzYS8uLi4vY2hlY2tzXQogICAgVEtbamFndWRlbG9lLXRrcyAvYXBpL3RrLypdCiAgZW5kCiAgSiAtLT58V2ViU29ja2V0IHdzc3wgV1MgLS0-IERPCiAgSiAtLT58UkVTVHwgUFggLS0-IENIICYgVEsKICBQWCAtLT58Y2hlY2tzLnVwZGF0ZWQgYnJvYWRjYXN0fCBETwogIERPIC0tPnxwdXNofCBK)
 
-```mermaid
-flowchart LR
-  subgraph clients [Front]
-    J[jagudeloe-front]
-  end
-  subgraph orch [main-orchestrator]
-    WS["/api/ws"]
-    DO[SocketHub DO]
-    PX[proxy]
-  end
-  subgraph back [Workers]
-    CH[jagudeloe POST /api/isa/.../checks]
-    TK[jagudeloe-tks /api/tk/*]
-  end
-  J -->|WebSocket wss| WS --> DO
-  J -->|REST| PX --> CH & TK
-  PX -->|checks.updated broadcast| DO
-  DO -->|push| J
-```
+> **Fuente del diagrama:** [`docs/arquitectura.mmd`](docs/arquitectura.mmd) — editar el `.mmd`; regenerar imagen: `node scripts/mermaid-ink-url.mjs jagudeloe/frontend/docs/arquitectura.mmd` (desde `apps/`).
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f?logo=githubpages&logoColor=white)](https://jeff-aporta.github.io/jagudeloe-front/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -46,12 +29,11 @@ flowchart LR
 
 ## Qué hace
 
-- **Spaces**: PatyIA · ClientesIS (sidebar permanente).
-- **Bitácora**: layout + segmentos MD/SQL renderizados (Marked + estilos dedicados).
-- **Tickets**: consulta pública del entity store con filtro por estado.
-- **Checks**: revisados de bitácora; lectura pública, escritura con JWT.
-- **Estado en URL** (`?s=`) para space/subspace.
-- **Tema** dodgerblue dark/light y toggle **orquestador local / producción**.
+- **PatyIA y ClientesIS**: dos espacios de trabajo en la misma pantalla.
+- **Bitácora**: notas del día con texto y consultas SQL.
+- **Tickets**: listado y detalle por estado.
+- **Revisión**: marcar contenido como revisado (requiere login).
+- **Tema** claro/oscuro y modo local o producción.
 
 ## Metadatos
 

@@ -202,6 +202,56 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
   }
 
   // ---------------------------------------------------------------------------
+  // RevisadoCheck — checkbox inline por revisadoKey (bitácora SQL, tickets, etc.)
+  // ---------------------------------------------------------------------------
+  function RevisadoCheck(props: { project: string; revisadoKey?: string | null; reloadKey?: number; label?: string }) {
+    if (!props.revisadoKey) return null;
+    const key = props.revisadoKey;
+    const [checked, setChecked] = React.useState<boolean | null>(null);
+    const [busy, setBusy] = React.useState(false);
+
+    React.useEffect(() => {
+      let alive = true;
+      window.ISAJ.Api.getRevisadoMap!(props.project)
+        .then((m) => { if (alive) setChecked(!!m[key]); })
+        .catch(() => { if (alive) setChecked(false); });
+      return () => { alive = false; };
+    }, [props.project, key, props.reloadKey]);
+
+    React.useEffect(() => {
+      function onLocal(e: Event) {
+        const k = (e as CustomEvent).detail?.revisadoKey;
+        if (k !== key) return;
+        window.ISAJ.Api.getRevisadoMap!(props.project, true).then((m) => setChecked(!!m[key]));
+      }
+      window.addEventListener("isaj:checks-local", onLocal);
+      return () => window.removeEventListener("isaj:checks-local", onLocal);
+    }, [props.project, key]);
+
+    const canEdit = window.ISAJ.Session && window.ISAJ.Session.isLoggedIn && window.ISAJ.Session.isLoggedIn();
+
+    function toggle() {
+      if (!canEdit || busy || checked === null) return;
+      const next = !checked;
+      setBusy(true);
+      try {
+        window.dispatchEvent(new CustomEvent("isaj:checks-local", { detail: { revisadoKey: key } }));
+      } catch { /* ignore */ }
+      window.ISAJ.Api.setCheck(props.project, key, next)
+        .then(() => setChecked(next))
+        .finally(() => setBusy(false));
+    }
+
+    return React.createElement(MUI.Tooltip, { title: canEdit ? "Marcar revisado" : "Inicia sesión para marcar" },
+      React.createElement("span", null,
+        React.createElement(MUI.Checkbox, {
+          size: "small", checked: !!checked, disabled: !canEdit || busy || checked === null,
+          onChange: toggle,
+          inputProps: { "aria-label": props.label || "Revisado" },
+        })));
+  }
+
+  // ---------------------------------------------------------------------------
   // SqlBlock — muestra SQL con CodeMirror (solo lectura) y botón de ejecución
   // dirigido a la BD correcta. Solo ejecuta si hay sesión con perfil válido.
   // ---------------------------------------------------------------------------
@@ -214,7 +264,7 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
     return true;
   }
 
-  function SqlBlock(props: { sql: string; title?: string; dbTarget?: string; project: string; segmentId?: string }) {
+  function SqlBlock(props: { sql: string; title?: string; dbTarget?: string; project: string; segmentId?: string; checkKey?: string; reloadKey?: number }) {
     const ref = React.useRef<HTMLDivElement | null>(null);
     const cm = React.useRef<any>(null);
     const [exec, setExec] = React.useState(false);
@@ -251,6 +301,7 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
 
     return React.createElement(MUI.Box, { sx: { my: 1.5, border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" } },
       React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" } },
+        React.createElement(RevisadoCheck, { project: props.project, revisadoKey: props.checkKey, reloadKey: props.reloadKey, label: props.title }),
         React.createElement(UI.Icon, { icon: "mdi:database-search-outline" }),
         React.createElement(MUI.Typography, { variant: "subtitle2", sx: { flex: 1 } }, props.title || "Consulta SQL"),
         React.createElement(MUI.Chip, { size: "small", color: db === "clientesis" ? "secondary" : "primary", variant: "outlined", label: "BD: " + db }),
@@ -267,5 +318,5 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
   }
 
   window.ISAJ = window.ISAJ || ({} as IsajNs);
-  window.ISAJ.Parts = { MockBanner, Accordion, MonthTree, DateTree, SqlBlock, monthLabel, canExecSql };
+  window.ISAJ.Parts = { MockBanner, Accordion, MonthTree, DateTree, SqlBlock, RevisadoCheck, monthLabel, canExecSql };
 })();

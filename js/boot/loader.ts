@@ -10,7 +10,6 @@
     "js/ui/parts.tsx",
     "js/views/BitacoraView.tsx",
     "js/views/TicketsView.tsx",
-    "js/views/ChecksView.tsx",
     "js/app/Login.tsx",
     "js/app/App.tsx",
   ];

@@ -2,10 +2,6 @@
  * api/client — cliente HTTP del Worker jagudeloe vía main-orchestrator.
  * GET = público (sin token). POST/PUT/DELETE = adjunta Authorization si hay sesión.
  * Rutas: /api/isa/{project}/{recurso}, /api/tk/…
- *
- * FALLBACK: si el backend falla (red/CORS/404/500), se devuelven MOCKUPS definidos
- * en js/mocks/*.json, marcados con `_mock: true` para que la UI los muestre como
- * datos de ejemplo mientras se arregla el back.
  */
 
 interface FetchOpts {
@@ -21,7 +17,53 @@ interface ApiError extends Error {
 (function () {
   "use strict";
 
-  async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
+  const FETCH_TIMEOUT_MS = 15000;
+  const revisadoCache: Record<string, Record<string, boolean>> = {};
+
+  const LOCAL_DIRECT: { test: (p: string) => boolean; base: string }[] = [
+    { test: (p) => p.startsWith("/api/tk"), base: "http://127.0.0.1:8786" },
+    {
+      test: (p) =>
+        p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
+        || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
+      base: "http://127.0.0.1:8783",
+    },
+  ];
+
+  function isLocalFront(): boolean {
+    const h = location.hostname;
+    return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+  }
+
+  function localDevHint(): string {
+    if (!isLocalFront()) return "";
+    return " En local: main-orchestrator (:8780), jagudeloe (:8783) y jagudeloe-tks (:8786).";
+  }
+
+  function directBaseFor(path: string): string | null {
+    if (!isLocalFront()) return null;
+    for (let i = 0; i < LOCAL_DIRECT.length; i++) {
+      if (LOCAL_DIRECT[i].test(path)) return LOCAL_DIRECT[i].base;
+    }
+    return null;
+  }
+
+  async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Response> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new Error("La API tardó demasiado en responder." + localDevHint());
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, baseOverride?: string): Promise<T> {
     const method = (opts.method || "GET").toUpperCase();
     const headers: Record<string, string> = Object.assign({}, opts.headers || {});
     if (method !== "GET" && method !== "HEAD") {
@@ -29,82 +71,95 @@ interface ApiError extends Error {
       Object.assign(headers, window.ISAJ.Session.authHeader());
     }
 
-    const res = await fetch(window.ISAJ.Config.apiUrl(path), {
-      method,
-      headers,
-      body: opts.body != null ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined,
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      const errBody = data as { error?: string } | null;
-      let msg = (errBody && errBody.error) || ("HTTP " + res.status);
-      if (res.status === 401) msg = "Sesión requerida o expirada.";
-      if (res.status === 403) msg = "No tienes permiso para esta acción.";
-      if (res.status === 404) msg = "Endpoint no disponible (¿backend desplegado?).";
-      const err = new Error(msg) as ApiError;
-      err.status = res.status; err.data = data;
-      throw err;
-    }
-    return data as T;
-  }
+    const bases: string[] = [];
+    if (baseOverride) bases.push(baseOverride.replace(/\/$/, ""));
+    else bases.push(window.ISAJ.Config.base().replace(/\/$/, ""));
 
-  /** Carga un mockup local (js/mocks/<name>.json) y lo marca como ejemplo. */
-  async function loadMock<T = Record<string, unknown>>(name: string): Promise<T> {
-    const res = await fetch("js/mocks/" + name + ".json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Mock " + name + " no disponible");
-    const data = (await res.json()) as Record<string, unknown>;
-    data._mock = true;
-    return data as T;
-  }
+    const direct = directBaseFor(path);
+    if (direct && bases.indexOf(direct) < 0) bases.push(direct);
 
-  /** Intenta el backend; si falla, cae al mockup (sin romper la UI). */
-  async function withMock<T = Record<string, unknown>>(real: () => Promise<T>, mock: string): Promise<T> {
-    try {
-      return await real();
-    } catch (e) {
+    let lastErr: ApiError | null = null;
+
+    for (let bi = 0; bi < bases.length; bi++) {
+      const url = bases[bi] + (path.charAt(0) === "/" ? path : "/" + path);
+      let res: Response;
       try {
-        return await loadMock<T>(mock);
-      } catch {
-        throw e; // si ni el mock carga, propaga el error original
+        res = await fetchWithTimeout(url, {
+          method,
+          headers,
+          body: opts.body != null ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined,
+        });
+      } catch (e) {
+        lastErr = e instanceof Error ? (e as ApiError) : new Error(String(e)) as ApiError;
+        if (bi < bases.length - 1) continue;
+        if (!lastErr.message.includes("conectar") && !lastErr.message.includes("tardó")) {
+          lastErr.message = "No se pudo conectar con la API." + localDevHint();
+        }
+        throw lastErr;
       }
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const errBody = data as { error?: string } | null;
+        let msg = (errBody && errBody.error) || ("HTTP " + res.status);
+        if (res.status === 401) msg = "Sesión requerida o expirada.";
+        if (res.status === 403) msg = "No tienes permiso para esta acción.";
+        if (res.status === 404) msg = "Endpoint no disponible (¿orquestador o jagudeloe desplegado?)." + localDevHint();
+        lastErr = new Error(msg) as ApiError;
+        lastErr.status = res.status; lastErr.data = data;
+        if (bi < bases.length - 1 && (res.status === 404 || res.status === 502 || res.status === 503)) continue;
+        throw lastErr;
+      }
+      return data as T;
     }
+
+    throw lastErr || new Error("No se pudo conectar con la API." + localDevHint());
+  }
+
+  async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {
+    if (!force && revisadoCache[project]) return revisadoCache[project];
+    const d = await labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks");
+    const map: Record<string, boolean> = {};
+    (d.rows || []).forEach((r) => { map[r.revisadoKey] = !!r.checked; });
+    revisadoCache[project] = map;
+    return map;
+  }
+
+  function invalidateRevisadoCache(project?: string): void {
+    if (project) delete revisadoCache[project];
+    else Object.keys(revisadoCache).forEach((k) => { delete revisadoCache[k]; });
   }
 
   const getSpaces = () => labFetch("/api/isa/spaces");
   const ping = () => getSpaces();
 
-  const getBitacora = (project: string) =>
-    withMock(() => labFetch("/api/isa/" + project + "/bitacora"), "bitacora");
+  const getBitacora = (project: string) => labFetch("/api/isa/" + project + "/bitacora");
 
   const getTickets = (project: string, opts?: { estado?: string }) => {
     let qs = "";
     if (opts?.estado === "inactivo") qs = "?activo=false";
     else if (opts?.estado === "activo") qs = "?activo=true";
     else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
-    return withMock(() => labFetch("/api/tk/" + project + "/tickets" + qs), "tickets");
+    return labFetch("/api/tk/" + project + "/tickets" + qs);
   };
 
   const getTicket = (project: string, iticket: string) =>
-    withMock(async () => labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket)), "tickets")
-      .then((d) => {
-        const body = d as Record<string, unknown>;
-        // Si vino del mock (lista), extrae el ticket pedido y añade contenido de ejemplo.
-        if (body._mock && Array.isArray(body.rows)) {
-          const found = (body.rows as Record<string, unknown>[]).find((t) => String(t.id) === String(iticket)) || (body.rows as Record<string, unknown>[])[0] || {};
-          return Object.assign({ _mock: true, contentHtml: "<p><em>Contenido de ejemplo del ticket.</em> Reemplazar por el detalle real del backend.</p>" }, found);
-        }
-        return body;
-      });
+    labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
 
-  const getChecks = (project: string) =>
-    withMock(() => labFetch("/api/isa/" + project + "/checks"), "checks");
+  const getChecks = (project: string) => labFetch("/api/isa/" + project + "/checks");
 
-  const setCheck = (project: string, revisadoKey: string, checked: boolean) =>
-    labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
+  const setCheck = async (project: string, revisadoKey: string, checked: boolean) => {
+    const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
+    invalidateRevisadoCache(project);
+    return r;
+  };
 
   const execSql = (project: string, payload: { sql: string; dbTarget?: string; segmentId?: string }) =>
     labFetch("/api/isa/" + project + "/sql", { method: "POST", body: payload });
 
   window.ISAJ = window.ISAJ || ({} as IsajNs);
-  window.ISAJ.Api = { labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck, execSql };
+  window.ISAJ.Api = {
+    labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck, execSql,
+    getRevisadoMap, invalidateRevisadoCache,
+  };
 })();

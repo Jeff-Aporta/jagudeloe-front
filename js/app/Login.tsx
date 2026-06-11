@@ -4,6 +4,17 @@
   const MUI = MaterialUI;
   const UI = window.ISAJ.UI;
 
+  function fmtExp(iso: string | null | undefined): string {
+    if (!iso) return "";
+    const F = window.ISAFront && (window.ISAFront as { formatLocalDateTime?: (v: string) => string }).formatLocalDateTime;
+    if (F) return F(iso);
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleString(undefined, {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    });
+  }
+
   function LoginButton() {
     const [open, setOpen] = React.useState(false);
     const [user, setUser] = React.useState("");
@@ -27,12 +38,15 @@
     }
 
     if (window.ISAJ.Session.isLoggedIn()) {
+      const sess = window.ISAJ.Session.current();
+      const tip = sess?.expiresAt ? ("Expira: " + fmtExp(sess.expiresAt)) : "Sesión activa";
       return React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center" },
-        React.createElement(MUI.Chip, {
-          size: "small", color: "success",
-          icon: React.createElement(UI.Icon, { icon: "mdi:account-check", size: 16 }),
-          label: window.ISAJ.Session.username(),
-        }),
+        React.createElement(MUI.Tooltip, { title: tip },
+          React.createElement(MUI.Chip, {
+            size: "small", color: "success",
+            icon: React.createElement(UI.Icon, { icon: "mdi:account-check", size: 16 }),
+            label: window.ISAJ.Session.username(),
+          })),
         React.createElement(MUI.Tooltip, { title: "Cerrar sesión" },
           React.createElement(MUI.IconButton, { size: "small", color: "inherit", onClick: () => window.ISAJ.Session.logout() },
             React.createElement(UI.Icon, { icon: "mdi:logout" }))));

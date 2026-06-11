@@ -1,7 +1,7 @@
 /*
  * views/TicketsView — tickets de un space. Navegador en carpetas AÑO → MES → DÍA →
  * ticket (solo números en las carpetas); a la derecha se ve UN TICKET a la vez.
- * Si el backend falla, el cliente entrega un MOCKUP (_mock).
+ * Cada ticket incluye su checkbox de revisado inline (revisadoKey).
  */
 
 interface Ticket {
@@ -9,7 +9,7 @@ interface Ticket {
   titulo?: string; title?: string; descripcion?: string; resumen?: string;
   estado?: string; status?: string; prioridad?: string;
   fecha?: string; fechaSolicitud?: string; solicitante?: string;
-  tiempoTotalMinutos?: number;
+  tiempoTotalMinutos?: number; revisadoKey?: string;
 }
 interface TicketsViewProps { project: string; reloadKey?: number; }
 
@@ -37,8 +37,11 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
     return "";
   }
 
-  // Detalle de UN ticket (inline). Carga el detalle por API (con fallback mock).
-  function TicketDetail(props: { project: string; iticket: string }) {
+  function revisadoKeyOf(tk: Record<string, unknown>, iticket: string): string {
+    return String(tk.revisadoKey || tk.REVISADOKEY || ("tickets." + iticket));
+  }
+
+  function TicketDetail(props: { project: string; iticket: string; reloadKey?: number }) {
     const [state, setState] = React.useState<{ loading: boolean; error: string | null; tk: Record<string, unknown> | null }>({ loading: true, error: null, tk: null });
     React.useEffect(() => {
       let alive = true;
@@ -47,14 +50,15 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
         .then((d) => { const b = d as Record<string, unknown>; if (alive) setState({ loading: false, error: null, tk: (b.ticket || b) as Record<string, unknown> }); })
         .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), tk: null }); });
       return () => { alive = false; };
-    }, [props.project, props.iticket]);
+    }, [props.project, props.iticket, props.reloadKey]);
 
     if (state.loading) return UI.Loading ? React.createElement(UI.Loading, { label: "Cargando ticket…" }) : React.createElement(MUI.CircularProgress, null);
     if (state.error) return UI.ErrorBox ? React.createElement(UI.ErrorBox, { message: state.error }) : React.createElement(MUI.Alert, { severity: "error" }, state.error);
     const tk = state.tk || {};
+    const rKey = revisadoKeyOf(tk, props.iticket);
     return React.createElement(MUI.Stack, { spacing: 2 },
-      tk._mock && React.createElement(P.MockBanner, null),
       React.createElement(MUI.Stack, { direction: "row", spacing: 1, alignItems: "center" },
+        React.createElement(P.RevisadoCheck, { project: props.project, revisadoKey: rKey, reloadKey: props.reloadKey, label: props.iticket }),
         React.createElement(MUI.Chip, { size: "small", color: "primary", label: props.iticket }),
         React.createElement(MUI.Typography, { variant: "h6" }, String(tk.titulo || tk.title || ""))),
       tk.resumen && React.createElement(MUI.Typography, { variant: "body2", color: "text.secondary" }, String(tk.resumen)),
@@ -70,21 +74,20 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
   }
 
   function TicketsView(props: TicketsViewProps) {
-    const [state, setState] = React.useState({ loading: true, error: null as string | null, rows: [] as Ticket[], mock: false });
+    const [state, setState] = React.useState({ loading: true, error: null as string | null, rows: [] as Ticket[] });
     const [selected, setSelected] = React.useState<string | null>(null);
 
     React.useEffect(() => {
       let alive = true;
-      setState({ loading: true, error: null, rows: [], mock: false });
+      setState({ loading: true, error: null, rows: [] });
       setSelected(null);
       window.ISAJ.Api.getTickets(props.project)
         .then((d) => {
           const body = d as Record<string, unknown> | Ticket[] | null;
           const rows: Ticket[] = (body && !Array.isArray(body) && ((body.rows as Ticket[]) || (body.tickets as Ticket[]) || (body.items as Ticket[]))) || (Array.isArray(body) ? body : []);
-          const mock = !!(body && !Array.isArray(body) && body._mock);
-          if (alive) setState({ loading: false, error: null, rows, mock });
+          if (alive) setState({ loading: false, error: null, rows });
         })
-        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), rows: [], mock: false }); });
+        .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), rows: [] }); });
       return () => { alive = false; };
     }, [props.project, props.reloadKey]);
 
@@ -109,9 +112,8 @@ interface TicketsViewProps { project: string; reloadKey?: number; }
     }, React.createElement(P.DateTree, { items: treeItems, selectedId: selected, onSelect: (id: string) => { setSelected(id); window.ISAJ.UrlState.merge({ sel: id }); }, mode: "items" }));
 
     const content = React.createElement(MUI.Box, { sx: { flex: 1, minWidth: 0, overflow: "auto", p: 2 } },
-      state.mock && React.createElement(P.MockBanner, null),
       selected
-        ? React.createElement(TicketDetail, { project: props.project, iticket: selected })
+        ? React.createElement(TicketDetail, { project: props.project, iticket: selected, reloadKey: props.reloadKey })
         : React.createElement(MUI.Typography, { color: "text.secondary" }, "Selecciona un ticket en el navegador."));
 
     return React.createElement(MUI.Box, { sx: { display: "flex", height: "100%", minHeight: 0 } }, tree, content);

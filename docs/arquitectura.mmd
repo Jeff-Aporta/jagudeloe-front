@@ -1,0 +1,17 @@
+flowchart LR
+  subgraph clients [Front]
+    J[jagudeloe-front]
+  end
+  subgraph orch [main-orchestrator]
+    WS["/api/ws"]
+    DO[SocketHub DO]
+    PX[proxy]
+  end
+  subgraph back [Workers]
+    CH[jagudeloe POST /api/isa/.../checks]
+    TK[jagudeloe-tks /api/tk/*]
+  end
+  J -->|WebSocket wss| WS --> DO
+  J -->|REST| PX --> CH & TK
+  PX -->|checks.updated broadcast| DO
+  DO -->|push| J

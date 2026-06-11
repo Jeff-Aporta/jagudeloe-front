@@ -1,6 +1,6 @@
 /*
  * app/App — raíz de jagudeloe. Notion-like: spaces (proyectos) → subspaces
- * (bitácora/tickets/checks). El estado de navegación va en el query param `s`.
+ * (bitácora/tickets). Checks inline en cada SQL y ticket. Navegación en `s`.
  */
 
 interface SpaceDef { id: string; label: string; icon: string; }
@@ -17,7 +17,6 @@ interface SpaceDef { id: string; label: string; icon: string; }
   const SUBSPACES: SpaceDef[] = [
     { id: "bitacora", label: "Bitácora", icon: "mdi:notebook-outline" },
     { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
-    { id: "checks", label: "Checks", icon: "mdi:check-circle-outline" },
   ];
 
   function App() {
@@ -25,7 +24,8 @@ interface SpaceDef { id: string; label: string; icon: string; }
 
     const boot = window.ISAJ.UrlState.boot || {};
     const bootSpace = typeof boot.space === "string" ? boot.space : "";
-    const bootSub = typeof boot.sub === "string" ? boot.sub : "";
+    const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";
+    const bootSub = bootSubRaw === "checks" ? "bitacora" : bootSubRaw;
     const [space, setSpace] = React.useState(SPACES.some((s) => s.id === bootSpace) ? bootSpace : "patyia");
     const [sub, setSub] = React.useState(SUBSPACES.some((s) => s.id === bootSub) ? bootSub : "bitacora");
     const [reloadKey, setReload] = React.useState(0);
@@ -67,7 +67,6 @@ interface SpaceDef { id: string; label: string; icon: string; }
       const props = { project: space, reloadKey };
       if (sub === "bitacora") return React.createElement(window.ISAJ.BitacoraView, props);
       if (sub === "tickets") return React.createElement(window.ISAJ.TicketsView, props);
-      if (sub === "checks") return React.createElement(window.ISAJ.ChecksView, props);
       return null;
     }
 
