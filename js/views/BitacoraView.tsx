@@ -71,16 +71,28 @@ interface BitacoraViewProps { project: string; reloadKey?: number; }
     const layout = (data.layout || data) as { nodes?: LayoutNode[] };
     const segments = (data.segments || {}) as Record<string, Record<string, string>>;
 
-    // Aplanar a lista de días con fecha YYYY-MM-DD
+    // Recolectar días de forma RECURSIVA: el layout puede ser mes→día (clientesis)
+    // o día directo (patyia). Un "día" es un nodo type="day" o un contenedor cuyo
+    // título trae una fecha YYYY-MM-DD.
     const days: DayEntry[] = [];
-    (layout.nodes || []).forEach((mo) => {
-      (mo.children || []).forEach((day) => {
-        const m = reDate.exec(day.title || "");
-        const date = m ? m[1] : "";
-        days.push({ id: date || (day.title || ""), date, title: day.title || "Día", children: day.children || [] });
+    const seen = new Set<string>();
+    const collect = (nodes: LayoutNode[]) => {
+      (nodes || []).forEach((n) => {
+        if (!n) return;
+        const m = reDate.exec(n.title || "");
+        const isLeaf = n.type === "md" || n.type === "sql" || n.type === "widget";
+        const isDay = n.type === "day" || (!!m && !isLeaf && !!(n.children && n.children.length));
+        if (isDay) {
+          const date = m ? m[1] : "";
+          const id = date || (n.title || "");
+          if (!seen.has(id)) { seen.add(id); days.push({ id, date, title: n.title || "Día", children: n.children || [] }); }
+        } else if (n.children && n.children.length) {
+          collect(n.children);
+        }
       });
-    });
-    days.sort((a, b) => (a.date < b.date ? 1 : -1)); // desc
+    };
+    collect(layout.nodes || []);
+    days.sort((a, b) => (a.date < b.date ? 1 : -1)); // desc (reciente → antiguo)
 
     // Seleccionar el más reciente al cargar
     React.useEffect(() => {

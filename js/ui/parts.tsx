@@ -12,6 +12,8 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
   "use strict";
   const MUI = MaterialUI;
   const UI = window.ISAJ.UI;
+  // Máximo 2 renglones por título (line-clamp CSS).
+  const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
 
   // Aviso de datos de ejemplo (mockup).
   function MockBanner() {
@@ -120,16 +122,18 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
     });
     const years = Object.keys(tree).sort().reverse();
 
-    // Estado de carpetas abiertas (path "y", "y/mo", "y/mo/d"); abre la rama más reciente.
+    // Por defecto todo colapsado, excepto las ramas de los 15 días MÁS RECIENTES.
+    const RECENT_DAYS = 15;
     const initial: Record<string, boolean> = {};
-    if (years.length) {
-      const y0 = years[0]; initial[y0] = true;
-      const mos = Object.keys(tree[y0]).sort().reverse();
-      if (mos.length) { const mo0 = mos[0]; initial[y0 + "/" + mo0] = true;
-        const ds = Object.keys(tree[y0][mo0]).sort().reverse();
-        if (ds.length && props.mode === "items") initial[y0 + "/" + mo0 + "/" + ds[0]] = true;
-      }
-    }
+    const recentDates = Array.from(new Set(props.items.map((it) => it.date).filter(Boolean)))
+      .sort().reverse().slice(0, RECENT_DAYS);
+    recentDates.forEach((dt) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dt);
+      if (!m) return;
+      initial[m[1]] = true;                       // año
+      initial[m[1] + "/" + m[2]] = true;          // mes
+      if (props.mode === "items") initial[m[1] + "/" + m[2] + "/" + m[3]] = true; // día
+    });
     const [open, setOpen] = React.useState<Record<string, boolean>>(initial);
     const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -153,8 +157,8 @@ interface TreeGroup { id: string; label: string; count?: number; items: TreeItem
         React.createElement(UI.Icon, { icon: "mdi:file-document-outline", size: 15, style: { opacity: 0.7 } }),
         React.createElement(MUI.ListItemText, {
           primary: label, secondary: it.secondary, sx: { ml: 1 },
-          primaryTypographyProps: { variant: "body2", noWrap: true },
-          secondaryTypographyProps: { variant: "caption", noWrap: true },
+          primaryTypographyProps: { variant: "body2", sx: CLAMP2 },
+          secondaryTypographyProps: { variant: "caption", sx: CLAMP2 },
         }));
     }
 
