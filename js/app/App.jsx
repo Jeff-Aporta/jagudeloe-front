@@ -18,9 +18,40 @@ const SUBSPACES = [
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
 ];
 
+const TAB_LABEL_SX = { display: "inline-flex", alignItems: "center", gap: "10px" };
+
+function TabLabel({ icon, label }) {
+  const { Icon } = UI;
+  return (
+    <span style={TAB_LABEL_SX}>
+      <Icon icon={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+/** Tabs propios cuando AppShell del CDN aún no expone navRows. */
+function LegacyNav(props) {
+  const { Tabs, Tab, Box } = getMaterialUI();
+  return (
+    <Box sx={{ flexShrink: 0 }}>
+      <Tabs value={props.space} onChange={(_e, v) => props.setSpace(v)} variant="scrollable" sx={{ minHeight: 48, px: 1 }}>
+        {SPACES.map((s) => (
+          <Tab key={s.id} value={s.id} label={<TabLabel icon={s.icon} label={s.label} />} sx={{ minHeight: 48, textTransform: "none" }} />
+        ))}
+      </Tabs>
+      <Tabs value={props.sub} onChange={(_e, v) => props.setSub(v)} variant="scrollable" sx={{ px: 1, borderTop: 1, borderColor: "divider", minHeight: 44 }}>
+        {SUBSPACES.map((ss) => (
+          <Tab key={ss.id} value={ss.id} label={<TabLabel icon={ss.icon} label={ss.label} />} sx={{ minHeight: 44, py: 0, textTransform: "none" }} />
+        ))}
+      </Tabs>
+    </Box>
+  );
+}
+
 export function App() {
   const { useState, useEffect, useRef } = getReact();
-  const { Tooltip, IconButton } = getMaterialUI();
+  const { Box, Stack, Tooltip, IconButton } = getMaterialUI();
   const { Icon } = UI;
   const { show: toastShow } = Toast;
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
@@ -72,25 +103,41 @@ export function App() {
   const Shell = window.ISAFront?.Layout?.AppShell;
   if (!Shell) throw new Error("AppShell no cargado — revisar loader.ts y front-shared");
 
+  const hasNavShell = !!window.ISAFront?.Layout?.NavTabRow;
+
+  /** toolbarExtra existe en AppShell legacy; toolbarEnd/toolbarActions no. */
+  const toolbarTools = (
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+      <Tooltip title="Recargar">
+        <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
+          <Icon icon="mdi:refresh" />
+        </IconButton>
+      </Tooltip>
+      <LoginButton />
+    </Stack>
+  );
+
+  const body = hasNavShell
+    ? renderView()
+    : (
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+        <LegacyNav space={space} setSpace={setSpace} sub={sub} setSub={setSub} />
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{renderView()}</Box>
+      </Box>
+    );
+
   return (
     <Shell
       ns="ISAJ"
       icon="mdi:view-dashboard-variant-outline"
       showTitle={false}
-      navRows={[
+      navRows={hasNavShell ? [
         { id: "space", value: space, onChange: setSpace, tabs: SPACES, minHeight: 48 },
         { id: "sub", value: sub, onChange: setSub, tabs: SUBSPACES, minHeight: 44 },
-      ]}
-      toolbarActions={(
-        <Tooltip title="Recargar">
-          <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
-            <Icon icon="mdi:refresh" />
-          </IconButton>
-        </Tooltip>
-      )}
-      toolbarEnd={<LoginButton />}
+      ] : undefined}
+      toolbarExtra={toolbarTools}
     >
-      {renderView()}
+      {body}
     </Shell>
   );
 }
