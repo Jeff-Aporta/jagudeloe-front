@@ -17,6 +17,25 @@ export function stripYoutubeFromHtml(html: string): string {
   return String(html).replace(YT_HTML_LINK, "$1");
 }
 
+const TODO_LINE = /^\s*-\s*\[( |x|X)\]\s+(.+)$/;
+
+export function stripTodoCheckboxesFromMarkdown(raw: string): string {
+  if (!raw) return raw;
+  const lines = String(raw).split("\n");
+  const out: string[] = [];
+  let prevWasTodo = false;
+  for (const line of lines) {
+    if (TODO_LINE.test(line)) {
+      prevWasTodo = true;
+      continue;
+    }
+    if (prevWasTodo && line.trim() === "") continue;
+    prevWasTodo = false;
+    out.push(line);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export function renderBitacoraMarkdown(raw: string): string {
   const cleaned = stripYoutubeFromMarkdown(raw);
   const html = typeof window !== "undefined" && window.marked
