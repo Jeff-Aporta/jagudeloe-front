@@ -154,10 +154,6 @@ function TicketMetricsDocument({ tk, iticket, project }) {
 
       {milestones.length > 0 && (
         <SectionCard title="Análisis del ticket" icon="mdi:chart-timeline-variant">
-          <DocText muted sx={{ mb: 1.5, fontSize: "0.95rem" }}>
-            Línea de tiempo en horario hábil. Azul = tiempo hábil · naranja = exclusiones (almuerzo).
-            {m.diasHabilesEnRango > 1 && ` Ventana: ${m.diasHabilesEnRango} día(s) hábil(es).`}
-          </DocText>
           <TicketAnalysisTimeline
             milestones={milestones}
             resumen={[
