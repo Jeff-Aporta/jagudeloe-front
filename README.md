@@ -23,16 +23,9 @@
 - **PatyIA y ClientesIS**: dos espacios de trabajo en la misma pantalla
 - **Bitácora**: notas del día con texto y consultas SQL
 - **Tickets**: listado y detalle por estado
-- **Revisión**: marcar contenido como revisado (requiere login)
-- **Tema** claro/oscuro y modo local o producción
+- **Revisión**: marcar contenido como revisado
+- **Tema** claro/oscuro
 
 Icono: `mdi:notebook-outline` · tema `#37474f`
-
-## Vista local
-
-```bash
-cd frontend
-npx serve .
-```
 
 MIT · [Jeff-Aporta](https://github.com/Jeff-Aporta)
