@@ -242,7 +242,7 @@ export function TicketsDiligenciaView(props) {
 
   return (
     <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
-      <Box sx={{ width: 260, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "auto", display: { xs: "none", md: "block" } }}>
+      <Box sx={{ width: 260, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
         <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="items" />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
