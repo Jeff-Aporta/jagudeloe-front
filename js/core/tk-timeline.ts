@@ -36,8 +36,14 @@ export interface TicketMilestone {
   fechaTexto: string;
   acumuladoHabilMin: number;
   tramoHabilMin: number | null;
+  /** Tiempo calendario desde el hito anterior inmediato (incluye jornada). */
+  tramoDesdeAnteriorMin?: number | null;
   tramoCalendarioMin: number | null;
   esExclusion: boolean;
+  /** Marcador de horario laboral (inicio/fin jornada); no altera la cadena hábil. */
+  esJornada?: boolean;
+  /** Fin del bloque almuerzo cuando inicio/fin van en una sola card. */
+  lunchFinIso?: string | null;
   nota?: string;
   icon: string;
 }
@@ -205,7 +211,16 @@ export function buildTicketMilestones(
   const fin = cie || ini;
   if (!cre || !fin) return [];
 
-  type Pt = { key: string; iso: string; label: string; icon: string; esExclusion: boolean; nota?: string };
+  type Pt = {
+    key: string;
+    iso: string;
+    label: string;
+    icon: string;
+    esExclusion: boolean;
+    esJornada?: boolean;
+    lunchEndIso?: string;
+    nota?: string;
+  };
   const points: Pt[] = [
     { key: "cre", iso: cre, label: "Creación / solicitud", icon: "mdi:ticket-outline", esExclusion: false },
   ];
@@ -226,7 +241,7 @@ export function buildTicketMilestones(
       const vac = fullDayVacation(ymd, lapsos, schedule);
       if (vac) {
         const vs = lunchIso(ymd, schedule.dayStart.h, schedule.dayStart.m, schedule);
-        if (new Date(vs).getTime() >= t0) {
+        if (new Date(vs).getTime() >= t0 && new Date(vs).getTime() <= t1) {
           points.push({
             key: `vac-${ymd}`,
             iso: vs,
@@ -239,23 +254,61 @@ export function buildTicketMilestones(
         ymd = nextDayYmd(ymd);
         continue;
       }
+      const dayStartIso = lunchIso(ymd, schedule.dayStart.h, schedule.dayStart.m, schedule);
+      const dayEndIso = lunchIso(ymd, schedule.dayEnd.h, schedule.dayEnd.m, schedule);
+      const dayStartMs = new Date(dayStartIso).getTime();
+      const dayEndMs = new Date(dayEndIso).getTime();
+      if (dayEndMs >= t0 && dayStartMs <= t1) {
+        if (dayStartMs >= t0 && dayStartMs <= t1) {
+          points.push({
+            key: `jor-in-${ymd}`,
+            iso: dayStartIso,
+            label: "Inicio jornada laboral",
+            icon: "mdi:briefcase-clock-outline",
+            esExclusion: false,
+            esJornada: true,
+          });
+        }
+        if (dayEndMs >= t0 && dayEndMs <= t1) {
+          points.push({
+            key: `jor-out-${ymd}`,
+            iso: dayEndIso,
+            label: "Fin jornada laboral",
+            icon: "mdi:briefcase-off-outline",
+            esExclusion: false,
+            esJornada: true,
+          });
+        }
+      }
       const ls = lunchIso(ymd, schedule.lunchStart.h, schedule.lunchStart.m, schedule);
       const le = lunchIso(ymd, schedule.lunchEnd.h, schedule.lunchEnd.m, schedule);
       const l0 = new Date(ls).getTime();
       const l1 = new Date(le).getTime();
       const lunchMin = schedule.lunchEnd.h * 60 + schedule.lunchEnd.m - (schedule.lunchStart.h * 60 + schedule.lunchStart.m);
+      const lunchRange = `${pad2(schedule.lunchStart.h)}:${pad2(schedule.lunchStart.m)}–${pad2(schedule.lunchEnd.h)}:${pad2(schedule.lunchEnd.m)}`;
       if (l1 > t0 && l0 < t1) {
-        if (l0 >= t0) {
+        const hasStart = l0 >= t0 && l0 <= t1;
+        const hasEnd = l1 > t0 && l1 <= t1;
+        if (hasStart && hasEnd) {
+          points.push({
+            key: `lunch-${ymd}`,
+            iso: ls,
+            label: "Almuerzo",
+            icon: "mdi:food-fork-drink",
+            esExclusion: true,
+            lunchEndIso: le,
+            nota: `${lunchRange} · No hábil · ${lunchMin} min excluidos · no suma al cómputo`,
+          });
+        } else if (hasStart) {
           points.push({
             key: `lunch0-${ymd}`,
             iso: ls,
             label: "Inicio almuerzo",
             icon: "mdi:food-fork-drink",
             esExclusion: true,
-            nota: `No hábil · ${lunchMin} min excluidos (12:30–14:00)`,
+            nota: `No hábil · ${lunchMin} min excluidos (${lunchRange})`,
           });
-        }
-        if (l1 > t0) {
+        } else if (hasEnd) {
           points.push({
             key: `lunch1-${ymd}`,
             iso: le,
@@ -277,42 +330,67 @@ export function buildTicketMilestones(
   const sorted = points
     .slice()
     .sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime())
-    .filter((p) => p.key === "cre" || new Date(p.iso).getTime() >= t0);
+    .filter((p) => {
+      if (p.key === "cre" || p.key === "cie") return true;
+      const t = new Date(p.iso).getTime();
+      return t >= t0 && t <= t1;
+    });
 
   let prevIso: string | null = null;
+  let prevTimelineIso: string | null = null;
   const rows: TicketMilestone[] = [];
 
   for (const p of sorted) {
     const acum = businessMinutesBetween(cre, p.iso, input, schedule) ?? 0;
+    const tramoDesdeAnterior = prevTimelineIso
+      ? (businessMinutesBetween(prevTimelineIso, p.iso, input, schedule) ?? 0)
+      : null;
     const tramoHabil = prevIso ? (businessMinutesBetween(prevIso, p.iso, input, schedule) ?? 0) : null;
-    const tramoCal = prevIso ? (calendarMinutesBetween(prevIso, p.iso) ?? 0) : null;
+    const tramoCal = prevTimelineIso ? (calendarMinutesBetween(prevTimelineIso, p.iso) ?? 0) : null;
 
     let nota = p.nota;
-    if (p.esExclusion && tramoHabil === 0 && prevIso) {
+    if (p.esJornada) {
+      nota =
+        p.key.startsWith("jor-in-")
+          ? `Horario laboral desde ${pad2(schedule.dayStart.h)}:${pad2(schedule.dayStart.m)}`
+          : `Horario laboral hasta ${pad2(schedule.dayEnd.h)}:${pad2(schedule.dayEnd.m)}`;
+    } else if (p.esExclusion && tramoHabil === 0 && prevIso) {
       nota = nota || "Sin tiempo hábil en este tramo";
     } else if (!p.esExclusion && p.key !== "cre" && tramoHabil != null && tramoHabil > 0) {
       nota = `+${formatMinutos(tramoHabil)} hábil en este tramo`;
     }
 
+    const hora = p.lunchEndIso
+      ? `${formatHoraBogota(p.iso)} – ${formatHoraBogota(p.lunchEndIso)}`
+      : formatHoraBogota(p.iso);
+
     rows.push({
       key: p.key,
       label: p.label,
       iso: p.iso,
-      hora: formatHoraBogota(p.iso),
+      hora,
       fechaTexto: formatTicketTs(p.iso),
       acumuladoHabilMin: acum,
       tramoHabilMin: tramoHabil,
+      tramoDesdeAnteriorMin: tramoDesdeAnterior,
       tramoCalendarioMin: tramoCal,
       esExclusion: p.esExclusion,
+      esJornada: p.esJornada,
+      lunchFinIso: p.lunchEndIso ?? null,
       nota,
       icon: p.icon,
     });
 
-    if (!p.esExclusion || p.key.startsWith("lunch1")) {
+    if (p.esJornada) {
+      /* marcador visual — no avanza cadena hábil */
+    } else if (p.key.startsWith("lunch-")) {
+      prevIso = p.lunchEndIso || p.iso;
+    } else if (!p.esExclusion || p.key.startsWith("lunch1")) {
       prevIso = p.iso;
     } else if (p.key.startsWith("lunch0") || p.key.startsWith("vac-")) {
       prevIso = p.iso;
     }
+    prevTimelineIso = p.lunchEndIso || p.iso;
   }
 
   return rows;
