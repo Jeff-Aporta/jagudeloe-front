@@ -1,8 +1,10 @@
 /*
- * ui/tkHtml — driver único de renderizado de tickets: JSON (kind + payload) → HTML
- * con el estilo "diligencia" (tablas + estilos inline, compatible con correo).
- * El backend ya NO genera HTML; todo se construye aquí a partir del JSON del ticket.
+ * ui/tkHtml — driver HTML de tickets: JSON (kind + payload) → HTML email-safe.
+ * Visualización con CodeMirror vía tkCodeHydrate.ts. Presentación web: TicketDocWebView.jsx.
  */
+
+import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
+import { formatDocumentadoPor, formatTiqueteCreadoPor } from "./tkHeroAuthors.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -43,12 +45,25 @@ function codeChip(text: string): string {
   return `<span style="${MONO}font-size:12px;background:${C.chipBg};color:${C.chipFg};padding:1px 5px;border-radius:3px;">${text}</span>`;
 }
 
+function codeChipWeb(text: string): string {
+  return `<code class="tk-inline-code">${text}</code>`;
+}
+
 /** Inline markdown ligero: **negrilla**, `código`, [label](url). Escapa el resto. */
 export function inlineMd(raw: string): string {
   let s = esc(raw);
   s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
   s = s.replace(/`([^`]+)`/g, (_m, code) => codeChip(code));
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer" style="color:${C.blue};">$1</a>`);
+  return s;
+}
+
+/** Igual que inlineMd, con `<code class="tk-inline-code">` para el driver JSX (tema claro/oscuro vía CSS). */
+export function inlineMdWeb(raw: string): string {
+  let s = esc(raw);
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  s = s.replace(/`([^`]+)`/g, (_m, code) => codeChipWeb(code));
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="tk-inline-link">$1</a>');
   return s;
 }
 
@@ -95,9 +110,9 @@ function pill(text: string, fg: string, bg: string): string {
 }
 
 function codeBlock(code: string, lang = "sql"): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0;border:1px solid ${C.border};border-radius:6px;background:${C.zebra};">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0;max-width:100%;table-layout:fixed;border:1px solid ${C.border};border-radius:6px;background:${C.zebra};overflow:visible;">
     <tr><td style="padding:5px 10px;border-bottom:1px solid ${C.border};${FONT}font-size:10px;color:${C.muted};text-transform:uppercase;letter-spacing:.5px;">${esc(lang)}</td></tr>
-    <tr><td style="padding:10px 12px;"><pre style="margin:0;${MONO}font-size:12px;color:${C.chipFg};line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(code)}</pre></td></tr></table>`;
+    <tr><td style="padding:0;max-width:100%;overflow:visible;"><div class="tk-code-wrap" data-lang="${esc(lang)}" style="max-width:100%;overflow:visible;"><pre class="tk-code-block" style="margin:0;${MONO}font-size:12px;color:${C.chipFg};line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow:visible;">${esc(code)}</pre></div></td></tr></table>`;
 }
 
 const BULLET_ICONS: Record<string, string> = {
@@ -259,14 +274,23 @@ export function stripInfoTiquete(html: string): string {
 }
 
 function commitsTable(commits: Record<string, unknown>[]): string {
-  const rows = commits.map((c) => [
-    codeChip(esc(String(c.hash ?? "").slice(0, 9))),
-    esc(String(c.proyecto ?? "")),
-    inlineMd(String(c.descripcion ?? "")),
-    `${pill("+" + Number(c.insCount ?? 0), C.green, "#e9f7ee")} ${pill("−" + Number(c.delCount ?? 0), "#c0392b", "#fdecea")}`,
-    esc(`${Number(c.minutos ?? 0)} min`),
-  ]);
-  return dataTable(["Commit", "Proyecto", "Descripción", "Cambios", "Tiempo"], rows, { raw: true });
+  const rows = commits.map((c) => {
+    const hash = String(c.hash ?? "");
+    const short = esc(hash.slice(0, 9));
+    const url = esc(tkCommitGithubUrl(String(c.proyecto ?? ""), hash));
+    const hashCell = hash
+      ? `<a href="${url}" target="_blank" rel="noopener noreferrer" style="${MONO}font-size:12px;color:${C.blue};text-decoration:none;">${short}</a>`
+      : short;
+    return [
+      hashCell,
+      esc(String(c.proyecto ?? "")),
+      inlineMd(String(c.descripcion ?? "")),
+      pill("+" + Number(c.insCount ?? 0), C.green, "#e9f7ee"),
+      pill("−" + Number(c.delCount ?? 0), "#c0392b", "#fdecea"),
+      esc(`${Number(c.minutos ?? 0)} min`),
+    ];
+  });
+  return dataTable(["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"], rows, { raw: true });
 }
 
 function timeRow(label: string, hint: string, mins: number, bold = false): string {
@@ -277,13 +301,15 @@ function timeRow(label: string, hint: string, mins: number, bold = false): strin
     <td align="right" style="${style}white-space:nowrap;">${mins} min</td></tr>`;
 }
 
+
 /** Cuerpo del ticket (filas <tr> del contenedor de 680px). */
 export function renderTicketRows(tk: Record<string, unknown>): string {
   const rows: string[] = [];
   const space = String(tk.space ?? "").toUpperCase() || "PATYIA";
   const iticket = esc(tk.iticket ?? "");
   const titulo = esc(tk.titulo ?? tk.title ?? "");
-  const solicitante = esc(tk.solicitante ?? "");
+  const creadoPor = esc(formatTiqueteCreadoPor(String(tk.solicitante ?? "")));
+  const documentadoPor = esc(formatDocumentadoPor(tk));
   const estado = String(tk.estado ?? "").toLowerCase();
 
   const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b));
@@ -303,7 +329,8 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
         ${tkBadge}
         <div style="${FONT}font-size:11px;color:#7fb4e6;letter-spacing:1px;text-transform:uppercase;">${esc(space)}</div>
         <div style="${FONT}font-size:18px;color:#ffffff;font-weight:bold;margin-top:3px;line-height:1.3;">${titulo}</div>
-        ${solicitante ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:4px;">${solicitante}</div>` : ""}
+        ${creadoPor ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:4px;">${creadoPor}</div>` : ""}
+        ${documentadoPor ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:2px;">${documentadoPor}</div>` : ""}
         ${badgesHtml}
       </td></tr></table></td></tr>`);
 
@@ -360,9 +387,9 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   } else if (est || dil || com || extra) {
     const derived = [
       { name: "Estimación", detail: "tiempo previsto", minutos: est },
-      { name: "Diligencia", detail: "gestión y documentación", minutos: dil },
-      { name: "Desarrollo en commits", detail: "código asociado al ticket", minutos: com },
-      { name: "Tiempo extra", detail: "fuera de alcance inicial", minutos: extra },
+      { name: "Documentación", detail: "diligencia y cierre del ticket", minutos: dil },
+      { name: "Tiempo en commits", detail: "código entregado en repositorio", minutos: com },
+      { name: "Tiempo extra", detail: "ajustes fuera del alcance inicial", minutos: extra },
     ].filter((t) => t.minutos > 0);
     timeRows = derived.map((t) => timeRow(t.name, t.detail, t.minutos)).join("");
     timeTotal = total + extra;
