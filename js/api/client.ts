@@ -34,8 +34,16 @@ function isLocalFront(): boolean {
 }
 
 function localDevHint(): string {
-  if (!isLocalFront()) return "";
-  return " En local: main-orchestrator (:8780), jagudeloe (:8783) y jagudeloe-tks (:8786).";
+  if (!isLocalFront() || !Config.isLocal()) return "";
+  return " Comprueba que el entorno local esté activo.";
+}
+
+function sanitizeApiError(raw: unknown, fallback = "No se pudo completar la operación"): string {
+  const msg = String(raw ?? "").trim();
+  if (!msg) return fallback;
+  if (/main-orchestrator|workers\.dev|localhost:\d+|878\d|azure|orquestador|gateway/i.test(msg)) return fallback;
+  if (/^HTTP \d{3}$/.test(msg)) return fallback;
+  return msg.length > 200 ? msg.slice(0, 197) + "…" : msg;
 }
 
 function directBaseFor(path: string): string | null {
@@ -53,7 +61,7 @@ async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Respons
     return await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") {
-      throw new Error("La API tardó demasiado en responder." + localDevHint());
+      throw new Error("La operación tardó demasiado." + localDevHint());
     }
     throw e;
   } finally {
@@ -93,7 +101,7 @@ export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, 
       lastErr = e instanceof Error ? (e as ApiError) : new Error(String(e)) as ApiError;
       if (bi < bases.length - 1) continue;
       if (!lastErr.message.includes("conectar") && !lastErr.message.includes("tardó")) {
-        lastErr.message = "No se pudo conectar con la API." + localDevHint();
+        lastErr.message = "No se pudo conectar con el servidor." + localDevHint();
       }
       throw lastErr;
     }
@@ -101,10 +109,10 @@ export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, 
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       const errBody = data as { error?: string } | null;
-      let msg = (errBody && errBody.error) || ("HTTP " + res.status);
+      let msg = sanitizeApiError(errBody?.error, "Error HTTP " + res.status);
       if (res.status === 401) msg = "Sesión requerida o expirada.";
       if (res.status === 403) msg = "No tienes permiso para esta acción.";
-      if (res.status === 404) msg = "Endpoint no disponible (¿orquestador o jagudeloe desplegado?)." + localDevHint();
+      if (res.status === 404) msg = "Recurso no encontrado." + localDevHint();
       lastErr = new Error(msg) as ApiError;
       lastErr.status = res.status;
       lastErr.data = data;
@@ -114,7 +122,7 @@ export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, 
     return data as T;
   }
 
-  throw lastErr || new Error("No se pudo conectar con la API." + localDevHint());
+  throw lastErr || new Error("No se pudo conectar con el servidor." + localDevHint());
 }
 
 export async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {

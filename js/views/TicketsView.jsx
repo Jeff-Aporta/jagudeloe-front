@@ -179,42 +179,50 @@ const TK_TABS = [
   { id: "metricas", label: "Métricas", icon: "mdi:chart-timeline-variant" },
 ];
 
-function TkTabLabel({ icon, label }) {
-  const { Icon } = UI;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-      <Icon icon={icon} size={18} />
-      <span>{label}</span>
-    </span>
-  );
-}
-
 /** Hub Tickets: Diligencia (listado) | Métricas (análisis TK). */
 export function TicketsView(props) {
   const { useState, useEffect } = getReact();
-  const { Box, Tabs, Tab } = getMaterialUI();
   const bootTkTab = boot.sub === "metricas" || boot.tkTab === "metricas" ? "metricas" : "diligencia";
   const [tkTab, setTkTab] = useState(TK_TABS.some((t) => t.id === bootTkTab) ? bootTkTab : "diligencia");
+  const ViewFrame = window.ISAFront?.Layout?.ViewFrame;
 
   useEffect(() => { merge({ sub: "tickets", tkTab }); }, [tkTab]);
 
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      <Tabs
-        value={tkTab}
-        onChange={(_e, v) => setTkTab(v)}
-        variant="scrollable"
-        sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
-      >
-        {TK_TABS.map((t) => (
-          <Tab key={t.id} value={t.id} label={<TkTabLabel icon={t.icon} label={t.label} />} sx={{ minHeight: 40, textTransform: "none" }} />
-        ))}
-      </Tabs>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        {tkTab === "metricas"
-          ? <TicketMetricsView project={props.project} reloadKey={props.reloadKey} />
-          : <TicketsDiligenciaView project={props.project} reloadKey={props.reloadKey} />}
+  const content = tkTab === "metricas"
+    ? <TicketMetricsView project={props.project} reloadKey={props.reloadKey} />
+    : <TicketsDiligenciaView project={props.project} reloadKey={props.reloadKey} />;
+
+  if (!ViewFrame) {
+    const { Box, Tabs, Tab } = getMaterialUI();
+    const { Icon } = UI;
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+        <Tabs value={tkTab} onChange={(_e, v) => setTkTab(v)} variant="scrollable" sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
+          {TK_TABS.map((t) => (
+            <Tab
+              key={t.id}
+              value={t.id}
+              label={(
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+                  <Icon icon={t.icon} size={18} />
+                  <span>{t.label}</span>
+                </span>
+              )}
+              sx={{ minHeight: 40, textTransform: "none" }}
+            />
+          ))}
+        </Tabs>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{content}</Box>
       </Box>
-    </Box>
+    );
+  }
+
+  return (
+    <ViewFrame
+      navRow={{ ns: "ISAJ", value: tkTab, onChange: setTkTab, tabs: TK_TABS, minHeight: 40 }}
+      scroll={false}
+    >
+      {content}
+    </ViewFrame>
   );
 }

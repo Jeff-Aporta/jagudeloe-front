@@ -1,6 +1,5 @@
-/* app/App — raíz jagudeloe. Spaces (proyectos) → subspaces (bitácora/tickets). */
+/* app/App — raíz jagudeloe. Spaces → subspaces (bitácora/tickets). Shell compartido front-shared. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
-import { useThemeMode } from "../core/theme.ts";
 import { UI, Toast, Session } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { invalidateRevisadoCache } from "../api/client.ts";
@@ -8,9 +7,7 @@ import { useRealtimeNotifications } from "../ui/realtime.ts";
 import { BitacoraView } from "../views/BitacoraView.jsx";
 import { TicketsView } from "../views/TicketsView.jsx";
 import { LoginButton } from "./Login.jsx";
-import { GatewaySwitch } from "../ui/GatewaySwitch.jsx";
 
-/* "general" no es un space real: combina todos los spaces (sin filtro). */
 const SPACES = [
   { id: "general", label: "General", icon: "mdi:view-grid-outline" },
   { id: "patyia", label: "PatyIA", icon: "mdi:robot-happy-outline" },
@@ -21,25 +18,11 @@ const SUBSPACES = [
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
 ];
 
-/** Separación icono ↔ etiqueta en tabs (MUI aprieta el iconWrapper por defecto). */
-const TAB_LABEL_SX = { display: "inline-flex", alignItems: "center", gap: "10px" };
-
-function TabLabel({ icon, label }) {
-  const { Icon } = UI;
-  return (
-    <span style={TAB_LABEL_SX}>
-      <Icon icon={icon} size={18} />
-      <span>{label}</span>
-    </span>
-  );
-}
-
 export function App() {
-  const { useState, useEffect, useRef, Fragment } = getReact();
-  const { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Tabs, Tab, Tooltip, IconButton } = getMaterialUI();
-  const { Icon, ThemeSwitch, FeedbackProvider } = UI;
+  const { useState, useEffect, useRef } = getReact();
+  const { Tooltip, IconButton } = getMaterialUI();
+  const { Icon } = UI;
   const { show: toastShow } = Toast;
-  const { theme, mode, toggle } = useThemeMode();
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
   const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";
   const bootSub = bootSubRaw === "checks" ? "bitacora" : bootSubRaw === "metricas" ? "tickets" : bootSubRaw;
@@ -86,39 +69,28 @@ export function App() {
     return null;
   }
 
-  const Provider = FeedbackProvider || Fragment;
+  const Shell = window.ISAFront?.Layout?.AppShell;
+  if (!Shell) throw new Error("AppShell no cargado — revisar loader.ts y front-shared");
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Provider>
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-        <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
-          <Toolbar variant="dense" sx={{ gap: 1, minHeight: 52 }}>
-            <Icon icon="mdi:view-dashboard-variant-outline" size={24} />
-            <Tabs value={space} onChange={(_e, v) => setSpace(v)} variant="scrollable" sx={{ minHeight: 48, flexGrow: 1 }}>
-              {SPACES.map((s) => (
-                <Tab key={s.id} value={s.id} label={<TabLabel icon={s.icon} label={s.label} />} sx={{ minHeight: 48, textTransform: "none" }} />
-              ))}
-            </Tabs>
-            <GatewaySwitch />
-            <Tooltip title="Recargar">
-              <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
-                <Icon icon="mdi:refresh" />
-              </IconButton>
-            </Tooltip>
-            <ThemeSwitch mode={mode} onToggle={toggle} />
-            <LoginButton />
-          </Toolbar>
-          <Tabs value={sub} onChange={(_e, v) => setSub(v)} sx={{ px: 1, borderTop: 1, borderColor: "divider", minHeight: 44 }} variant="scrollable">
-            {SUBSPACES.map((ss) => (
-              <Tab key={ss.id} value={ss.id} label={<TabLabel icon={ss.icon} label={ss.label} />} sx={{ minHeight: 44, py: 0, textTransform: "none" }} />
-            ))}
-          </Tabs>
-        </AppBar>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{renderView()}</Box>
-      </Box>
-      </Provider>
-    </ThemeProvider>
+    <Shell
+      ns="ISAJ"
+      icon="mdi:view-dashboard-variant-outline"
+      showTitle={false}
+      navRows={[
+        { id: "space", value: space, onChange: setSpace, tabs: SPACES, minHeight: 48 },
+        { id: "sub", value: sub, onChange: setSub, tabs: SUBSPACES, minHeight: 44 },
+      ]}
+      toolbarActions={(
+        <Tooltip title="Recargar">
+          <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
+            <Icon icon="mdi:refresh" />
+          </IconButton>
+        </Tooltip>
+      )}
+      toolbarEnd={<LoginButton />}
+    >
+      {renderView()}
+    </Shell>
   );
 }
