@@ -258,13 +258,6 @@ export function stripInfoTiquete(html: string): string {
   return out;
 }
 
-function fmtFecha(raw: unknown): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(raw ?? ""));
-  if (!m) return String(raw ?? "");
-  const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  return `${m[3]}/${meses[parseInt(m[2], 10) - 1]}/${m[1]}`;
-}
-
 function commitsTable(commits: Record<string, unknown>[]): string {
   const rows = commits.map((c) => [
     codeChip(esc(String(c.hash ?? "").slice(0, 9))),
@@ -291,23 +284,26 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   const iticket = esc(tk.iticket ?? "");
   const titulo = esc(tk.titulo ?? tk.title ?? "");
   const solicitante = esc(tk.solicitante ?? "");
-  const fecha = fmtFecha(tk.fechaSolicitud ?? tk.fecha);
   const estado = String(tk.estado ?? "").toLowerCase();
 
   const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b));
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
   const blocks = content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
-  // Hero
+  // Hero — badge TK (blanco/negro) primero; solicitante sin fecha
   const heroBadge = (b: TkBlock) =>
     `<span style="${FONT}display:inline-block;font-size:11px;font-weight:bold;color:#cfe4fa;border:1px solid #3d6c9c;border-radius:12px;padding:2px 10px;margin:0 6px 6px 0;background:rgba(255,255,255,0.06);">${esc((b.payload && (b.payload.label ?? b.payload.text)) ?? "")}</span>`;
   const badgesHtml = badges.length ? `<div style="margin-top:10px;">${badges.map(heroBadge).join("")}</div>` : "";
+  const tkBadge = iticket
+    ? `<span style="${FONT}display:inline-block;font-size:11px;font-weight:700;color:#111111;background:#ffffff;border-radius:4px;padding:3px 10px;margin:0 0 8px 0;letter-spacing:0.3px;">${iticket}</span>`
+    : "";
   rows.push(`<tr><td style="padding:0 0 16px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:680px;max-width:680px;border-radius:8px;background:${C.navy};">
       <tr><td style="padding:18px 20px;">
+        ${tkBadge}
         <div style="${FONT}font-size:11px;color:#7fb4e6;letter-spacing:1px;text-transform:uppercase;">${esc(space)}</div>
         <div style="${FONT}font-size:18px;color:#ffffff;font-weight:bold;margin-top:3px;line-height:1.3;">${titulo}</div>
-        <div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:4px;">${[solicitante, fecha].filter(Boolean).join(" · ")}</div>
+        ${solicitante ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:4px;">${solicitante}</div>` : ""}
         ${badgesHtml}
       </td></tr></table></td></tr>`);
 
