@@ -2,7 +2,7 @@
 import { getReact } from "./runtime.ts";
 import { Session } from "./platform.ts";
 
-const SESSION_KEY = "system-login:session";
+const SESSION_KEY_PREFIX = "system-login:session:jagudeloe-front";
 
 export function useSession() {
   const { useState, useEffect } = getReact();
@@ -12,7 +12,7 @@ export function useSession() {
     function sync(e?: Event) {
       if (e?.type === "storage") {
         const se = e as StorageEvent;
-        if (se.key && se.key !== SESSION_KEY) return;
+        if (se.key && se.key !== SESSION_KEY_PREFIX) return;
       }
       bump((n) => n + 1);
     }

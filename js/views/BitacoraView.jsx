@@ -14,6 +14,7 @@ import {
 } from "../core/bitacora-merge.ts";
 import { isGeneralProject } from "../core/tk-spaces.ts";
 import { DateTree, SqlBlock } from "../ui/parts.jsx";
+import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
 
@@ -24,7 +25,7 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
   if (node.type === "md") {
     const seg = segments[node.segmentId] || {};
     const raw = seg.markdown || seg.md || seg.body || "";
-    const html = window.marked ? window.marked.parse(raw) : raw;
+    const html = renderBitacoraMarkdown(typeof raw === "string" ? raw : String(raw));
     return <Box key={key} sx={{ my: 1 }}><Box className="md-body" dangerouslySetInnerHTML={{ __html: html }} /></Box>;
   }
   if (node.type === "sql") {

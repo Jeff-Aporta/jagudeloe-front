@@ -244,24 +244,16 @@ export function EmpresaComparativoReport({ tickets, project }) {
 
   return (
     <Box sx={{ maxWidth: 1100, mx: "auto", py: 3, px: { xs: 2, md: 3 }, bgcolor: c.pageBg, minHeight: "100%" }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, color: c.text, mb: 0.5 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, color: c.text, mb: 2 }}>
         Reporte general · Empresa vs hábil · {projectLabel(project)}
-      </Typography>
-      <Typography variant="body2" sx={{ color: c.muted, mb: 2, lineHeight: 1.5 }}>
-        Comparativa empresa vs hábil en tickets del <strong style={{ color: c.text }}>Excel empresa</strong> que ya
-        documentaste como solucionados (hitos cre → ini → cierre).
-        {" "}{report.totalIncluidos} incluidos
-        {report.excluidos > 0 && (
-          <> · {report.excluidos} excluidos ({report.excluidosSinReporte} sin fila Excel, {report.excluidosSinHitos} sin hitos/cierre)</>
-        )}.
       </Typography>
 
       <TicketAssignmentTimeline tickets={tickets} project={project} />
 
       {!report.rows.length ? (
         <Alert severity="info">
-          No hay tickets con reporte empresa y hitos de solución documentados. Revisa que el seed de métricas tenga
-          creación, inicio de atención y cierre.
+          No hay tickets con tipo PQR proyecto, PQR Error del sistema o Requerimiento técnico, reporte empresa y hitos
+          de solución documentados (creación, inicio de atención y cierre).
         </Alert>
       ) : (
         <>

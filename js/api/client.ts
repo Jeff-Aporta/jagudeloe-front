@@ -62,13 +62,13 @@ async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Respons
 }
 
 export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, baseOverride?: string): Promise<T> {
-  const { authHeader } = Session;
+  const { authHeader, appHeader } = Session;
   const { base } = Config;
   const method = (opts.method || "GET").toUpperCase();
   const headers: Record<string, string> = Object.assign({}, opts.headers || {});
   if (method !== "GET" && method !== "HEAD") {
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
-    Object.assign(headers, authHeader());
+    Object.assign(headers, authHeader(), appHeader());
   }
 
   const bases: string[] = [];

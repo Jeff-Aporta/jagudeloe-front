@@ -34,6 +34,29 @@ function stripTipoSolicitudDisplay(full: string): string {
   return s.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Tipos de apertura incluidos en el reporte general empresa vs hábil. */
+export const TIPOS_APERTURA_COMPARATIVO = [
+  "PQR proyecto",
+  "PQR Error del sistema",
+  "Requerimiento técnico",
+] as const;
+
+export function normalizeTipoSolicitudApertura(full: string | null | undefined): string {
+  if (!full) return "";
+  return stripTipoSolicitudDisplay(String(full)).toLowerCase();
+}
+
+/** Solo proyecto, error del sistema y requerimiento técnico (InSoft «1 - …»). */
+export function isTipoAperturaComparativo(tipo: string | null | undefined): boolean {
+  const n = normalizeTipoSolicitudApertura(tipo);
+  if (!n) return false;
+  return TIPOS_APERTURA_COMPARATIVO.some((t) => n.startsWith(t.toLowerCase()));
+}
+
+export function isTicketTipoComparativo(tk: Record<string, unknown>): boolean {
+  return isTipoAperturaComparativo(extractTipoSolicitudApertura(tk));
+}
+
 /** Abreviaturas conocidas para chips en sidebar (texto completo queda en tooltip / detalle). */
 const TIPO_CHIP_ABBR: Array<[string, string]> = [
   ["PQR proyecto", "PQR Proy."],

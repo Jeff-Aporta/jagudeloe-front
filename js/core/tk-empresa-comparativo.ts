@@ -8,6 +8,7 @@ import {
   formatEmpresaHoras,
   type EmpresaReportEntry,
 } from "./tk-empresa-report.ts";
+import { isTicketTipoComparativo } from "./tk-normativa.ts";
 import { reportProject } from "./tk-spaces.ts";
 
 export const REPORTE_GENERAL_ID = "__reporte_general__";
@@ -53,6 +54,7 @@ export interface ComparativoReport {
   excluidosAbiertos: number;
   excluidosSinReporte: number;
   excluidosSinHitos: number;
+  excluidosPorTipo: number;
 }
 
 function ticketEstado(tk: Record<string, unknown>): string {
@@ -99,6 +101,7 @@ export function isTicketComparativoIncluido(
   m: TicketMetricResult,
   project = "clientesis",
 ): boolean {
+  if (!isTicketTipoComparativo(tk)) return false;
   const report = extractEmpresaReport(tk, project);
   return hasReporteEmpresaUtil(report) && hasCompleteMetricHitos(m);
 }
@@ -161,6 +164,7 @@ export function buildComparativoReport(
 ): ComparativoReport {
   let excluidosSinReporte = 0;
   let excluidosSinHitos = 0;
+  let excluidosPorTipo = 0;
   const rows: ComparativoRow[] = [];
 
   for (const tk of tickets) {
@@ -168,9 +172,16 @@ export function buildComparativoReport(
     const tkProj = reportProject(tk, project);
     const report = extractEmpresaReport(tk, tkProj);
 
-    if (!isTicketComparativoIncluido(tk, m, project)) {
-      if (!hasReporteEmpresaUtil(report)) excluidosSinReporte += 1;
-      else excluidosSinHitos += 1;
+    if (!isTicketTipoComparativo(tk)) {
+      excluidosPorTipo += 1;
+      continue;
+    }
+    if (!hasReporteEmpresaUtil(report)) {
+      excluidosSinReporte += 1;
+      continue;
+    }
+    if (!hasCompleteMetricHitos(m)) {
+      excluidosSinHitos += 1;
       continue;
     }
 
@@ -192,7 +203,7 @@ export function buildComparativoReport(
     totalSolucion: avgPairs(rows, (r) => r.totalSolucion),
   };
 
-  const excluidos = excluidosSinReporte + excluidosSinHitos;
+  const excluidos = excluidosSinReporte + excluidosSinHitos + excluidosPorTipo;
   return {
     rows,
     averages,
@@ -202,6 +213,7 @@ export function buildComparativoReport(
     excluidosAbiertos: excluidos,
     excluidosSinReporte,
     excluidosSinHitos,
+    excluidosPorTipo,
   };
 }
 

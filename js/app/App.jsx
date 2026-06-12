@@ -8,6 +8,7 @@ import { useRealtimeNotifications } from "../ui/realtime.ts";
 import { BitacoraView } from "../views/BitacoraView.jsx";
 import { TicketsView } from "../views/TicketsView.jsx";
 import { LoginButton } from "./Login.jsx";
+import { GatewaySwitch } from "../ui/GatewaySwitch.jsx";
 
 /* "general" no es un space real: combina todos los spaces (sin filtro). */
 const SPACES = [
@@ -36,7 +37,7 @@ function TabLabel({ icon, label }) {
 export function App() {
   const { useState, useEffect, useRef } = getReact();
   const { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Tabs, Tab, Tooltip, IconButton } = getMaterialUI();
-  const { Icon, TargetSwitch, ThemeSwitch } = UI;
+  const { Icon, ThemeSwitch } = UI;
   const { show: toastShow } = Toast;
   const { theme, mode, toggle } = useThemeMode();
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
@@ -97,7 +98,7 @@ export function App() {
                 <Tab key={s.id} value={s.id} label={<TabLabel icon={s.icon} label={s.label} />} sx={{ minHeight: 48, textTransform: "none" }} />
               ))}
             </Tabs>
-            <TargetSwitch />
+            <GatewaySwitch />
             <Tooltip title="Recargar">
               <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
                 <Icon icon="mdi:refresh" />

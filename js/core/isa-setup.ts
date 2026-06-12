@@ -10,6 +10,7 @@ const ORCH = {
 
 window.ISAFront.registerApp({
   ns: "ISAJ",
+  app: "jagudeloe-front",
   theme: { lsKey: "jagudeloe:theme" },
   widgets: { targetStyle: "chip" },
   api: ORCH,
@@ -23,6 +24,9 @@ if (!window.ISAJ?.Session) {
     "ISAJ.Session no registrado — recargue sin caché (Ctrl+Shift+R). " +
       "Si persiste, actualice FRONT_SHARED_REF en front-shared/cdn/boot-helper.mjs.",
   );
+}
+if (!window.ISAJ.Session.isLoggedIn()) {
+  window.ISAJ.Config.setLocal(false);
 }
 if (!window.ISAJ?.Realtime && window.ISAFront.registerRealtime) {
   window.ISAFront.registerRealtime("ISAJ", {});
