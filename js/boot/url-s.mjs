@@ -41,12 +41,13 @@ export function buildShareUrl(state, originPath) {
   return location.origin + path + "?" + encodeS(state);
 }
 
-/** Vista documento: solo HTML del ticket, sin shell de la app. */
+/** Vista documento: solo ticket, sin shell. driver: html (correo) | jsx (web). */
 export function docBootFromSearch(search = location.search) {
   const s = decodeS(search);
   if (s.view !== "doc") return null;
   const space = typeof s.space === "string" ? s.space.trim() : "";
   const sel = typeof s.sel === "string" ? s.sel.trim() : "";
   if (!space || !sel) return null;
-  return { space, sel };
+  const driver = s.driver === "html" ? "html" : "jsx";
+  return { space, sel, driver };
 }
