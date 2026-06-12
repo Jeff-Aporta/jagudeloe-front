@@ -29,11 +29,27 @@ export function resolveDocumentadorCargo(tk: Record<string, unknown>): string {
   return asignado ? (ASIGNADO_CARGO[asignado] ?? "") : "";
 }
 
+export const DOCUMENTADOR_LABEL = "Solucionado y documentado por";
+
+export function resolveDocumentadorBlock(tk: Record<string, unknown>): {
+  label: string;
+  nombre: string;
+  cargo: string;
+} | null {
+  const nombre = resolveDocumentadorNombre(tk);
+  if (!nombre) return null;
+  return {
+    label: DOCUMENTADOR_LABEL,
+    nombre,
+    cargo: resolveDocumentadorCargo(tk),
+  };
+}
+
+/** Una línea — correo / compatibilidad. */
 export function formatDocumentadoPor(tk: Record<string, unknown>): string {
-  const name = resolveDocumentadorNombre(tk);
-  if (!name) return "";
-  const cargo = resolveDocumentadorCargo(tk);
-  return cargo
-    ? `Solucionado y documentado por ${name} (${cargo})`
-    : `Solucionado y documentado por ${name}`;
+  const block = resolveDocumentadorBlock(tk);
+  if (!block) return "";
+  return block.cargo
+    ? `${block.label} ${block.nombre} (${block.cargo})`
+    : `${block.label} ${block.nombre}`;
 }
