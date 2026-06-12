@@ -13,6 +13,7 @@
     if (docBoot) {
       const { importAppEntry } = await import(MODULE_LOADER);
       const mod = await importAppEntry("js/boot/doc-viewer.ts", Babel);
+      if (mod.applyDocPageLayout) mod.applyDocPageLayout(docBoot.driver === "html" ? "html" : "jsx");
       await mod.runDocViewer(docBoot);
       return;
     }
