@@ -2,12 +2,21 @@
   "use strict";
 
   const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9ecf1cc/cdn/boot-helper.mjs?v=9ecf1cc";
+    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@05509e7/cdn/boot-helper.mjs?v=05509e7";
 
   const MODULE_LOADER = "./js/boot/module-graph.mjs";
   const ENTRY = "js/main.jsx";
 
   async function boot() {
+    const { docBootFromSearch } = await import("./js/boot/url-s.mjs");
+    const docBoot = docBootFromSearch();
+    if (docBoot) {
+      const { importAppEntry } = await import(MODULE_LOADER);
+      const mod = await importAppEntry("js/boot/doc-viewer.ts", Babel);
+      await mod.runDocViewer(docBoot);
+      return;
+    }
+
     const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(BOOT_HELPER);
     const { importAppEntry } = await import(MODULE_LOADER);
 
