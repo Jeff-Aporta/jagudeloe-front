@@ -1,0 +1,23 @@
+/* AppShell jagudeloe — tabs y nav con glow neon. */
+
+html[data-mui-color-scheme="dark"] .isa-layout-root > header.MuiAppBar-root .MuiTab-root.Mui-selected {
+  color: #63b3ff;
+}
+
+html[data-mui-color-scheme="light"] .isa-layout-root > header.MuiAppBar-root {
+  color: #0a2540;
+}
+
+html[data-mui-color-scheme="light"] .isa-view-frame > .MuiTabs-root {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 255, 0.92));
+  border-bottom: 1px solid rgba(30, 144, 255, 0.12);
+}
+
+html[data-mui-color-scheme="dark"] .isa-view-frame > .MuiTabs-root {
+  background: linear-gradient(180deg, rgba(11, 18, 32, 0.6), rgba(15, 28, 48, 0.35));
+  border-bottom: 1px solid rgba(30, 144, 255, 0.15);
+}
+
+.isa-view-frame > .MuiTabs-root .MuiTab-root.Mui-selected {
+  text-shadow: 0 0 12px rgba(30, 144, 255, 0.5);
+}
