@@ -34,7 +34,7 @@ function isLocalFront(): boolean {
 }
 
 function localDevHint(): string {
-  if (!isLocalFront() || !Config.isLocal()) return "";
+  if (!isLocalFront()) return "";
   return " Comprueba que el entorno local esté activo.";
 }
 
@@ -74,9 +74,11 @@ export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, 
   const { base } = Config;
   const method = (opts.method || "GET").toUpperCase();
   const headers: Record<string, string> = Object.assign({}, opts.headers || {});
+  if (Session.isLoggedIn()) {
+    Object.assign(headers, authHeader(), appHeader());
+  }
   if (method !== "GET" && method !== "HEAD") {
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
-    Object.assign(headers, authHeader(), appHeader());
   }
 
   const bases: string[] = [];
@@ -125,11 +127,25 @@ export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, 
   throw lastErr || new Error("No se pudo conectar con el servidor." + localDevHint());
 }
 
+const TICKET_REVISADO_KEY = /^tickets\.(.+)$/i;
+
+function mergeCheckRows(...lists: { revisadoKey: string; checked: boolean }[][]) {
+  const map: Record<string, boolean> = {};
+  for (const rows of lists) {
+    for (const r of rows || []) {
+      if (r?.revisadoKey) map[r.revisadoKey] = !!r.checked;
+    }
+  }
+  return map;
+}
+
 export async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {
   if (!force && revisadoCache[project]) return revisadoCache[project];
-  const d = await labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks");
-  const map: Record<string, boolean> = {};
-  (d.rows || []).forEach((r) => { map[r.revisadoKey] = !!r.checked; });
+  const [isa, tk] = await Promise.all([
+    labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks").catch(() => ({ rows: [] })),
+    labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/tk/" + project + "/checks").catch(() => ({ rows: [] })),
+  ]);
+  const map = mergeCheckRows(isa.rows || [], tk.rows || []);
   revisadoCache[project] = map;
   return map;
 }
@@ -142,6 +158,38 @@ export function invalidateRevisadoCache(project?: string): void {
 export const getSpaces = () => labFetch("/api/isa/spaces");
 export const ping = () => getSpaces();
 export const getBitacora = (project: string) => labFetch("/api/isa/" + project + "/bitacora");
+
+export function getBitacoraTodos(project: string, segmentId: string) {
+  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
+    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId),
+  );
+}
+
+export function createBitacoraTodo(project: string, segmentId: string, text: string) {
+  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
+    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId),
+    { method: "POST", body: { text } },
+  );
+}
+
+export function updateBitacoraTodo(
+  project: string,
+  segmentId: string,
+  todoId: string,
+  patch: { text?: string; checked?: boolean },
+) {
+  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
+    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId) + "/" + encodeURIComponent(todoId),
+    { method: "PATCH", body: patch },
+  );
+}
+
+export function deleteBitacoraTodo(project: string, segmentId: string, todoId: string) {
+  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
+    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId) + "/" + encodeURIComponent(todoId),
+    { method: "DELETE" },
+  );
+}
 
 export function getTickets(project: string, opts?: { estado?: string }) {
   let qs = "";
@@ -157,7 +205,18 @@ export const getTicket = (project: string, iticket: string) =>
 export const getChecks = (project: string) => labFetch("/api/isa/" + project + "/checks");
 
 export async function setCheck(project: string, revisadoKey: string, checked: boolean) {
-  const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
+  const key = String(revisadoKey || "").trim();
+  const ticketMatch = TICKET_REVISADO_KEY.exec(key);
+  if (ticketMatch) {
+    const iticket = ticketMatch[1]!;
+    const r = await labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket) + "/check", {
+      method: "PATCH",
+      body: { checked: !!checked },
+    });
+    invalidateRevisadoCache(project);
+    return r;
+  }
+  const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey: key, checked: !!checked } });
   invalidateRevisadoCache(project);
   return r;
 }

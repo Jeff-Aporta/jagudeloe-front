@@ -1,6 +1,6 @@
 /* ui/parts — componentes compartidos para las vistas jagudeloe. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
-import { UI } from "../core/platform.ts";
+import { UI, Toast } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
@@ -23,6 +23,19 @@ export function CheckDot(props) {
     <Tooltip title={p.title}>
       <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: p.bg, flexShrink: 0, display: "inline-block", boxShadow: state === "partial" ? "0 0 0 2px rgba(255,152,0,0.25)" : "none" }} aria-hidden />
     </Tooltip>
+  );
+}
+
+/** Dot de estado en navegación: color si hay checks; gris 60% si no, para alinear iconos. */
+export function NavStatusDot(props) {
+  const { Box } = getMaterialUI();
+  if (props.state) return <CheckDot state={props.state} />;
+  return (
+    <Box
+      component="span"
+      sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "rgba(158, 158, 158, 0.6)", flexShrink: 0, display: "inline-block" }}
+      aria-hidden
+    />
   );
 }
 
@@ -151,7 +164,9 @@ export function DateTree(props) {
     return (
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
         <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
-          {it.dotState && <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0 }}><CheckDot state={it.dotState} /></Box>}
+          <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
+            <NavStatusDot state={it.dotState} />
+          </Box>
           <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
           <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />
         </ListItemButton>
@@ -236,6 +251,11 @@ export function RevisadoCheck(props) {
     setCheck(props.project, key, next).then(() => {
       setChecked(next);
       try { window.dispatchEvent(new CustomEvent("isaj:checks-sync", { detail: { type: "checks.updated", project: props.project, revisadoKey: key, checked: next } })); } catch { /* ignore */ }
+    }).catch((e) => {
+      setChecked(!next);
+      const msg = e instanceof Error ? e.message : String(e);
+      try { window.dispatchEvent(new CustomEvent("isaj:checks-local", { detail: { revisadoKey: key } })); } catch { /* ignore */ }
+      Toast.show({ message: msg, severity: "error" });
     }).finally(() => setBusy(false));
   }
 
@@ -268,6 +288,7 @@ export function VideoBlock(props) {
   const summaryMd = v.summaryMd || v.summary || "";
   const transcript = v.transcript || {};
   const segments = Array.isArray(transcript.segments) ? transcript.segments : [];
+  const hasTranscript = segments.length > 0 || !!(transcript.plainText && String(transcript.plainText).trim());
   const meta = v.metadata || {};
   const [tab, setTab] = useState("resumen");
   const summaryHtml = summaryMd ? renderBitacoraMarkdown(summaryMd) : "";
@@ -324,7 +345,9 @@ export function VideoBlock(props) {
             : <Typography color="text.secondary">Sin resumen para este video.</Typography>
         )}
         {tab === "transcripcion" && (
-          segments.length
+          !loggedIn && !hasTranscript
+            ? <Alert severity="info">Inicia sesión para ver la transcripción y metadatos del video.</Alert>
+            : segments.length
             ? <Stack spacing={0.75}>{segments.map((seg, i) => (
               <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
                 <Chip

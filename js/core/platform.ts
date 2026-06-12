@@ -69,4 +69,6 @@ export const Realtime = {
 export const Config = {
   base: () => isa().Config.base(),
   apiUrl: (path: string) => isa().Config.apiUrl(path),
+  isLocal: () => isa().Config.isLocal?.() ?? false,
+  setLocal: (v: boolean) => isa().Config.setLocal?.(v),
 };
