@@ -3,7 +3,7 @@
   "use strict";
 
   const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@1dbb9fa/cdn/boot-helper.mjs?v=1dbb9fa";
+    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@d2ae9b7/cdn/boot-helper.mjs?v=d2ae9b7";
 
   const MODULE_LOADER = "./js/boot/module-graph.mjs";
 
@@ -26,7 +26,7 @@
     assertStack();
 
     // Pin explícito: jsDelivr @main puede servir auth.js obsoleto (/auth/token sin /api).
-    await import("https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@1dbb9fa/cdn/isa/js/index.js");
+    await import("https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@d2ae9b7/cdn/isa/js/index.js");
 
     await importAppEntry("js/core/isa-setup.ts", Babel);
 
