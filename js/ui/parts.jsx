@@ -4,6 +4,7 @@ import { UI } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
+import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };
 const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
@@ -248,18 +249,135 @@ export function RevisadoCheck(props) {
   );
 }
 
+function formatVideoMs(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return "??:??";
+  const h = Math.floor(n / 3_600_000);
+  const m = Math.floor((n % 3_600_000) / 60_000);
+  const s = Math.floor((n % 60_000) / 1000);
+  if (h > 0) return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  return m + ":" + String(s).padStart(2, "0");
+}
+
+export function VideoBlock(props) {
+  const { useState } = getReact();
+  const { Box, Stack, Typography, Chip, Tabs, Tab, Table, TableBody, TableRow, TableCell, Alert } = getMaterialUI();
+  const { Icon } = UI;
+  const v = props.video || {};
+  const summaryMd = v.summaryMd || v.summary || "";
+  const transcript = v.transcript || {};
+  const segments = Array.isArray(transcript.segments) ? transcript.segments : [];
+  const meta = v.metadata || {};
+  const [tab, setTab] = useState("resumen");
+  const summaryHtml = summaryMd ? renderBitacoraMarkdown(summaryMd) : "";
+
+  const metaRows = [
+    ["Título", v.title || meta.title || "—"],
+    ["Grabación", v.recordedAt || meta.recordedAt || "—"],
+    ["Duración", v.durationLabel || (v.durationSec != null ? formatVideoMs(v.durationSec * 1000) : "—")],
+    ["Canal / autor", v.author || meta.author || "—"],
+    ["Video ID", v.youtubeId ? String(v.youtubeId) : "—"],
+    ["Idioma transcripción", transcript.language || "—"],
+    ["Método", transcript.method || "—"],
+    ["Modelo STT", transcript.model || meta.sttModel || "—"],
+    ["Segmentos", segments.length ? String(segments.length) : (transcript.plainText ? "texto plano" : "—")],
+    ["Caracteres", transcript.plainText ? String(transcript.plainText.length) : "—"],
+    ["Participantes", Array.isArray(meta.participants) ? meta.participants.join(", ") : "—"],
+    ["Temas", Array.isArray(meta.topics) ? meta.topics.join(" · ") : "—"],
+  ];
+
+  return (
+    <Box sx={{ my: 1.5, border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" }}>
+        <Icon icon="mdi:video-outline" />
+        <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 120 }}>{props.title || v.title || "Reunión grabada"}</Typography>
+        {v.durationLabel && <Chip size="small" variant="outlined" label={v.durationLabel} />}
+        {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar video revisado (BITACORA_REVISADO)" showLabel />}
+      </Stack>
+      <Tabs value={tab} onChange={(_e, val) => setTab(val)} variant="scrollable" sx={{ px: 1, minHeight: 40, borderBottom: 1, borderColor: "divider" }}>
+        <Tab value="resumen" label="Resumen" icon={<Icon icon="mdi:text-box-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
+        <Tab value="transcripcion" label="Transcripción" icon={<Icon icon="mdi:subtitles-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
+        <Tab value="metadatos" label="Metadatos" icon={<Icon icon="mdi:information-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
+      </Tabs>
+      <Box sx={{ p: 2, maxHeight: 480, overflow: "auto" }}>
+        {tab === "resumen" && (
+          summaryHtml
+            ? <Box className="md-body" dangerouslySetInnerHTML={{ __html: summaryHtml }} />
+            : <Typography color="text.secondary">Sin resumen para este video.</Typography>
+        )}
+        {tab === "transcripcion" && (
+          segments.length
+            ? <Stack spacing={0.75}>{segments.map((seg, i) => (
+              <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: "monospace", flexShrink: 0, pt: 0.15 }}>{formatVideoMs(seg.startMs)}</Typography>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>{seg.text}</Typography>
+              </Stack>
+            ))}</Stack>
+            : transcript.plainText
+              ? <Typography variant="body2" component="pre" sx={{ whiteSpace: "pre-wrap", fontFamily: "inherit", m: 0 }}>{transcript.plainText}</Typography>
+              : <Alert severity="info">Transcripción no disponible.</Alert>
+        )}
+        {tab === "metadatos" && (
+          <Table size="small">
+            <TableBody>
+              {metaRows.map(([label, value]) => (
+                <TableRow key={label}>
+                  <TableCell sx={{ fontWeight: 600, width: "38%", verticalAlign: "top" }}>{label}</TableCell>
+                  <TableCell sx={{ whiteSpace: "pre-wrap" }}>{value}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 export function SqlBlock(props) {
+  const Shared = UI.SqlBlock;
+  const { canExecSql, execSqlBlockReason } = useSession();
+  const db = props.dbTarget || (props.project === "clientesis" ? "clientesis" : "paty");
+  const capId = db === "clientesis" ? "sql.exec.mssql.clientesis" : "sql.exec.isa";
+
+  if (Shared) {
+    return (
+      <Shared
+        title={props.title || "Consulta SQL"}
+        sql={props.sql}
+        dbTarget={db}
+        project={props.project}
+        capId={capId}
+        canRun={() => canExecSql(capId)}
+        blockReason={() => execSqlBlockReason(capId)}
+        onExecute={(payload) => execSql(props.project, payload)}
+        Icon={UI.Icon}
+        extraToolbar={
+          props.checkKey ? (
+            <RevisadoCheck
+              project={props.project}
+              revisadoKey={props.checkKey}
+              reloadKey={props.reloadKey}
+              label="Revisado"
+              hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)"
+              showLabel
+            />
+          ) : null
+        }
+      />
+    );
+  }
+
   const { useRef, useState, useEffect } = getReact();
   const { Box, Stack, Typography, Chip, Tooltip, Button, Alert } = getMaterialUI();
-  const { Icon } = UI;
   const ref = useRef(null);
   const cm = useRef(null);
   const [exec, setExec] = useState(false);
   const [res, setRes] = useState(null);
   const [err, setErr] = useState(null);
   const CM = window.CodeMirror;
-  const db = props.dbTarget || (props.project === "clientesis" ? "clientesis" : "paty");
-  const { canExecSql: allowed } = useSession();
+  const allowed = canExecSql(capId);
+  const tip = allowed ? ("Ejecutar en " + db) : execSqlBlockReason(capId);
 
   useEffect(() => {
     if (ref.current && CM && !cm.current) {
@@ -286,12 +404,12 @@ export function SqlBlock(props) {
   return (
     <Box sx={{ my: 1.5, border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" }}>
-        <Icon icon="mdi:database-search-outline" />
+        <UI.Icon icon="mdi:database-search-outline" />
         <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 120 }}>{props.title || "Consulta SQL"}</Typography>
         <Chip size="small" color={db === "clientesis" ? "secondary" : "primary"} variant="outlined" label={"BD: " + db} />
         {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)" showLabel />}
-        <Tooltip title={allowed ? ("Ejecutar en " + db) : "Inicia sesión con un perfil autorizado para ejecutar"}>
-          <span><Button size="small" variant="contained" disabled={!allowed || exec} startIcon={<Icon icon="mdi:play" />} onClick={run}>{exec ? "Ejecutando…" : "Ejecutar"}</Button></span>
+        <Tooltip title={tip}>
+          <span><Button size="small" variant="contained" disabled={!allowed || exec} onClick={run}>{exec ? "Ejecutando…" : "Ejecutar"}</Button></span>
         </Tooltip>
       </Stack>
       <Box ref={ref} className="sql-cm sql-cm-scroll" />

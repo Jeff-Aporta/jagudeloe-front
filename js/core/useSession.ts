@@ -25,15 +25,31 @@ export function useSession() {
   }, []);
 
   const loggedIn = Session.isLoggedIn();
-  const can = Session.can;
 
-  function canExecSql() {
-    if (!loggedIn) return false;
-    if (typeof can === "function") {
-      return can("ejecutar_sql") || can("ejecutar_mssql") || can("guardar_langlab");
-    }
-    return true;
+  function can(capId: string) {
+    return Session.can?.(capId) ?? false;
   }
 
-  return { loggedIn, username: Session.username(), can, canExecSql };
+  function blockReason(capId: string) {
+    return Session.blockReason?.(capId) ?? "Inicia sesión para usar este servicio";
+  }
+
+  /** Bitácora ISA — servicio exclusivo JAGUDELOE (sql.exec.isa). */
+  function canExecSql(capId = "sql.exec.isa") {
+    if (!loggedIn) return false;
+    return can(capId);
+  }
+
+  function execSqlBlockReason(capId = "sql.exec.isa") {
+    return blockReason(capId);
+  }
+
+  return {
+    loggedIn,
+    username: Session.username(),
+    can,
+    blockReason,
+    canExecSql,
+    execSqlBlockReason,
+  };
 }

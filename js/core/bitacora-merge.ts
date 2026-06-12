@@ -33,7 +33,7 @@ function daySubtitle(title: string): string {
 function remapSegmentIds(nodes: LayoutNode[] | undefined, space: string): LayoutNode[] {
   return (nodes || []).map((n) => {
     if (!n) return n;
-    if (n.type === "md" || n.type === "sql") {
+    if (n.type === "md" || n.type === "sql" || n.type === "video") {
       return { ...n, segmentId: space + "::" + n.segmentId, _space: space };
     }
     if (n.children?.length) {
@@ -57,7 +57,7 @@ function extractDaysFromLayout(layout: { nodes?: LayoutNode[] }, space: string):
     (nodes || []).forEach((n) => {
       if (!n) return;
       const m = reDate.exec(n.title || "");
-      const isLeaf = n.type === "md" || n.type === "sql" || n.type === "widget";
+      const isLeaf = n.type === "md" || n.type === "sql" || n.type === "widget" || n.type === "video";
       const isDay = n.type === "day" || (!!m && !isLeaf && !!(n.children && n.children.length));
       if (isDay) {
         const date = m ? m[1] : "";

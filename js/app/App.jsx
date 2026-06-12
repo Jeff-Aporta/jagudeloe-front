@@ -35,9 +35,9 @@ function TabLabel({ icon, label }) {
 }
 
 export function App() {
-  const { useState, useEffect, useRef } = getReact();
+  const { useState, useEffect, useRef, Fragment } = getReact();
   const { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Tabs, Tab, Tooltip, IconButton } = getMaterialUI();
-  const { Icon, ThemeSwitch } = UI;
+  const { Icon, ThemeSwitch, FeedbackProvider } = UI;
   const { show: toastShow } = Toast;
   const { theme, mode, toggle } = useThemeMode();
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
@@ -86,9 +86,12 @@ export function App() {
     return null;
   }
 
+  const Provider = FeedbackProvider || Fragment;
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Provider>
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
         <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
           <Toolbar variant="dense" sx={{ gap: 1, minHeight: 52 }}>
@@ -115,6 +118,7 @@ export function App() {
         </AppBar>
         <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{renderView()}</Box>
       </Box>
+      </Provider>
     </ThemeProvider>
   );
 }

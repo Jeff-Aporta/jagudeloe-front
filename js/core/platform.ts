@@ -43,12 +43,23 @@ export const Session = {
   appId: () => sessionApi().appId?.() ?? window.ISAJ?.APP_ID ?? null,
   login: (u: string, p: string) => sessionApi().login(u, p),
   logout: () => sessionApi().logout(),
+  refreshProfile: () => sessionApi().refreshProfile?.(),
+  capabilities: () => sessionApi().capabilities?.() ?? [],
+  can: (cap: string) => sessionApi().can?.(cap) ?? false,
+  blockReason: (cap: string) => sessionApi().blockReason?.(cap) ?? "Inicia sesión para usar este servicio",
   get EVENT() { return sessionApi().EVENT; },
-  can: (perm: string) => isa().Session?.can?.(perm),
 };
 
 export const Toast = {
-  show: (opts: { message: string; severity?: string; durationMs?: number }) => isa().Toast?.show?.(opts),
+  show: (opts: { message: string; severity?: string; durationMs?: number; title?: string }) =>
+    isa().Toast?.show?.(opts) ?? isa().Feedback?.toast?.show?.({ message: opts.message, severity: opts.severity, durationMs: opts.durationMs, title: opts.title }),
+};
+
+export const Feedback = {
+  get toast() { return isa().Feedback?.toast; },
+  get process() { return isa().Feedback?.process; },
+  runProcess: (opts: Record<string, unknown>) => isa().Feedback?.runProcess?.(opts),
+  confirm: (opts: Record<string, unknown>) => isa().Feedback?.confirm?.(opts),
 };
 
 export const Realtime = {

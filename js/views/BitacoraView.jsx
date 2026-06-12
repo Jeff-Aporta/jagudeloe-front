@@ -13,7 +13,7 @@ import {
   projectLabel,
 } from "../core/bitacora-merge.ts";
 import { isGeneralProject } from "../core/tk-spaces.ts";
-import { DateTree, SqlBlock } from "../ui/parts.jsx";
+import { DateTree, SqlBlock, VideoBlock } from "../ui/parts.jsx";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
@@ -27,6 +27,21 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
     const raw = seg.markdown || seg.md || seg.body || "";
     const html = renderBitacoraMarkdown(typeof raw === "string" ? raw : String(raw));
     return <Box key={key} sx={{ my: 1 }}><Box className="md-body" dangerouslySetInnerHTML={{ __html: html }} /></Box>;
+  }
+  if (node.type === "video") {
+    const s = segments[node.segmentId] || {};
+    const checkKey = node.checkKey || s.checkKey || s.revisadoKey;
+    return (
+      <VideoBlock
+        key={key}
+        video={s}
+        title={node.title || s.title}
+        project={segProject}
+        segmentId={node.segmentId}
+        checkKey={checkKey}
+        reloadKey={reloadKey}
+      />
+    );
   }
   if (node.type === "sql") {
     const s = segments[node.segmentId] || {};
@@ -56,7 +71,7 @@ function extractDaysFromSingle(data) {
     (nodes || []).forEach((n) => {
       if (!n) return;
       const m = reDate.exec(n.title || "");
-      const isLeaf = n.type === "md" || n.type === "sql" || n.type === "widget";
+      const isLeaf = n.type === "md" || n.type === "sql" || n.type === "widget" || n.type === "video";
       const isDay = n.type === "day" || (!!m && !isLeaf && !!(n.children && n.children.length));
       if (isDay) {
         const date = m ? m[1] : "";
