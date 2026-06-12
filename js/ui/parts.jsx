@@ -327,8 +327,13 @@ export function VideoBlock(props) {
           segments.length
             ? <Stack spacing={0.75}>{segments.map((seg, i) => (
               <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: "monospace", flexShrink: 0, pt: 0.15 }}>{formatVideoMs(seg.startMs)}</Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>{seg.text}</Typography>
+                <Chip
+                  size="small"
+                  label={formatVideoMs(seg.startMs)}
+                  variant="outlined"
+                  sx={{ fontFamily: "monospace", flexShrink: 0, height: 24, fontSize: "0.75rem" }}
+                />
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", pt: 0.15 }}>{seg.text}</Typography>
               </Stack>
             ))}</Stack>
             : transcript.plainText
