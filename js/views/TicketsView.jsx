@@ -2,13 +2,17 @@
  * El HTML del ticket se genera en el front (ui/tkHtml.ts) a partir del JSON del backend. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI } from "../core/platform.ts";
-import { merge, boot } from "../core/urlState.ts";
+import { merge, boot, subscribe } from "../core/urlState.ts";
+import { resolveDocDriver } from "../core/doc-driver.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
-import { buildDocViewUrl } from "../core/doc-view-url.ts";
+import { buildDocEmailUrl, buildDocWebUrl } from "../core/doc-view-url.ts";
+import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";
+import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
+import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsView } from "./TicketMetricsView.jsx";
 
 const ESTADO_COLOR = { abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error" };
@@ -30,11 +34,36 @@ function dateOf(t) {
   return "";
 }
 
-function revisadoKeyOf(tk, iticket) { return String(tk.revisadoKey || tk.REVISADOKEY || ("tickets." + iticket)); }
+function revisadoKeyOf(tk, iticket) {
+  const ctx = (tk.contexts || [])[0] || {};
+  return String(tk.revisadoKey || tk.REVISADOKEY || ctx.revisadoKey || ctx.REVISADOKEY || ("tickets." + iticket));
+}
+
+function CopyDocLinkButton({ space, iticket, driver }) {
+  const { useState } = getReact();
+  const { Tooltip, IconButton } = getMaterialUI();
+  const { Icon } = UI;
+  const [done, setDone] = useState(false);
+  if (!space || !iticket) return null;
+  const url = driver === "jsx" ? buildDocWebUrl(space, iticket) : buildDocEmailUrl(space, iticket);
+  const tip = driver === "jsx" ? "Copiar enlace web (JSX)" : "Copiar enlace HTML (correo)";
+  function copy() {
+    navigator.clipboard.writeText(url);
+    setDone(true);
+    setTimeout(() => setDone(false), 1500);
+  }
+  return (
+    <Tooltip title={done ? "Enlace copiado" : tip}>
+      <IconButton size="small" onClick={copy} aria-label={tip}>
+        <Icon icon={done ? "mdi:check" : "mdi:link-variant"} size={20} />
+      </IconButton>
+    </Tooltip>
+  );
+}
 
 function CopyHtmlButton({ tk }) {
   const { useState } = getReact();
-  const { Tooltip, Button } = getMaterialUI();
+  const { Tooltip, IconButton } = getMaterialUI();
   const { Icon } = UI;
   const [done, setDone] = useState(false);
   if (!tk) return null;
@@ -44,39 +73,49 @@ function CopyHtmlButton({ tk }) {
     setTimeout(() => setDone(false), 1500);
   }
   return (
-    <Tooltip title={done ? "Copiado" : "Copiar HTML para correo"}>
-      <Button size="small" variant="outlined" startIcon={<Icon icon={done ? "mdi:check" : "mdi:email-outline"} />} onClick={copy}>
-        {done ? "HTML copiado" : "Copiar HTML"}
-      </Button>
+    <Tooltip title={done ? "HTML copiado" : "Copiar HTML para correo"}>
+      <IconButton size="small" onClick={copy} aria-label="Copiar HTML para correo">
+        <Icon icon={done ? "mdi:check" : "mdi:email-outline"} size={20} />
+      </IconButton>
     </Tooltip>
   );
 }
 
-function CopyDocLinkButton({ space, iticket }) {
-  const { useState } = getReact();
-  const { Tooltip, Button } = getMaterialUI();
+function DriverToggle({ driver, onChange }) {
+  const { ToggleButtonGroup, ToggleButton } = getMaterialUI();
   const { Icon } = UI;
-  const [done, setDone] = useState(false);
-  if (!space || !iticket) return null;
-  function copy() {
-    navigator.clipboard.writeText(buildDocViewUrl(space, iticket));
-    setDone(true);
-    setTimeout(() => setDone(false), 1500);
-  }
   return (
-    <Tooltip title={done ? "Enlace copiado" : "Copiar enlace de solo documento (sin navegación)"}>
-      <Button size="small" variant="outlined" startIcon={<Icon icon={done ? "mdi:check" : "mdi:link-variant"} />} onClick={copy}>
-        {done ? "Enlace copiado" : "Copiar enlace doc"}
-      </Button>
-    </Tooltip>
+    <ToggleButtonGroup size="small" exclusive value={driver} onChange={(_e, v) => v && onChange(v)} aria-label="Driver de documento">
+      <ToggleButton value="jsx" title="Web — presentación moderna">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Icon icon="mdi:web" size={16} />
+          <span>Web</span>
+        </span>
+      </ToggleButton>
+      <ToggleButton value="html" title="HTML — para correo">
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Icon icon="mdi:email-outline" size={16} />
+          <span>HTML</span>
+        </span>
+      </ToggleButton>
+    </ToggleButtonGroup>
   );
 }
 
 function TicketDetail(props) {
-  const { useState, useEffect } = getReact();
-  const { Stack, Typography, Alert, CircularProgress, Chip, Box } = getMaterialUI();
+  const { useState, useEffect, useRef } = getReact();
+  const { Stack, Typography, Alert, CircularProgress, Chip, Box, useTheme } = getMaterialUI();
   const { Loading, ErrorBox } = UI;
   const [state, setState] = useState({ loading: true, error: null, tk: null });
+  const [driver, setDriver] = useState(() => resolveDocDriver(boot));
+  const htmlRef = useRef(null);
+  const theme = useTheme();
+
+  useEffect(() => subscribe((s) => setDriver(resolveDocDriver(s))), []);
+
+  function onDriverChange(v) {
+    merge({ driver: v });
+  }
 
   useEffect(() => {
     let alive = true;
@@ -87,13 +126,19 @@ function TicketDetail(props) {
     return () => { alive = false; };
   }, [props.project, props.iticket, props.reloadKey]);
 
+  useEffect(() => {
+    if (state.loading || driver !== "html" || !htmlRef.current || !state.tk) return;
+    hydrateTkCodeBlocks(htmlRef.current, theme.palette.mode);
+    refreshTkCodeThemes(htmlRef.current, theme.palette.mode);
+  }, [driver, state.loading, state.tk, theme.palette.mode]);
+
   if (state.loading) return Loading ? <Loading label="Cargando ticket…" /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
 
   const tk = state.tk || {};
+  const html = renderTicketViewHtml(tk);
   const rKey = revisadoKeyOf(tk, props.iticket);
   const tkSpace = String(tk.space || props.project).toLowerCase();
-  const html = renderTicketViewHtml(tk);
 
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
@@ -104,14 +149,25 @@ function TicketDetail(props) {
         {tk.estado && <Chip size="small" color={ESTADO_COLOR[String(tk.estado)] || "default"} label={String(tk.estado)} />}
         {tk.tiempoTotalMinutos != null && <Chip size="small" variant="outlined" label={"Total " + String(tk.tiempoTotalMinutos) + " min"} />}
         <Box sx={{ flex: 1 }} />
-        <CopyDocLinkButton space={tkSpace} iticket={props.iticket} />
-        <CopyHtmlButton tk={tk} />
+        <DriverToggle driver={driver} onChange={onDriverChange} />
+        <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} />
+        {driver === "html" && <CopyHtmlButton tk={tk} />}
       </Stack>
-      <Box
-        className="tk-content"
-        sx={{ flex: 1, minHeight: 0, overflow: "auto", bgcolor: "#eef2f7", "& a": { wordBreak: "break-word" } }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      {driver === "jsx" ? (
+        <Box
+          className="tk-doc-web-surface"
+          sx={tkDocSurfaceSx()}
+        >
+          <TicketDocWebView tk={tk} />
+        </Box>
+      ) : (
+        <Box
+          ref={htmlRef}
+          className="tk-content"
+          sx={{ flex: 1, minHeight: 0, overflow: "auto", bgcolor: "#eef2f7", "& a": { wordBreak: "break-word" } }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )}
     </Stack>
   );
 }
