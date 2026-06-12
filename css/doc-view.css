@@ -1,15 +1,116 @@
-/* Vista documento (?s → view:doc) — sin shell de la app. */
+/* Vista documento (?s → view:doc) — sin shell; scroll en body (override base.css ISA). */
 html.tk-doc-mode,
 body.tk-doc-mode {
   margin: 0;
+  height: auto !important;
   min-height: 100%;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+html.tk-doc-html,
+body.tk-doc-html {
   background: #eef2f7;
 }
 
+html.tk-doc-web,
+body.tk-doc-web {
+  background: #f0f6ff;
+}
+
+html[data-mui-color-scheme="dark"].tk-doc-web,
+html[data-mui-color-scheme="dark"] body.tk-doc-web,
+body[data-mui-color-scheme="dark"].tk-doc-web {
+  background: #0b1220;
+}
+
+html.tk-doc-mode #root,
+body.tk-doc-mode #root,
 #root.tk-doc-view {
+  display: block !important;
+  height: auto !important;
   min-height: 100vh;
+  overflow: visible !important;
+  flex: none !important;
 }
 
 #root.tk-doc-view a {
   word-break: break-word;
+}
+/* FAB copiar HTML (driver html full-page) */
+.tk-doc-fab {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1200;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(10, 37, 64, 0.12);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tk-doc-fab:hover {
+  background: #f4f8ff;
+}
+
+/* CodeMirror en doc full-page: sin scroll interno; scroll solo en body */
+#root.tk-doc-html .tk-code-cm.sql-cm-scroll,
+#root.tk-doc-html .tk-code-cm,
+.tk-content .tk-code-cm {
+  max-height: none;
+  overflow: visible;
+}
+
+#root.tk-doc-html .tk-code-cm .CodeMirror,
+.tk-content .tk-code-cm .CodeMirror {
+  font-size: 12px;
+  border-radius: 0 0 6px 6px;
+  max-width: 100%;
+}
+
+#root.tk-doc-html .tk-code-cm .CodeMirror-scroll,
+.tk-content .tk-code-cm .CodeMirror-scroll {
+  max-height: none;
+  overflow: visible !important;
+}
+
+/* Driver JSX — inline code y enlaces sutiles (claro / oscuro) */
+.tk-doc-markdown .tk-inline-code {
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.88em;
+  font-weight: 500;
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+  background: rgba(30, 144, 255, 0.1);
+  border: 1px solid rgba(30, 144, 255, 0.18);
+  color: inherit;
+  white-space: break-spaces;
+}
+
+.tk-doc-markdown .tk-inline-link {
+  color: #1e90ff;
+  text-decoration: none;
+}
+
+.tk-doc-markdown .tk-inline-link:hover {
+  text-decoration: underline;
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code,
+body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-link,
+body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-link {
+  color: #7ec8ff;
 }
