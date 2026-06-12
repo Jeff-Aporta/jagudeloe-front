@@ -1,4 +1,5 @@
 /** Monta CodeMirror en bloques `.tk-code-wrap` generados por el driver HTML. */
+import { readStoredThemeMode } from "../core/theme-mode.ts";
 
 function cmMode(lang: string): string | { name: string; json?: boolean } {
   const l = lang.toLowerCase();
@@ -9,7 +10,7 @@ function cmMode(lang: string): string | { name: string; json?: boolean } {
 
 type CmGlobal = Window & { CodeMirror?: { (el: HTMLElement, opts: Record<string, unknown>): { setOption: (k: string, v: unknown) => void; refresh: () => void } } };
 
-export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = "light"): void {
+export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = readStoredThemeMode()): void {
   const CM = (window as CmGlobal).CodeMirror;
   if (!CM) return;
   const theme = paletteMode === "dark" ? "dracula" : "default";
