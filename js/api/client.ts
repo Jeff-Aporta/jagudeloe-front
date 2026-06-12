@@ -3,6 +3,7 @@
  */
 
 import { Session, Config } from "../core/platform.ts";
+import { spacesFor } from "../core/tk-spaces.ts";
 
 interface FetchOpts {
   method?: string;
@@ -139,13 +140,24 @@ function mergeCheckRows(...lists: { revisadoKey: string; checked: boolean }[][])
   return map;
 }
 
+function invalidateRevisadoCacheFor(project: string): void {
+  invalidateRevisadoCache(project);
+  if (project === "general") {
+    for (const s of spacesFor("general")) invalidateRevisadoCache(s);
+  }
+}
+
 export async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {
   if (!force && revisadoCache[project]) return revisadoCache[project];
-  const [isa, tk] = await Promise.all([
-    labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks").catch(() => ({ rows: [] })),
-    labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/tk/" + project + "/checks").catch(() => ({ rows: [] })),
+  const spaces = spacesFor(project);
+  const isaProject = spaces[0] || project;
+  const [isa, ...tkLists] = await Promise.all([
+    labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + isaProject + "/checks").catch(() => ({ rows: [] })),
+    ...spaces.map((s) =>
+      labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/tk/" + s + "/checks").catch(() => ({ rows: [] })),
+    ),
   ]);
-  const map = mergeCheckRows(isa.rows || [], tk.rows || []);
+  const map = mergeCheckRows(isa.rows || [], ...tkLists.map((t) => t.rows || []));
   revisadoCache[project] = map;
   return map;
 }
@@ -206,18 +218,43 @@ export const getChecks = (project: string) => labFetch("/api/isa/" + project + "
 
 export async function setCheck(project: string, revisadoKey: string, checked: boolean) {
   const key = String(revisadoKey || "").trim();
+  if (!key) throw new Error("revisadoKey requerido");
+  const body = { revisadoKey: key, checked: !!checked };
+  const isaProject = project === "general" ? (spacesFor("general")[0] || "patyia") : project;
+
+  async function postIsaCheck() {
+    return labFetch("/api/isa/" + isaProject + "/checks", { method: "POST", body });
+  }
+
   const ticketMatch = TICKET_REVISADO_KEY.exec(key);
   if (ticketMatch) {
     const iticket = ticketMatch[1]!;
-    const r = await labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket) + "/check", {
-      method: "PATCH",
-      body: { checked: !!checked },
-    });
-    invalidateRevisadoCache(project);
-    return r;
+    const trySpaces = spacesFor(project);
+    let lastErr: ApiError | null = null;
+    for (const sp of trySpaces) {
+      try {
+        const r = await labFetch("/api/tk/" + sp + "/tickets/" + encodeURIComponent(iticket) + "/check", {
+          method: "PATCH",
+          body: { checked: !!checked },
+        });
+        invalidateRevisadoCacheFor(project);
+        return r;
+      } catch (e) {
+        lastErr = e instanceof Error ? (e as ApiError) : (new Error(String(e)) as ApiError);
+        if (lastErr.status !== 404) throw lastErr;
+      }
+    }
+    try {
+      const r = await postIsaCheck();
+      invalidateRevisadoCacheFor(project);
+      return r;
+    } catch (e) {
+      throw lastErr || e;
+    }
   }
-  const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey: key, checked: !!checked } });
-  invalidateRevisadoCache(project);
+
+  const r = await postIsaCheck();
+  invalidateRevisadoCacheFor(project);
   return r;
 }
 
