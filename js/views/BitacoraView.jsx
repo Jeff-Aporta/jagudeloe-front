@@ -32,7 +32,20 @@ function resolveSelFromUrl(days) {
   return days[0]?.id ?? null;
 }
 
-function renderNode(node, segments, project, key, depth, reloadKey) {
+function countVideoLeaves(nodes) {
+  let n = 0;
+  const walk = (list) => {
+    (list || []).forEach((node) => {
+      if (!node) return;
+      if (node.type === "video") n += 1;
+      else if (node.children?.length) walk(node.children);
+    });
+  };
+  walk(nodes);
+  return n;
+}
+
+function renderNode(node, segments, project, key, depth, reloadKey, fillHeight) {
   const { Box, Typography } = getMaterialUI();
   if (!node) return null;
   const segProject = node._space || segmentProject(node.segmentId, project);
@@ -54,6 +67,7 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
         segmentId={node.segmentId}
         checkKey={checkKey}
         reloadKey={reloadKey}
+        fillHeight={fillHeight}
       />
     );
   }
@@ -65,12 +79,25 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
     );
   }
   if (node.type === "day" || node.type === "group" || node.type === "section") {
+    const stretch = fillHeight;
     return (
-      <Box key={key} sx={{ my: 1.5, pl: depth ? 1.5 : 0, borderLeft: depth ? 2 : 0, borderColor: "divider" }}>
+      <Box
+        key={key}
+        sx={{
+          my: stretch ? 0 : 1.5,
+          pl: depth ? 1.5 : 0,
+          borderLeft: depth ? 2 : 0,
+          borderColor: "divider",
+          flex: stretch ? 1 : undefined,
+          minHeight: stretch ? 0 : undefined,
+          display: stretch ? "flex" : undefined,
+          flexDirection: stretch ? "column" : undefined,
+        }}
+      >
         {node.title && (
-          <Typography variant={depth >= 1 ? "subtitle2" : "subtitle1"} sx={Object.assign({ color: "primary.main", fontWeight: 600, mb: 0.5 }, clamp2)}>{node.title}</Typography>
+          <Typography variant={depth >= 1 ? "subtitle2" : "subtitle1"} sx={Object.assign({ color: "primary.main", fontWeight: 600, mb: 0.5, flexShrink: 0 }, clamp2)}>{node.title}</Typography>
         )}
-        {(node.children || []).map((c, i) => renderNode(c, segments, project, key + "-" + i, depth + 1, reloadKey))}
+        {(node.children || []).map((c, i) => renderNode(c, segments, project, key + "-" + i, depth + 1, reloadKey, fillHeight))}
       </Box>
     );
   }
@@ -184,6 +211,7 @@ export function BitacoraView(props) {
   }
 
   const current = days.find((d) => d.id === selected) || days[0];
+  const stretchVideo = countVideoLeaves(current.children) === 1;
   const treeItems = days.map((d) => ({
     id: d.id,
     date: d.date,
@@ -196,17 +224,19 @@ export function BitacoraView(props) {
       <Box sx={{ width: 230, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "auto", display: { xs: "none", md: "block" } }}>
         <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="day" />
       </Box>
-      <Box sx={{ flex: 1, minWidth: 0, overflow: "auto", p: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ mb: 2 }}>
+      <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
           <Icon icon="mdi:calendar-text-outline" size={22} style={{ flexShrink: 0, marginTop: 2 }} />
           <Typography variant="h6" sx={clamp2}>{current.title}</Typography>
           {isGeneralProject(props.project) && current.spaces?.length > 1 && current.spaces.map((s) => (
             <Chip key={s} size="small" variant="outlined" label={projectLabel(s)} />
           ))}
         </Stack>
-        {current.children.length
-          ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey))
-          : <Typography color="text.secondary">Sin contenido para este día.</Typography>}
+        <Box sx={{ flex: 1, minHeight: 0, overflow: stretchVideo ? "hidden" : "auto", px: 2, pb: 2, display: "flex", flexDirection: "column" }}>
+          {current.children.length
+            ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey, stretchVideo))
+            : <Typography color="text.secondary">Sin contenido para este día.</Typography>}
+        </Box>
       </Box>
     </Box>
   );

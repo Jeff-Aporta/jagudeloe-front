@@ -286,20 +286,31 @@ export function VideoBlock(props) {
     ["Temas", Array.isArray(meta.topics) ? meta.topics.join(" · ") : "—"],
   ];
 
+  const fill = props.fillHeight === true;
   return (
-    <Box sx={{ my: 1.5, border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" }}>
+    <Box sx={{
+      my: fill ? 0 : 1.5,
+      border: 1,
+      borderColor: "divider",
+      borderRadius: 1,
+      overflow: "hidden",
+      display: fill ? "flex" : undefined,
+      flexDirection: fill ? "column" : undefined,
+      flex: fill ? 1 : undefined,
+      minHeight: fill ? 0 : undefined,
+    }}>
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
         <Icon icon="mdi:video-outline" />
         <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 120 }}>{props.title || v.title || "Reunión grabada"}</Typography>
         {v.durationLabel && <Chip size="small" variant="outlined" label={v.durationLabel} />}
         {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar video revisado (BITACORA_REVISADO)" showLabel />}
       </Stack>
-      <Tabs value={tab} onChange={(_e, val) => setTab(val)} variant="scrollable" sx={{ px: 1, minHeight: 40, borderBottom: 1, borderColor: "divider" }}>
+      <Tabs value={tab} onChange={(_e, val) => setTab(val)} variant="scrollable" sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
         <Tab value="resumen" label="Resumen" icon={<Icon icon="mdi:text-box-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
         <Tab value="transcripcion" label="Transcripción" icon={<Icon icon="mdi:subtitles-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
         <Tab value="metadatos" label="Metadatos" icon={<Icon icon="mdi:information-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
       </Tabs>
-      <Box sx={{ p: 2, maxHeight: 480, overflow: "auto" }}>
+      <Box sx={{ p: 2, overflow: "auto", flex: fill ? 1 : undefined, minHeight: fill ? 0 : undefined, maxHeight: fill ? undefined : 480 }}>
         {tab === "resumen" && (
           summaryHtml
             ? <Box className="md-body" dangerouslySetInnerHTML={{ __html: summaryHtml }} />
