@@ -381,41 +381,12 @@ export function VideoBlock(props) {
 }
 
 export function SqlBlock(props) {
-  const Shared = UI.SqlBlock;
   const { canExecSql, execSqlBlockReason } = useSession();
   const db = props.dbTarget || (props.project === "clientesis" ? "clientesis" : "paty");
   const capId = db === "clientesis" ? "sql.exec.mssql.clientesis" : "sql.exec.isa";
 
-  if (Shared) {
-    return (
-      <Shared
-        title={props.title || "Consulta SQL"}
-        sql={props.sql}
-        dbTarget={db}
-        project={props.project}
-        capId={capId}
-        canRun={() => canExecSql(capId)}
-        blockReason={() => execSqlBlockReason(capId)}
-        onExecute={(payload) => execSql(props.project, payload)}
-        Icon={UI.Icon}
-        extraToolbar={
-          props.checkKey ? (
-            <RevisadoCheck
-              project={props.project}
-              revisadoKey={props.checkKey}
-              reloadKey={props.reloadKey}
-              label="Revisado"
-              hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)"
-              showLabel
-            />
-          ) : null
-        }
-      />
-    );
-  }
-
   const { useRef, useState, useEffect } = getReact();
-  const { Box, Stack, Typography, Chip, Tooltip, Button, Alert } = getMaterialUI();
+  const { Box, Stack, Typography, Chip, Tooltip, IconButton, CircularProgress, Alert } = getMaterialUI();
   const ref = useRef(null);
   const cm = useRef(null);
   const [exec, setExec] = useState(false);
@@ -455,7 +426,11 @@ export function SqlBlock(props) {
         <Chip size="small" color={db === "clientesis" ? "secondary" : "primary"} variant="outlined" label={"BD: " + db} />
         {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)" showLabel />}
         <Tooltip title={tip}>
-          <span><Button size="small" variant="contained" disabled={!allowed || exec} onClick={run}>{exec ? "Ejecutando…" : "Ejecutar"}</Button></span>
+          <span>
+            <IconButton size="small" color="primary" disabled={!allowed || exec} onClick={run} aria-label={tip} sx={{ bgcolor: "primary.main", color: "#fff", "&:hover": { opacity: 0.92 } }}>
+              {exec ? <CircularProgress size={18} color="inherit" /> : <UI.Icon icon="mdi:play-circle-outline" size={22} />}
+            </IconButton>
+          </span>
         </Tooltip>
       </Stack>
       <Box ref={ref} className="sql-cm sql-cm-scroll" />
