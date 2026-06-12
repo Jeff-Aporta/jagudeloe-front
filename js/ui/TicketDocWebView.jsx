@@ -12,7 +12,7 @@ import { UI } from "../core/platform.ts";
 
 import { inlineMdWeb } from "../ui/tkHtml.ts";
 
-import { formatDocumentadoPor, formatTiqueteCreadoPor } from "../ui/tkHeroAuthors.ts";
+import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "../ui/tkHeroAuthors.ts";
 
 import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 
@@ -758,29 +758,45 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
   const creadoPor = formatTiqueteCreadoPor(tk.solicitante);
 
-  const documentadoPor = formatDocumentadoPor(tk);
+  const documentador = resolveDocumentadorBlock(tk);
 
   return (
 
     <Box
 
-      sx={{
+      sx={(t) => {
 
-        position: "relative",
+        const dark = t.palette.mode === "dark";
 
-        overflow: "hidden",
+        return {
 
-        borderRadius: { xs: 2.5, md: 3 },
+          position: "relative",
 
-        mb: 3,
+          overflow: "hidden",
 
-        p: { xs: 2.5, sm: 3, md: 3.5 },
+          borderRadius: { xs: 2.5, md: 3 },
 
-        color: "#fff",
+          mb: 3,
 
-        background: "linear-gradient(135deg, #0b2e4e 0%, #1e5a8a 38%, #1e90ff 72%, #6366f1 100%)",
+          p: { xs: 2.5, sm: 3, md: 3.5 },
 
-        boxShadow: "0 20px 60px rgba(30,144,255,0.25)",
+          color: dark ? "#fff" : t.palette.text.primary,
+
+          background: dark
+
+            ? "linear-gradient(135deg, #0b2e4e 0%, #1e5a8a 38%, #1e90ff 72%, #6366f1 100%)"
+
+            : "linear-gradient(135deg, #dbeafe 0%, #e8f4ff 38%, #f0f7ff 72%, #ffffff 100%)",
+
+          border: dark ? "none" : `1px solid ${t.palette.divider}`,
+
+          boxShadow: dark
+
+            ? "0 20px 60px rgba(30,144,255,0.25)"
+
+            : "0 8px 32px rgba(30,144,255,0.12)",
+
+        };
 
       }}
 
@@ -788,7 +804,7 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
       <Box
 
-        sx={{
+        sx={(t) => ({
 
           position: "absolute",
 
@@ -802,17 +818,19 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
           borderRadius: "50%",
 
-          background: "rgba(255,255,255,0.12)",
+          background:
+
+            t.palette.mode === "dark" ? "rgba(255,255,255,0.12)" : "rgba(30,144,255,0.1)",
 
           filter: "blur(2px)",
 
-        }}
+        })}
 
       />
 
       <Box
 
-        sx={{
+        sx={(t) => ({
 
           position: "absolute",
 
@@ -826,11 +844,13 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
           borderRadius: "50%",
 
-          background: "rgba(99,102,241,0.35)",
+          background:
+
+            t.palette.mode === "dark" ? "rgba(99,102,241,0.35)" : "rgba(99,102,241,0.14)",
 
           filter: "blur(4px)",
 
-        }}
+        })}
 
       />
 
@@ -841,18 +861,25 @@ function HeroHeader({ tk, space, iticket, badges }) {
             <Chip
               size="small"
               label={iticket}
-              sx={{ bgcolor: "#fff", color: "#0b2e4e", fontWeight: 800, fontSize: "0.8rem", mr: 0.5 }}
+              sx={(t) => ({
+                bgcolor: t.palette.mode === "dark" ? "#fff" : t.palette.primary.main,
+                color: t.palette.mode === "dark" ? "#0b2e4e" : "#fff",
+                fontWeight: 800,
+                fontSize: "0.8rem",
+                mr: 0.5,
+              })}
             />
           )}
           <Typography
             variant="caption"
-            sx={{
+            sx={(t) => ({
               opacity: 0.85,
               letterSpacing: 1.2,
               textTransform: "uppercase",
               fontWeight: 600,
               pl: 0.5,
-            }}
+              color: t.palette.mode === "dark" ? "inherit" : t.palette.text.secondary,
+            })}
           >
             {space}
           </Typography>
@@ -882,7 +909,7 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
         {creadoPor && (
 
-          <Typography variant="body1" sx={{ opacity: 0.9, maxWidth: 560 }}>
+          <Typography variant="body1" sx={(t) => ({ opacity: 0.9, maxWidth: 560, color: t.palette.mode === "dark" ? "inherit" : t.palette.text.primary })}>
 
             {creadoPor}
 
@@ -890,13 +917,79 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
         )}
 
-        {documentadoPor && (
+        {documentador && (
 
-          <Typography variant="body2" sx={{ opacity: 0.85, maxWidth: 560 }}>
+          <Box sx={{ maxWidth: 560, mt: 0.25 }}>
 
-            {documentadoPor}
+            <Typography
 
-          </Typography>
+              component="small"
+
+              variant="caption"
+
+              sx={(t) => ({
+
+                display: "block",
+
+                opacity: 0.8,
+
+                lineHeight: 1.4,
+
+                color: t.palette.mode === "dark" ? "inherit" : t.palette.text.secondary,
+
+              })}
+
+            >
+
+              {documentador.label}
+
+            </Typography>
+
+            <Typography
+
+              variant="body2"
+
+              sx={(t) => ({
+
+                fontWeight: 700,
+
+                lineHeight: 1.45,
+
+                color: t.palette.mode === "dark" ? "inherit" : t.palette.text.primary,
+
+              })}
+
+            >
+
+              {documentador.nombre}
+
+            </Typography>
+
+            {documentador.cargo && (
+
+              <Typography
+
+                variant="body2"
+
+                sx={(t) => ({
+
+                  lineHeight: 1.45,
+
+                  opacity: 0.9,
+
+                  color: t.palette.mode === "dark" ? "inherit" : t.palette.text.secondary,
+
+                })}
+
+              >
+
+                {documentador.cargo}
+
+              </Typography>
+
+            )}
+
+          </Box>
 
         )}
 
@@ -914,17 +1007,21 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
                 label={b.payload?.label ?? b.payload?.text ?? ""}
 
-                sx={{
+                sx={(t) => ({
 
-                  bgcolor: "rgba(255,255,255,0.15)",
+                  bgcolor:
 
-                  color: "#fff",
+                    t.palette.mode === "dark" ? "rgba(255,255,255,0.15)" : "rgba(30,144,255,0.1)",
 
-                  borderColor: "rgba(255,255,255,0.35)",
+                  color: t.palette.mode === "dark" ? "#fff" : t.palette.primary.dark,
+
+                  borderColor:
+
+                    t.palette.mode === "dark" ? "rgba(255,255,255,0.35)" : "rgba(30,144,255,0.35)",
 
                   backdropFilter: "blur(8px)",
 
-                }}
+                })}
 
                 variant="outlined"
 
