@@ -44,7 +44,7 @@ Icono: `mdi:notebook-outline` · tema `#37474f` · [`JeffAppMeta`](https://githu
 ```bash
 cd frontend
 npx serve .
-# main-orchestrator en :8780
+# TargetSwitch → modo local si desarrollas backends en wrangler dev
 ```
 
 Sirva **desde la carpeta `frontend`** (no desde `apps/` ni con Vite en :5173 sin alias). El arranque carga `boot-helper` desde jsDelivr (`@1dbb9fa`); no requiere `/front-shared` local. Tras cambios en front-shared, recargue sin caché (Ctrl+Shift+R).
