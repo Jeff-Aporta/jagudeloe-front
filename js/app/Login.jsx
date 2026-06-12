@@ -7,12 +7,13 @@ function fmtExp(iso) { return iso ? fmtIso(iso) : ""; }
 
 export function LoginButton() {
   const { useState, useEffect } = getReact();
-  const { Stack, Tooltip, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert, TextField } = getMaterialUI();
+  const { Stack, Tooltip, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert, TextField, InputAdornment } = getMaterialUI();
   const { Icon } = UI;
   const { current, isLoggedIn, username, login, logout, EVENT } = Session;
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
   const [, setSess] = useState(current());
@@ -49,7 +50,7 @@ export function LoginButton() {
   return (
     <>
       <Button size="small" variant="outlined" color="inherit" startIcon={<Icon icon="mdi:login" />} onClick={() => setOpen(true)}>Iniciar sesión</Button>
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={open} onClose={() => { setOpen(false); setShowPass(false); }} maxWidth="xs" fullWidth>
         <DialogTitle>Iniciar sesión</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -57,7 +58,29 @@ export function LoginButton() {
           </Typography>
           {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
           <TextField label="Usuario" fullWidth size="small" sx={{ mb: 2 }} value={user} onChange={(e) => setUser(e.target.value)} />
-          <TextField label="Contraseña" type="password" fullWidth size="small" value={pass} onChange={(e) => setPass(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
+          <TextField
+            label="Contraseña"
+            type={showPass ? "text" : "password"}
+            fullWidth
+            size="small"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    edge="end"
+                    aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPass((v) => !v)}
+                  >
+                    <Icon icon={showPass ? "mdi:eye-off" : "mdi:eye"} size={20} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancelar</Button>
