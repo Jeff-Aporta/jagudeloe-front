@@ -1,165 +1,158 @@
 /*
  * api/client — cliente HTTP del Worker jagudeloe vía main-orchestrator.
- * GET = público (sin token). POST/PUT/DELETE = adjunta Authorization si hay sesión.
- * Rutas: /api/isa/{project}/{recurso}, /api/tk/…
  */
+
+import { Session, Config } from "../core/platform.ts";
 
 interface FetchOpts {
   method?: string;
   headers?: Record<string, string>;
   body?: unknown;
 }
+
 interface ApiError extends Error {
   status?: number;
   data?: unknown;
 }
 
-(function () {
-  "use strict";
+const FETCH_TIMEOUT_MS = 15000;
+const revisadoCache: Record<string, Record<string, boolean>> = {};
 
-  const FETCH_TIMEOUT_MS = 15000;
-  const revisadoCache: Record<string, Record<string, boolean>> = {};
+const LOCAL_DIRECT: { test: (p: string) => boolean; base: string }[] = [
+  { test: (p) => p.startsWith("/api/tk"), base: "http://127.0.0.1:8786" },
+  {
+    test: (p) =>
+      p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
+      || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
+    base: "http://127.0.0.1:8783",
+  },
+];
 
-  const LOCAL_DIRECT: { test: (p: string) => boolean; base: string }[] = [
-    { test: (p) => p.startsWith("/api/tk"), base: "http://127.0.0.1:8786" },
-    {
-      test: (p) =>
-        p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
-        || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
-      base: "http://127.0.0.1:8783",
-    },
-  ];
+function isLocalFront(): boolean {
+  const h = location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+}
 
-  function isLocalFront(): boolean {
-    const h = location.hostname;
-    return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+function localDevHint(): string {
+  if (!isLocalFront()) return "";
+  return " En local: main-orchestrator (:8780), jagudeloe (:8783) y jagudeloe-tks (:8786).";
+}
+
+function directBaseFor(path: string): string | null {
+  if (!isLocalFront()) return null;
+  for (const entry of LOCAL_DIRECT) {
+    if (entry.test(path)) return entry.base;
   }
+  return null;
+}
 
-  function localDevHint(): string {
-    if (!isLocalFront()) return "";
-    return " En local: main-orchestrator (:8780), jagudeloe (:8783) y jagudeloe-tks (:8786).";
-  }
-
-  function directBaseFor(path: string): string | null {
-    if (!isLocalFront()) return null;
-    for (let i = 0; i < LOCAL_DIRECT.length; i++) {
-      if (LOCAL_DIRECT[i].test(path)) return LOCAL_DIRECT[i].base;
+async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("La API tardó demasiado en responder." + localDevHint());
     }
-    return null;
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, baseOverride?: string): Promise<T> {
+  const { authHeader } = Session;
+  const { base } = Config;
+  const method = (opts.method || "GET").toUpperCase();
+  const headers: Record<string, string> = Object.assign({}, opts.headers || {});
+  if (method !== "GET" && method !== "HEAD") {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    Object.assign(headers, authHeader());
   }
 
-  async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Response> {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const bases: string[] = [];
+  if (baseOverride) bases.push(baseOverride.replace(/\/$/, ""));
+  else bases.push(base().replace(/\/$/, ""));
+
+  const direct = directBaseFor(path);
+  if (direct && bases.indexOf(direct) < 0) bases.push(direct);
+
+  let lastErr: ApiError | null = null;
+
+  for (let bi = 0; bi < bases.length; bi++) {
+    const url = bases[bi] + (path.charAt(0) === "/" ? path : "/" + path);
+    let res: Response;
     try {
-      return await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+      res = await fetchWithTimeout(url, {
+        method,
+        headers,
+        body: opts.body != null ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined,
+      });
     } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") {
-        throw new Error("La API tardó demasiado en responder." + localDevHint());
+      lastErr = e instanceof Error ? (e as ApiError) : new Error(String(e)) as ApiError;
+      if (bi < bases.length - 1) continue;
+      if (!lastErr.message.includes("conectar") && !lastErr.message.includes("tardó")) {
+        lastErr.message = "No se pudo conectar con la API." + localDevHint();
       }
-      throw e;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}, baseOverride?: string): Promise<T> {
-    const method = (opts.method || "GET").toUpperCase();
-    const headers: Record<string, string> = Object.assign({}, opts.headers || {});
-    if (method !== "GET" && method !== "HEAD") {
-      headers["Content-Type"] = headers["Content-Type"] || "application/json";
-      Object.assign(headers, window.ISAJ.Session.authHeader());
+      throw lastErr;
     }
 
-    const bases: string[] = [];
-    if (baseOverride) bases.push(baseOverride.replace(/\/$/, ""));
-    else bases.push(window.ISAJ.Config.base().replace(/\/$/, ""));
-
-    const direct = directBaseFor(path);
-    if (direct && bases.indexOf(direct) < 0) bases.push(direct);
-
-    let lastErr: ApiError | null = null;
-
-    for (let bi = 0; bi < bases.length; bi++) {
-      const url = bases[bi] + (path.charAt(0) === "/" ? path : "/" + path);
-      let res: Response;
-      try {
-        res = await fetchWithTimeout(url, {
-          method,
-          headers,
-          body: opts.body != null ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined,
-        });
-      } catch (e) {
-        lastErr = e instanceof Error ? (e as ApiError) : new Error(String(e)) as ApiError;
-        if (bi < bases.length - 1) continue;
-        if (!lastErr.message.includes("conectar") && !lastErr.message.includes("tardó")) {
-          lastErr.message = "No se pudo conectar con la API." + localDevHint();
-        }
-        throw lastErr;
-      }
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const errBody = data as { error?: string } | null;
-        let msg = (errBody && errBody.error) || ("HTTP " + res.status);
-        if (res.status === 401) msg = "Sesión requerida o expirada.";
-        if (res.status === 403) msg = "No tienes permiso para esta acción.";
-        if (res.status === 404) msg = "Endpoint no disponible (¿orquestador o jagudeloe desplegado?)." + localDevHint();
-        lastErr = new Error(msg) as ApiError;
-        lastErr.status = res.status; lastErr.data = data;
-        if (bi < bases.length - 1 && (res.status === 404 || res.status === 502 || res.status === 503)) continue;
-        throw lastErr;
-      }
-      return data as T;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const errBody = data as { error?: string } | null;
+      let msg = (errBody && errBody.error) || ("HTTP " + res.status);
+      if (res.status === 401) msg = "Sesión requerida o expirada.";
+      if (res.status === 403) msg = "No tienes permiso para esta acción.";
+      if (res.status === 404) msg = "Endpoint no disponible (¿orquestador o jagudeloe desplegado?)." + localDevHint();
+      lastErr = new Error(msg) as ApiError;
+      lastErr.status = res.status;
+      lastErr.data = data;
+      if (bi < bases.length - 1 && (res.status === 404 || res.status === 502 || res.status === 503)) continue;
+      throw lastErr;
     }
-
-    throw lastErr || new Error("No se pudo conectar con la API." + localDevHint());
+    return data as T;
   }
 
-  async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {
-    if (!force && revisadoCache[project]) return revisadoCache[project];
-    const d = await labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks");
-    const map: Record<string, boolean> = {};
-    (d.rows || []).forEach((r) => { map[r.revisadoKey] = !!r.checked; });
-    revisadoCache[project] = map;
-    return map;
-  }
+  throw lastErr || new Error("No se pudo conectar con la API." + localDevHint());
+}
 
-  function invalidateRevisadoCache(project?: string): void {
-    if (project) delete revisadoCache[project];
-    else Object.keys(revisadoCache).forEach((k) => { delete revisadoCache[k]; });
-  }
+export async function getRevisadoMap(project: string, force = false): Promise<Record<string, boolean>> {
+  if (!force && revisadoCache[project]) return revisadoCache[project];
+  const d = await labFetch<{ rows?: { revisadoKey: string; checked: boolean }[] }>("/api/isa/" + project + "/checks");
+  const map: Record<string, boolean> = {};
+  (d.rows || []).forEach((r) => { map[r.revisadoKey] = !!r.checked; });
+  revisadoCache[project] = map;
+  return map;
+}
 
-  const getSpaces = () => labFetch("/api/isa/spaces");
-  const ping = () => getSpaces();
+export function invalidateRevisadoCache(project?: string): void {
+  if (project) delete revisadoCache[project];
+  else Object.keys(revisadoCache).forEach((k) => { delete revisadoCache[k]; });
+}
 
-  const getBitacora = (project: string) => labFetch("/api/isa/" + project + "/bitacora");
+export const getSpaces = () => labFetch("/api/isa/spaces");
+export const ping = () => getSpaces();
+export const getBitacora = (project: string) => labFetch("/api/isa/" + project + "/bitacora");
 
-  const getTickets = (project: string, opts?: { estado?: string }) => {
-    let qs = "";
-    if (opts?.estado === "inactivo") qs = "?activo=false";
-    else if (opts?.estado === "activo") qs = "?activo=true";
-    else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
-    return labFetch("/api/tk/" + project + "/tickets" + qs);
-  };
+export function getTickets(project: string, opts?: { estado?: string }) {
+  let qs = "";
+  if (opts?.estado === "inactivo") qs = "?activo=false";
+  else if (opts?.estado === "activo") qs = "?activo=true";
+  else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
+  return labFetch("/api/tk/" + project + "/tickets" + qs);
+}
 
-  const getTicket = (project: string, iticket: string) =>
-    labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
+export const getTicket = (project: string, iticket: string) =>
+  labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
 
-  const getChecks = (project: string) => labFetch("/api/isa/" + project + "/checks");
+export const getChecks = (project: string) => labFetch("/api/isa/" + project + "/checks");
 
-  const setCheck = async (project: string, revisadoKey: string, checked: boolean) => {
-    const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
-    invalidateRevisadoCache(project);
-    return r;
-  };
+export async function setCheck(project: string, revisadoKey: string, checked: boolean) {
+  const r = await labFetch("/api/isa/" + project + "/checks", { method: "POST", body: { revisadoKey, checked: !!checked } });
+  invalidateRevisadoCache(project);
+  return r;
+}
 
-  const execSql = (project: string, payload: { sql: string; dbTarget?: string; segmentId?: string }) =>
-    labFetch("/api/isa/" + project + "/sql", { method: "POST", body: payload });
-
-  window.ISAJ = window.ISAJ || ({} as IsajNs);
-  window.ISAJ.Api = {
-    labFetch, ping, getSpaces, getBitacora, getTickets, getTicket, getChecks, setCheck, execSql,
-    getRevisadoMap, invalidateRevisadoCache,
-  };
-})();
+export const execSql = (project: string, payload: { sql: string; dbTarget?: string; segmentId?: string }) =>
+  labFetch("/api/isa/" + project + "/sql", { method: "POST", body: payload });

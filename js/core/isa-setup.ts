@@ -1,19 +1,27 @@
-(function () {
-  "use strict";
-  const host = location.hostname;
-  const isLocalFront = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
-  if (isLocalFront) {
-    try {
-      localStorage.setItem("jeff:gateway-local", "1");
-    } catch (e) {
-      /* ignore */
-    }
-  }
-  window.ISAFront.registerApp({
-    ns: "ISAJ",
-    theme: { lsKey: "jagudeloe:theme" },
-    widgets: { targetStyle: "chip" },
-    session: true,
-    realtime: true,
-  });
-})();
+/** Registra widgets compartidos en window.ISAJ vía ISAFront. */
+
+/** URLs del orquestador (front-shared/constants.js). */
+const ORCH = {
+  local: "http://localhost:8780",
+  online: "https://main-orchestrator.jeffaporta.workers.dev",
+  lsKey: "jeff:gateway-local",
+  event: "jeff:gateway-target",
+};
+
+window.ISAFront.registerApp({
+  ns: "ISAJ",
+  theme: { lsKey: "jagudeloe:theme" },
+  widgets: { targetStyle: "chip" },
+  api: ORCH,
+  session: true,
+  realtime: true,
+  auth: false,
+});
+
+/** CDN legacy: registerApp ignora session/realtime y auth:false deja sin login. */
+if (!window.ISAJ?.Session && window.ISAFront.registerAuth) {
+  window.ISAFront.registerAuth("ISAJ", {});
+}
+if (!window.ISAJ?.Realtime && window.ISAFront.registerRealtime) {
+  window.ISAFront.registerRealtime("ISAJ", {});
+}
