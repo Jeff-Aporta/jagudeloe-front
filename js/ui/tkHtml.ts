@@ -4,7 +4,7 @@
  */
 
 import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
-import { formatDocumentadoPor, formatTiqueteCreadoPor } from "./tkHeroAuthors.ts";
+import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -309,7 +309,14 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   const iticket = esc(tk.iticket ?? "");
   const titulo = esc(tk.titulo ?? tk.title ?? "");
   const creadoPor = esc(formatTiqueteCreadoPor(String(tk.solicitante ?? "")));
-  const documentadoPor = esc(formatDocumentadoPor(tk));
+  const documentador = resolveDocumentadorBlock(tk);
+  const documentadorHtml = documentador
+    ? `<div style="margin-top:2px;line-height:1.45;">
+        <small style="${FONT}font-size:10px;color:#a9c7e6;display:block;">${esc(documentador.label)}</small>
+        <div style="${FONT}font-size:12px;color:#cfe4fa;font-weight:bold;">${esc(documentador.nombre)}</div>
+        ${documentador.cargo ? `<div style="${FONT}font-size:11px;color:#a9c7e6;">${esc(documentador.cargo)}</div>` : ""}
+      </div>`
+    : "";
   const estado = String(tk.estado ?? "").toLowerCase();
 
   const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b));
@@ -330,7 +337,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
         <div style="${FONT}font-size:11px;color:#7fb4e6;letter-spacing:1px;text-transform:uppercase;">${esc(space)}</div>
         <div style="${FONT}font-size:18px;color:#ffffff;font-weight:bold;margin-top:3px;line-height:1.3;">${titulo}</div>
         ${creadoPor ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:4px;">${creadoPor}</div>` : ""}
-        ${documentadoPor ? `<div style="${FONT}font-size:12px;color:#a9c7e6;margin-top:2px;">${documentadoPor}</div>` : ""}
+        ${documentadorHtml}
         ${badgesHtml}
       </td></tr></table></td></tr>`);
 
