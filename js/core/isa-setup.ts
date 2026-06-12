@@ -8,6 +8,8 @@ const ORCH = {
   event: "jeff:gateway-target",
 };
 
+import { useThemeMode, makeNeonTheme } from "./theme.ts";
+
 window.ISAFront.registerApp({
   ns: "ISAJ",
   app: "jagudeloe-front",
@@ -18,6 +20,14 @@ window.ISAFront.registerApp({
   realtime: true,
   auth: false,
 });
+
+if (window.ISAJ?.Theme) {
+  window.ISAJ.Theme = {
+    ...window.ISAJ.Theme,
+    useThemeMode,
+    makeTheme: makeNeonTheme,
+  };
+}
 
 if (!window.ISAJ?.Session) {
   throw new Error(
