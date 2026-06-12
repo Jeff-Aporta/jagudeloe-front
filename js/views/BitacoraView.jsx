@@ -14,7 +14,8 @@ import {
 } from "../core/bitacora-merge.ts";
 import { isGeneralProject } from "../core/tk-spaces.ts";
 import { DateTree, SqlBlock, VideoBlock } from "../ui/parts.jsx";
-import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
+import { BitacoraTodoList } from "../ui/BitacoraTodoList.jsx";
+import { renderBitacoraMarkdown, stripTodoCheckboxesFromMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
 
@@ -45,15 +46,32 @@ function countVideoLeaves(nodes) {
   return n;
 }
 
-function renderNode(node, segments, project, key, depth, reloadKey, fillHeight) {
+function renderNode(node, segments, project, key, depth, reloadKey, fillHeight, onSegmentTodos) {
   const { Box, Typography } = getMaterialUI();
   if (!node) return null;
   const segProject = node._space || segmentProject(node.segmentId, project);
   if (node.type === "md") {
     const seg = segments[node.segmentId] || {};
     const raw = seg.markdown || seg.md || seg.body || "";
-    const html = renderBitacoraMarkdown(typeof raw === "string" ? raw : String(raw));
-    return <Box key={key} sx={{ my: 1 }}><Box className="md-body" dangerouslySetInnerHTML={{ __html: html }} /></Box>;
+    const mdStr = typeof raw === "string" ? raw : String(raw);
+    const todos = Array.isArray(seg.todos) ? seg.todos : [];
+    const mdWithoutTodos = stripTodoCheckboxesFromMarkdown(mdStr);
+    const hadCheckboxes = mdStr !== mdWithoutTodos;
+    const html = mdWithoutTodos ? renderBitacoraMarkdown(mdWithoutTodos) : "";
+    return (
+      <Box key={key} sx={{ my: 1 }}>
+        {(todos.length > 0 || hadCheckboxes) && (
+          <BitacoraTodoList
+            project={segProject}
+            segmentId={node.segmentId}
+            todos={todos}
+            reloadKey={reloadKey}
+            onChange={(next) => onSegmentTodos && onSegmentTodos(node.segmentId, next)}
+          />
+        )}
+        {html ? <Box className="md-body" dangerouslySetInnerHTML={{ __html: html }} /> : null}
+      </Box>
+    );
   }
   if (node.type === "video") {
     const s = segments[node.segmentId] || {};
@@ -97,7 +115,7 @@ function renderNode(node, segments, project, key, depth, reloadKey, fillHeight) 
         {node.title && (
           <Typography variant={depth >= 1 ? "subtitle2" : "subtitle1"} sx={Object.assign({ color: "primary.main", fontWeight: 600, mb: 0.5, flexShrink: 0 }, clamp2)}>{node.title}</Typography>
         )}
-        {(node.children || []).map((c, i) => renderNode(c, segments, project, key + "-" + i, depth + 1, reloadKey, fillHeight))}
+        {(node.children || []).map((c, i) => renderNode(c, segments, project, key + "-" + i, depth + 1, reloadKey, fillHeight, onSegmentTodos))}
       </Box>
     );
   }
@@ -136,11 +154,13 @@ export function BitacoraView(props) {
   const [state, setState] = useState({ loading: true, error: null, data: null, days: [] });
   const [selected, setSelected] = useState(null);
   const [revisadoMap, setRevisadoMap] = useState({});
+  const [segmentPatches, setSegmentPatches] = useState({});
 
   useEffect(() => {
     let alive = true;
     setState({ loading: true, error: null, data: null, days: [] });
     setSelected(null);
+    setSegmentPatches({});
 
     const spaces = spacesFor(props.project);
     Promise.all(spaces.map((s) => getBitacora(s).catch(() => null)))
@@ -187,9 +207,17 @@ export function BitacoraView(props) {
   }, [props.project]);
 
   const days = state.days;
-  const segments = isGeneralProject(props.project)
+  const baseSegments = isGeneralProject(props.project)
     ? (state.data?.segments || {})
     : (state.data?.segments || {});
+  const segments = Object.assign({}, baseSegments);
+  Object.entries(segmentPatches).forEach(([id, patch]) => {
+    if (segments[id]) segments[id] = Object.assign({}, segments[id], patch);
+  });
+
+  function onSegmentTodos(segmentId, todos) {
+    setSegmentPatches((p) => Object.assign({}, p, { [segmentId]: { todos } }));
+  }
 
   useEffect(() => {
     if (!days.length) return;
@@ -234,7 +262,7 @@ export function BitacoraView(props) {
         </Stack>
         <Box sx={{ flex: 1, minHeight: 0, overflow: stretchVideo ? "hidden" : "auto", px: 2, pb: 2, display: "flex", flexDirection: "column" }}>
           {current.children.length
-            ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey, stretchVideo))
+            ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey, stretchVideo, onSegmentTodos))
             : <Typography color="text.secondary">Sin contenido para este día.</Typography>}
         </Box>
       </Box>
