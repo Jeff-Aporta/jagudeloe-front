@@ -43,6 +43,11 @@ function remapSegmentIds(nodes: LayoutNode[] | undefined, space: string): Layout
   });
 }
 
+function normalizeBitacoraSegments(data: { segments?: Record<string, unknown>; md?: Record<string, unknown>; sql?: Record<string, unknown>; video?: Record<string, unknown> }): Record<string, unknown> {
+  if (data.segments && Object.keys(data.segments).length) return data.segments;
+  return { ...(data.md || {}), ...(data.sql || {}), ...(data.video || {}) };
+}
+
 function prefixSegments(segments: Record<string, unknown>, space: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(segments || {})) out[space + "::" + k] = v;
@@ -99,7 +104,7 @@ export function mergeBitacoraBundles(
   for (const { space, data } of bundles) {
     if (!data) continue;
     const layout = data.layout || data;
-    Object.assign(segments, prefixSegments(data.segments || {}, space));
+    Object.assign(segments, prefixSegments(normalizeBitacoraSegments(data), space));
     for (const day of extractDaysFromLayout(layout as { nodes?: LayoutNode[] }, space)) {
       const key = day.date || day.id;
       const existing = byKey.get(key);

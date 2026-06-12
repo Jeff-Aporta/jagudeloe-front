@@ -1,7 +1,7 @@
 /* views/BitacoraView — bitácora de un space (o General = PatyIA + Clientes consolidados). */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI } from "../core/platform.ts";
-import { merge } from "../core/urlState.ts";
+import { merge, subscribe, boot } from "../core/urlState.ts";
 import { getBitacora, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState, collectSqlCheckKeys } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
@@ -17,6 +17,20 @@ import { DateTree, SqlBlock, VideoBlock } from "../ui/parts.jsx";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
+
+/** API legacy devuelve md/sql/video; el front espera segments. */
+function normalizeBitacoraData(data) {
+  if (!data) return data;
+  if (data.segments && Object.keys(data.segments).length) return data;
+  const segments = Object.assign({}, data.md || {}, data.sql || {}, data.video || {});
+  return Object.assign({}, data, { segments });
+}
+
+function resolveSelFromUrl(days) {
+  const sel = typeof boot.sel === "string" ? boot.sel.trim() : "";
+  if (sel && days.some((d) => d.id === sel)) return sel;
+  return days[0]?.id ?? null;
+}
 
 function renderNode(node, segments, project, key, depth, reloadKey) {
   const { Box, Typography } = getMaterialUI();
@@ -110,11 +124,11 @@ export function BitacoraView(props) {
           return;
         }
         if (isGeneralProject(props.project)) {
-          const bundles = spaces.map((s, i) => ({ space: s, data: results[i] }));
+          const bundles = spaces.map((s, i) => ({ space: s, data: normalizeBitacoraData(results[i]) }));
           const merged = mergeBitacoraBundles(bundles);
           setState({ loading: false, error: null, data: merged, days: merged.days });
         } else {
-          const data = results[0];
+          const data = normalizeBitacoraData(results[0]);
           const days = data ? extractDaysFromSingle(Object.assign({}, data, { project: props.project })) : [];
           setState({ loading: false, error: null, data, days });
         }
@@ -150,7 +164,18 @@ export function BitacoraView(props) {
     ? (state.data?.segments || {})
     : (state.data?.segments || {});
 
-  useEffect(() => { if (days.length && !selected) setSelected(days[0].id); }, [state.days]);
+  useEffect(() => {
+    if (!days.length) return;
+    const next = resolveSelFromUrl(days);
+    if (next && next !== selected) setSelected(next);
+  }, [state.days]);
+
+  useEffect(() => {
+    return subscribe((s) => {
+      if (typeof s.sel !== "string" || !s.sel.trim()) return;
+      if (days.some((d) => d.id === s.sel) && s.sel !== selected) setSelected(s.sel);
+    });
+  }, [days, selected]);
 
   if (state.loading) return Loading ? <Loading label="Cargando bitácora…" /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
