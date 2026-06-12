@@ -1,20 +1,58 @@
 /* css/code — bloques de código SQL de la bitácora. */
 
 /* Editor CodeMirror del SqlBlock: altura automática y tipografía monoespaciada. */
-.sql-cm .CodeMirror {
+.sql-cm .CodeMirror,
+.tk-code-cm .CodeMirror {
   height: auto;
   font-family: "Consolas", "Courier New", monospace;
   font-size: 0.85rem;
   line-height: 1.5;
 }
-.sql-cm .CodeMirror-scroll { min-height: 0; }
+.tk-code-cm .CodeMirror-scroll { min-height: 0; }
 
-/* SqlBlock: scroll interno cuando el SQL supera 70vh */
-.sql-cm-scroll {
+.tk-content .tk-code-wrap,
+.tk-content .tk-code-cm,
+.tk-content .tk-code-cm.sql-cm-scroll {
+  max-width: 100%;
+  max-height: none;
+  overflow: visible;
+}
+
+.tk-content .tk-code-cm .CodeMirror {
+  height: auto !important;
+  max-width: 100%;
+}
+
+.tk-content .tk-code-cm .CodeMirror-scroll {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.tk-content .tk-code-cm .CodeMirror-sizer {
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+.tk-content .tk-code-cm .CodeMirror-lines {
+  word-break: break-word;
+}
+
+.tk-content {
+  overflow-x: hidden;
+}
+
+.tk-content table {
+  max-width: 100%;
+}
+
+/* SqlBlock bitácora: scroll interno cuando el SQL supera 70vh */
+.sql-cm-scroll,
+.tk-code-cm.sql-cm-scroll {
   max-height: 70vh;
   overflow: auto;
 }
-.sql-cm-scroll .CodeMirror-scroll {
+.sql-cm-scroll .CodeMirror-scroll,
+.tk-code-cm.sql-cm-scroll .CodeMirror-scroll {
   max-height: calc(70vh - 4px);
   overflow: auto !important;
 }
