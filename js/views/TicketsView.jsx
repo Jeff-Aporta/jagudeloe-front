@@ -8,6 +8,7 @@ import { aggregateDotState } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
+import { buildDocViewUrl } from "../core/doc-view-url.ts";
 import { TicketMetricsView } from "./TicketMetricsView.jsx";
 
 const ESTADO_COLOR = { abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error" };
@@ -51,6 +52,26 @@ function CopyHtmlButton({ tk }) {
   );
 }
 
+function CopyDocLinkButton({ space, iticket }) {
+  const { useState } = getReact();
+  const { Tooltip, Button } = getMaterialUI();
+  const { Icon } = UI;
+  const [done, setDone] = useState(false);
+  if (!space || !iticket) return null;
+  function copy() {
+    navigator.clipboard.writeText(buildDocViewUrl(space, iticket));
+    setDone(true);
+    setTimeout(() => setDone(false), 1500);
+  }
+  return (
+    <Tooltip title={done ? "Enlace copiado" : "Copiar enlace de solo documento (sin navegación)"}>
+      <Button size="small" variant="outlined" startIcon={<Icon icon={done ? "mdi:check" : "mdi:link-variant"} />} onClick={copy}>
+        {done ? "Enlace copiado" : "Copiar enlace doc"}
+      </Button>
+    </Tooltip>
+  );
+}
+
 function TicketDetail(props) {
   const { useState, useEffect } = getReact();
   const { Stack, Typography, Alert, CircularProgress, Chip, Box } = getMaterialUI();
@@ -77,12 +98,13 @@ function TicketDetail(props) {
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+        <Chip size="small" label={props.iticket} sx={{ bgcolor: "#fff", color: "#111", fontWeight: 700 }} />
         <RevisadoCheck project={tkSpace} revisadoKey={rKey} reloadKey={props.reloadKey} label={props.iticket} showLabel={false} hint="Marcar ticket como revisado y ejecutado" />
         <Chip size="small" variant="outlined" label={tkSpace} />
-        <Chip size="small" color="primary" label={props.iticket} />
         {tk.estado && <Chip size="small" color={ESTADO_COLOR[String(tk.estado)] || "default"} label={String(tk.estado)} />}
         {tk.tiempoTotalMinutos != null && <Chip size="small" variant="outlined" label={"Total " + String(tk.tiempoTotalMinutos) + " min"} />}
         <Box sx={{ flex: 1 }} />
+        <CopyDocLinkButton space={tkSpace} iticket={props.iticket} />
         <CopyHtmlButton tk={tk} />
       </Stack>
       <Box
