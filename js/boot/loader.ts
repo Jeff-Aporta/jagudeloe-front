@@ -3,7 +3,7 @@
   "use strict";
 
   const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@main/cdn/boot-helper.mjs";
+    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@1dbb9fa/cdn/boot-helper.mjs?v=1dbb9fa";
 
   const MODULE_LOADER = "./js/boot/module-graph.mjs";
 
@@ -13,7 +13,7 @@
 
   async function boot(): Promise<void> {
 
-    const { importShared, assertStack, loadIsaFront } = await import(BOOT_HELPER);
+    const { importShared, assertStack } = await import(BOOT_HELPER);
 
     const { importAppEntry } = await import(MODULE_LOADER);
 
@@ -25,7 +25,8 @@
 
     assertStack();
 
-    await loadIsaFront();
+    // Pin explícito: jsDelivr @main puede servir auth.js obsoleto (/auth/token sin /api).
+    await import("https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@1dbb9fa/cdn/isa/js/index.js");
 
     await importAppEntry("js/core/isa-setup.ts", Babel);
 

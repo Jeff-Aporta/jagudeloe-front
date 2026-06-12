@@ -18,9 +18,11 @@ window.ISAFront.registerApp({
   auth: false,
 });
 
-/** CDN legacy: registerApp ignora session/realtime y auth:false deja sin login. */
-if (!window.ISAJ?.Session && window.ISAFront.registerAuth) {
-  window.ISAFront.registerAuth("ISAJ", {});
+if (!window.ISAJ?.Session) {
+  throw new Error(
+    "ISAJ.Session no registrado — recargue sin caché (Ctrl+Shift+R). " +
+      "Si persiste, actualice FRONT_SHARED_REF en front-shared/cdn/boot-helper.mjs.",
+  );
 }
 if (!window.ISAJ?.Realtime && window.ISAFront.registerRealtime) {
   window.ISAFront.registerRealtime("ISAJ", {});

@@ -441,7 +441,7 @@ export function TicketMetricsView(props) {
                       <Chip size="small" label="empresa" variant="outlined" color="default" />
                     )}
                   </Stack>
-                  <Typography variant="body2" sx={{ fontWeight: sel ? 600 : 400, lineHeight: 1.45, color: c.text }}>
+                  <Typography variant="body2" title={row.titulo} sx={{ fontWeight: sel ? 600 : 400, lineHeight: 1.45, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {row.titulo}
                   </Typography>
                   <Typography variant="body2" sx={{ fontSize: "0.8125rem", mt: 0.25, color: c.muted }}>

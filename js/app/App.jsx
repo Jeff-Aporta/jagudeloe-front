@@ -1,13 +1,12 @@
 /* app/App — raíz jagudeloe. Spaces (proyectos) → subspaces (bitácora/tickets). */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { useThemeMode } from "../core/theme.ts";
-import { UI, Toast } from "../core/platform.ts";
+import { UI, Toast, Session } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { invalidateRevisadoCache } from "../api/client.ts";
 import { useRealtimeNotifications } from "../ui/realtime.ts";
 import { BitacoraView } from "../views/BitacoraView.jsx";
 import { TicketsView } from "../views/TicketsView.jsx";
-import { TicketMetricsView } from "../views/TicketMetricsView.jsx";
 import { LoginButton } from "./Login.jsx";
 
 /* "general" no es un space real: combina todos los spaces (sin filtro). */
@@ -19,8 +18,20 @@ const SPACES = [
 const SUBSPACES = [
   { id: "bitacora", label: "Bitácora", icon: "mdi:notebook-outline" },
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
-  { id: "metricas", label: "Métricas TK", icon: "mdi:chart-timeline-variant" },
 ];
+
+/** Separación icono ↔ etiqueta en tabs (MUI aprieta el iconWrapper por defecto). */
+const TAB_LABEL_SX = { display: "inline-flex", alignItems: "center", gap: "10px" };
+
+function TabLabel({ icon, label }) {
+  const { Icon } = UI;
+  return (
+    <span style={TAB_LABEL_SX}>
+      <Icon icon={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
 
 export function App() {
   const { useState, useEffect, useRef } = getReact();
@@ -30,7 +41,7 @@ export function App() {
   const { theme, mode, toggle } = useThemeMode();
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
   const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";
-  const bootSub = bootSubRaw === "checks" ? "bitacora" : bootSubRaw;
+  const bootSub = bootSubRaw === "checks" ? "bitacora" : bootSubRaw === "metricas" ? "tickets" : bootSubRaw;
   const [space, setSpace] = useState(SPACES.some((s) => s.id === bootSpace) ? bootSpace : "patyia");
   const [sub, setSub] = useState(SUBSPACES.some((s) => s.id === bootSub) ? bootSub : "bitacora");
   const [reloadKey, setReload] = useState(0);
@@ -53,21 +64,24 @@ export function App() {
     return () => window.removeEventListener("isaj:checks-local", onLocal);
   }, []);
   useEffect(() => {
+    function onAuth() { setReload((k) => k + 1); }
+    window.addEventListener(Session.EVENT, onAuth);
+    return () => window.removeEventListener(Session.EVENT, onAuth);
+  }, []);
+  useEffect(() => {
     return subscribe((s) => {
       if (typeof s.space === "string" && s.space !== space) setSpace(s.space);
-      if (typeof s.sub === "string" && s.sub !== sub) setSub(s.sub);
+      if (typeof s.sub === "string") {
+        const nextSub = s.sub === "metricas" ? "tickets" : s.sub;
+        if (nextSub !== sub) setSub(nextSub);
+      }
     });
   }, [space, sub]);
 
   function renderView() {
     const props = { project: space, reloadKey };
-    if (space === "general" && sub === "bitacora") {
-      const { Alert } = getMaterialUI();
-      return <Alert severity="info" sx={{ m: 2 }}>La bitácora se consulta por espacio: selecciona PatyIA o Clientes.</Alert>;
-    }
     if (sub === "bitacora") return <BitacoraView {...props} />;
     if (sub === "tickets") return <TicketsView {...props} />;
-    if (sub === "metricas") return <TicketMetricsView {...props} />;
     return null;
   }
 
@@ -80,7 +94,7 @@ export function App() {
             <Icon icon="mdi:view-dashboard-variant-outline" size={24} />
             <Tabs value={space} onChange={(_e, v) => setSpace(v)} variant="scrollable" sx={{ minHeight: 48, flexGrow: 1 }}>
               {SPACES.map((s) => (
-                <Tab key={s.id} value={s.id} label={s.label} sx={{ minHeight: 48 }} icon={<Icon icon={s.icon} />} iconPosition="start" />
+                <Tab key={s.id} value={s.id} label={<TabLabel icon={s.icon} label={s.label} />} sx={{ minHeight: 48, textTransform: "none" }} />
               ))}
             </Tabs>
             <TargetSwitch />
@@ -94,7 +108,7 @@ export function App() {
           </Toolbar>
           <Tabs value={sub} onChange={(_e, v) => setSub(v)} sx={{ px: 1, borderTop: 1, borderColor: "divider", minHeight: 44 }} variant="scrollable">
             {SUBSPACES.map((ss) => (
-              <Tab key={ss.id} value={ss.id} label={ss.label} sx={{ minHeight: 44, py: 0 }} icon={<Icon icon={ss.icon} />} iconPosition="start" />
+              <Tab key={ss.id} value={ss.id} label={<TabLabel icon={ss.icon} label={ss.label} />} sx={{ minHeight: 44, py: 0, textTransform: "none" }} />
             ))}
           </Tabs>
         </AppBar>

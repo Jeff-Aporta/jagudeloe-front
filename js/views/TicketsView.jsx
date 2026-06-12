@@ -2,12 +2,13 @@
  * El HTML del ticket se genera en el front (ui/tkHtml.ts) a partir del JSON del backend. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI } from "../core/platform.ts";
-import { merge } from "../core/urlState.ts";
+import { merge, boot } from "../core/urlState.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
+import { TicketMetricsView } from "./TicketMetricsView.jsx";
 
 const ESTADO_COLOR = { abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error" };
 /* Spaces reales de tickets; "general" los combina todos sin filtro. */
@@ -93,18 +94,20 @@ function TicketDetail(props) {
   );
 }
 
-export function TicketsView(props) {
-  const { useState, useEffect } = getReact();
+export function TicketsDiligenciaView(props) {
+  const { useState, useEffect, useRef } = getReact();
   const { Box, Typography, Alert, CircularProgress } = getMaterialUI();
   const { Loading, ErrorBox } = UI;
   const [state, setState] = useState({ loading: true, error: null, rows: [] });
-  const [selected, setSelected] = useState(null);
+  // Selección inicial desde la URL (?s → sel): al recargar con F5 se conserva el TK abierto.
+  const bootSelRef = useRef(typeof boot.sel === "string" && boot.sel ? boot.sel : null);
+  const [selected, setSelected] = useState(bootSelRef.current);
   const [revisadoMap, setRevisadoMap] = useState({});
 
   useEffect(() => {
     let alive = true;
     setState({ loading: true, error: null, rows: [] });
-    setSelected(null);
+    setSelected(bootSelRef.current);
     const spaces = spacesFor(props.project);
     Promise.all(spaces.map((s) =>
       getTickets(s).then((d) => {
@@ -116,7 +119,12 @@ export function TicketsView(props) {
       .then((lists) => {
         if (!alive) return;
         if (lists.every((l) => l === null)) { setState({ loading: false, error: "No se pudo cargar los tickets.", rows: [] }); return; }
-        setState({ loading: false, error: null, rows: lists.filter(Boolean).flat() });
+        const all = lists.filter(Boolean).flat();
+        // El sel de la URL solo se respeta si existe en este space; si no, cae al primero.
+        const pref = bootSelRef.current;
+        bootSelRef.current = null;
+        if (pref && !all.some((t) => ticketId(t) === pref)) setSelected(null);
+        setState({ loading: false, error: null, rows: all });
       });
     return () => { alive = false; };
   }, [props.project, props.reloadKey]);
@@ -161,6 +169,51 @@ export function TicketsView(props) {
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {selected ? <TicketDetail project={props.project} iticket={selected} reloadKey={props.reloadKey} /> : <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>}
+      </Box>
+    </Box>
+  );
+}
+
+const TK_TABS = [
+  { id: "diligencia", label: "Diligencia", icon: "mdi:clipboard-text-outline" },
+  { id: "metricas", label: "Métricas", icon: "mdi:chart-timeline-variant" },
+];
+
+function TkTabLabel({ icon, label }) {
+  const { Icon } = UI;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+      <Icon icon={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+/** Hub Tickets: Diligencia (listado) | Métricas (análisis TK). */
+export function TicketsView(props) {
+  const { useState, useEffect } = getReact();
+  const { Box, Tabs, Tab } = getMaterialUI();
+  const bootTkTab = boot.sub === "metricas" || boot.tkTab === "metricas" ? "metricas" : "diligencia";
+  const [tkTab, setTkTab] = useState(TK_TABS.some((t) => t.id === bootTkTab) ? bootTkTab : "diligencia");
+
+  useEffect(() => { merge({ sub: "tickets", tkTab }); }, [tkTab]);
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      <Tabs
+        value={tkTab}
+        onChange={(_e, v) => setTkTab(v)}
+        variant="scrollable"
+        sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
+      >
+        {TK_TABS.map((t) => (
+          <Tab key={t.id} value={t.id} label={<TkTabLabel icon={t.icon} label={t.label} />} sx={{ minHeight: 40, textTransform: "none" }} />
+        ))}
+      </Tabs>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        {tkTab === "metricas"
+          ? <TicketMetricsView project={props.project} reloadKey={props.reloadKey} />
+          : <TicketsDiligenciaView project={props.project} reloadKey={props.reloadKey} />}
       </Box>
     </Box>
   );

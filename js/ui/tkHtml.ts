@@ -347,6 +347,12 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
 
   // Resumen de tiempos — usa tk.tiempos (name + detail + minutos) si existe;
   // los ítems con minutos <= 0 no se muestran. Fallback: tiempos derivados del ticket.
+  // Si una diligencia antigua (bloque html) ya trae su propio "Resumen de tiempos", no se duplica.
+  const embeddedTiempos = blocks.some((b) => {
+    const kind = String(b.kind ?? "").toLowerCase();
+    if (kind !== "html" && kind !== "body") return false;
+    return /resumen de tiempos/i.test(String((b.payload && (b.payload.html ?? b.payload.body ?? b.payload.content)) ?? ""));
+  });
   const tiempos = ((tk.tiempos as Record<string, unknown>[]) ?? [])
     .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
     .filter((t) => t.name && t.minutos > 0);
@@ -365,7 +371,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     timeRows = derived.map((t) => timeRow(t.name, t.detail, t.minutos)).join("");
     timeTotal = total + extra;
   }
-  if (timeRows) {
+  if (timeRows && !embeddedTiempos) {
     const body = `<p style="margin:0 0 8px;color:${C.muted};">Distribución del esfuerzo según la naturaleza del trabajo.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         ${timeRows}

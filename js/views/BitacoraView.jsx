@@ -1,18 +1,26 @@
-/* views/BitacoraView — bitácora de un space. Navegador AÑO → MES → DÍA. */
+/* views/BitacoraView — bitácora de un space (o General = PatyIA + Clientes consolidados). */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI } from "../core/platform.ts";
 import { merge } from "../core/urlState.ts";
 import { getBitacora, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState, collectSqlCheckKeys } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
+import {
+  mergeBitacoraBundles,
+  segmentProject,
+  reDate,
+  spacesFor,
+  projectLabel,
+} from "../core/bitacora-merge.ts";
+import { isGeneralProject } from "../core/tk-spaces.ts";
 import { DateTree, SqlBlock } from "../ui/parts.jsx";
 
-const reDate = /(\d{4}-\d{2}-\d{2})/;
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
 
 function renderNode(node, segments, project, key, depth, reloadKey) {
   const { Box, Typography } = getMaterialUI();
   if (!node) return null;
+  const segProject = node._space || segmentProject(node.segmentId, project);
   if (node.type === "md") {
     const seg = segments[node.segmentId] || {};
     const raw = seg.markdown || seg.md || seg.body || "";
@@ -23,7 +31,7 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
     const s = segments[node.segmentId] || {};
     const checkKey = node.checkKey || s.checkKey || s.revisadoKey;
     return (
-      <SqlBlock key={key} sql={s.sql || s.body || "-- sin SQL"} title={s.title || node.title || "Consulta"} dbTarget={s.dbTarget} project={project} segmentId={node.segmentId} checkKey={checkKey} reloadKey={reloadKey} />
+      <SqlBlock key={key} sql={s.sql || s.body || "-- sin SQL"} title={s.title || node.title || "Consulta"} dbTarget={s.dbTarget} project={segProject} segmentId={node.segmentId} checkKey={checkKey} reloadKey={reloadKey} />
     );
   }
   if (node.type === "day" || node.type === "group" || node.type === "section") {
@@ -39,42 +47,8 @@ function renderNode(node, segments, project, key, depth, reloadKey) {
   return null;
 }
 
-export function BitacoraView(props) {
-  const { useState, useEffect } = getReact();
-  const { Box, Stack, Typography, Alert, CircularProgress } = getMaterialUI();
-  const { Loading, ErrorBox, Icon } = UI;
-  const [state, setState] = useState({ loading: true, error: null, data: null });
-  const [selected, setSelected] = useState(null);
-  const [revisadoMap, setRevisadoMap] = useState({});
-
-  useEffect(() => {
-    let alive = true;
-    setState({ loading: true, error: null, data: null });
-    setSelected(null);
-    getBitacora(props.project)
-      .then((d) => { if (alive) setState({ loading: false, error: null, data: d }); })
-      .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), data: null }); });
-    return () => { alive = false; };
-  }, [props.project, props.reloadKey]);
-
-  useEffect(() => {
-    let alive = true;
-    getRevisadoMap(props.project).then((m) => { if (alive) setRevisadoMap(m); }).catch(() => { if (alive) setRevisadoMap({}); });
-    return () => { alive = false; };
-  }, [props.project, props.reloadKey]);
-
-  useEffect(() => {
-    const { REALTIME, REALTIME_EVENT } = getRealtimeConstants();
-    function refresh() { getRevisadoMap(props.project, true).then(setRevisadoMap).catch(() => setRevisadoMap({})); }
-    function onRealtime(e) { const msg = e.detail; if (msg && msg.type && msg.type !== REALTIME.CHECKS_UPDATED) return; refresh(); }
-    window.addEventListener("isaj:checks-sync", refresh);
-    window.addEventListener(REALTIME_EVENT, onRealtime);
-    return () => { window.removeEventListener("isaj:checks-sync", refresh); window.removeEventListener(REALTIME_EVENT, onRealtime); };
-  }, [props.project]);
-
-  const data = state.data || {};
+function extractDaysFromSingle(data) {
   const layout = data.layout || data;
-  const segments = data.segments || {};
   const days = [];
   const seen = new Set();
   const collect = (nodes) => {
@@ -86,22 +60,92 @@ export function BitacoraView(props) {
       if (isDay) {
         const date = m ? m[1] : "";
         const id = date || (n.title || "");
-        if (!seen.has(id)) { seen.add(id); days.push({ id, date, title: n.title || "Día", children: n.children || [] }); }
+        if (!seen.has(id)) {
+          seen.add(id);
+          days.push({ id, date, title: n.title || "Día", spaces: [data.project || ""], children: n.children || [] });
+        }
       } else if (n.children && n.children.length) collect(n.children);
     });
   };
   collect(layout.nodes || []);
   days.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return days;
+}
 
-  useEffect(() => { if (days.length && !selected) setSelected(days[0].id); }, [state.data]);
+export function BitacoraView(props) {
+  const { useState, useEffect } = getReact();
+  const { Box, Stack, Typography, Alert, CircularProgress, Chip } = getMaterialUI();
+  const { Loading, ErrorBox, Icon } = UI;
+  const [state, setState] = useState({ loading: true, error: null, data: null, days: [] });
+  const [selected, setSelected] = useState(null);
+  const [revisadoMap, setRevisadoMap] = useState({});
+
+  useEffect(() => {
+    let alive = true;
+    setState({ loading: true, error: null, data: null, days: [] });
+    setSelected(null);
+
+    const spaces = spacesFor(props.project);
+    Promise.all(spaces.map((s) => getBitacora(s).catch(() => null)))
+      .then((results) => {
+        if (!alive) return;
+        if (results.every((r) => r == null)) {
+          setState({ loading: false, error: "No se pudo cargar la bitácora.", data: null, days: [] });
+          return;
+        }
+        if (isGeneralProject(props.project)) {
+          const bundles = spaces.map((s, i) => ({ space: s, data: results[i] }));
+          const merged = mergeBitacoraBundles(bundles);
+          setState({ loading: false, error: null, data: merged, days: merged.days });
+        } else {
+          const data = results[0];
+          const days = data ? extractDaysFromSingle(Object.assign({}, data, { project: props.project })) : [];
+          setState({ loading: false, error: null, data, days });
+        }
+      })
+      .catch((e) => {
+        if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), data: null, days: [] });
+      });
+    return () => { alive = false; };
+  }, [props.project, props.reloadKey]);
+
+  function loadRevisado(force) {
+    return Promise.all(spacesFor(props.project).map((s) => getRevisadoMap(s, force).catch(() => ({}))))
+      .then((maps) => Object.assign({}, ...maps));
+  }
+
+  useEffect(() => {
+    let alive = true;
+    loadRevisado(false).then((m) => { if (alive) setRevisadoMap(m); });
+    return () => { alive = false; };
+  }, [props.project, props.reloadKey]);
+
+  useEffect(() => {
+    const { REALTIME, REALTIME_EVENT } = getRealtimeConstants();
+    function refresh() { loadRevisado(true).then(setRevisadoMap).catch(() => setRevisadoMap({})); }
+    function onRealtime(e) { const msg = e.detail; if (msg && msg.type && msg.type !== REALTIME.CHECKS_UPDATED) return; refresh(); }
+    window.addEventListener("isaj:checks-sync", refresh);
+    window.addEventListener(REALTIME_EVENT, onRealtime);
+    return () => { window.removeEventListener("isaj:checks-sync", refresh); window.removeEventListener(REALTIME_EVENT, onRealtime); };
+  }, [props.project]);
+
+  const days = state.days;
+  const segments = isGeneralProject(props.project)
+    ? (state.data?.segments || {})
+    : (state.data?.segments || {});
+
+  useEffect(() => { if (days.length && !selected) setSelected(days[0].id); }, [state.days]);
 
   if (state.loading) return Loading ? <Loading label="Cargando bitácora…" /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
-  if (!days.length) return <Alert severity="info">{"La bitácora de " + props.project + " está vacía."}</Alert>;
+  if (!days.length) {
+    return <Alert severity="info">{isGeneralProject(props.project) ? "No hay entradas de bitácora en PatyIA ni Clientes." : "La bitácora de " + props.project + " está vacía."}</Alert>;
+  }
 
   const current = days.find((d) => d.id === selected) || days[0];
   const treeItems = days.map((d) => ({
-    id: d.id, date: d.date,
+    id: d.id,
+    date: d.date,
     secondary: d.title.replace(reDate, "").replace(/^\s*[—-]\s*/, "").trim(),
     dotState: aggregateDotState(collectSqlCheckKeys(d.children, segments), revisadoMap),
   }));
@@ -112,9 +156,12 @@ export function BitacoraView(props) {
         <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="day" />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, overflow: "auto", p: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ mb: 2 }}>
           <Icon icon="mdi:calendar-text-outline" size={22} style={{ flexShrink: 0, marginTop: 2 }} />
           <Typography variant="h6" sx={clamp2}>{current.title}</Typography>
+          {isGeneralProject(props.project) && current.spaces?.length > 1 && current.spaces.map((s) => (
+            <Chip key={s} size="small" variant="outlined" label={projectLabel(s)} />
+          ))}
         </Stack>
         {current.children.length
           ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey))

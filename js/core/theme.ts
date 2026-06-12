@@ -7,6 +7,15 @@ const componentOverrides = {
   MuiButton: { styleOverrides: { root: { textTransform: "none" } } },
   MuiTab: { styleOverrides: { root: { textTransform: "none" } } },
   MuiToggleButton: { styleOverrides: { root: { textTransform: "none" } } },
+  MuiChip: {
+    styleOverrides: {
+      root: {
+        "&.MuiChip-sizeSmall": { height: "auto", minHeight: 28, py: "3px" },
+      },
+      label: { paddingLeft: 10, paddingRight: 10, paddingTop: 2, paddingBottom: 2 },
+      icon: { marginLeft: 8 },
+    },
+  },
 };
 
 function initialMode() {

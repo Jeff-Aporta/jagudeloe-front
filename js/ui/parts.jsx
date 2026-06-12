@@ -1,11 +1,16 @@
 /* ui/parts — componentes compartidos para las vistas jagudeloe. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
-import { UI, Session } from "../core/platform.ts";
+import { UI } from "../core/platform.ts";
+import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };
 const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
+/** Una sola línea con ellipsis en el panel lateral (DateTree / MonthTree). */
+const NAV_LINE1 = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", minWidth: 0 };
+const NAV_BTN = { overflow: "hidden", minWidth: 0, width: "100%", display: "flex", alignItems: "center" };
+const NAV_TEXT = { ml: 1, minWidth: 0, flex: 1, my: 0, overflow: "hidden", "& .MuiListItemText-primary": NAV_LINE1, "& .MuiListItemText-secondary": NAV_LINE1 };
 
 export function CheckDot(props) {
   const { Tooltip, Box } = getMaterialUI();
@@ -64,18 +69,18 @@ export function MonthTree(props) {
         const isOpen = !!open[g.id];
         return (
           <Fragment key={g.id}>
-            <ListItemButton onClick={() => setOpen((o) => ({ ...o, [g.id]: !o[g.id] }))} sx={{ py: 0.25 }}>
-              <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={18} />
-              <ListItemText primary={g.label} sx={{ ml: 1 }} primaryTypographyProps={{ fontWeight: 600, variant: "body2" }} />
+            <ListItemButton onClick={() => setOpen((o) => ({ ...o, [g.id]: !o[g.id] }))} sx={{ py: 0.25, ...NAV_BTN }}>
+              <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={18} style={{ flexShrink: 0 }} />
+              <ListItemText primary={g.label} sx={{ ...NAV_TEXT, ml: 1 }} primaryTypographyProps={{ fontWeight: 600, variant: "body2", sx: NAV_LINE1 }} />
               {g.count != null && <Chip size="small" label={g.count} sx={{ mr: 0.5 }} />}
               <Icon icon={isOpen ? "mdi:chevron-down" : "mdi:chevron-right"} size={18} />
             </ListItemButton>
             <Collapse in={isOpen} unmountOnExit>
               <List dense disablePadding>
                 {g.items.map((it) => (
-                  <ListItemButton key={it.id} selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 4, py: 0.25 }}>
-                    <Icon icon="mdi:file-document-outline" size={16} style={{ opacity: 0.7 }} />
-                    <ListItemText primary={it.label} secondary={it.secondary} sx={{ ml: 1 }} primaryTypographyProps={{ variant: "body2", noWrap: true }} secondaryTypographyProps={{ variant: "caption", noWrap: true }} />
+                  <ListItemButton key={it.id} selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 4, py: 0.25, ...NAV_BTN }}>
+                    <Icon icon="mdi:file-document-outline" size={16} style={{ opacity: 0.7, flexShrink: 0 }} />
+                    <ListItemText primary={it.label} secondary={it.secondary ? it.secondary : undefined} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} secondaryTypographyProps={{ variant: "caption", sx: NAV_LINE1 }} />
                     {it.color && <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: it.color }} />}
                   </ListItemButton>
                 ))}
@@ -123,12 +128,14 @@ export function DateTree(props) {
 
   function folderRow(key, label, depth, count, isOpen) {
     return (
-      <ListItemButton onClick={() => toggle(key)} sx={{ pl: 1 + depth * 1.5, py: 0.25 }}>
-        <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={17} />
-        <ListItemText primary={label} sx={{ ml: 1 }} primaryTypographyProps={{ fontWeight: 600, variant: "body2" }} />
-        {count != null && <Chip size="small" label={count} sx={{ mr: 0.5, height: 18 }} />}
-        <Icon icon={isOpen ? "mdi:chevron-down" : "mdi:chevron-right"} size={16} />
-      </ListItemButton>
+      <Tooltip title={label} placement="right" enterDelay={400}>
+        <ListItemButton onClick={() => toggle(key)} sx={{ pl: 1 + depth * 1.5, py: 0.25, ...NAV_BTN }}>
+          <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={17} style={{ flexShrink: 0 }} />
+          <ListItemText primary={label} sx={NAV_TEXT} primaryTypographyProps={{ fontWeight: 600, variant: "body2", sx: NAV_LINE1 }} />
+          {count != null && <Chip size="small" label={count} sx={{ mr: 0.5, height: 18, flexShrink: 0 }} />}
+          <Icon icon={isOpen ? "mdi:chevron-down" : "mdi:chevron-right"} size={16} style={{ flexShrink: 0 }} />
+        </ListItemButton>
+      </Tooltip>
     );
   }
 
@@ -142,10 +149,10 @@ export function DateTree(props) {
     const tip = it.secondary && props.mode !== "day" ? line + " — " + it.secondary : line;
     return (
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
-        <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, alignItems: "center", minHeight: 36 }}>
+        <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
           {it.dotState && <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0 }}><CheckDot state={it.dotState} /></Box>}
           <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
-          <ListItemText primary={line} sx={{ ml: 1, minWidth: 0, flex: 1, my: 0 }} primaryTypographyProps={{ variant: "body2", sx: CLAMP1 }} />
+          <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />
         </ListItemButton>
       </Tooltip>
     );
@@ -187,7 +194,7 @@ export function DateTree(props) {
 export function RevisadoCheck(props) {
   const { useState, useEffect } = getReact();
   const { Tooltip, Checkbox, Typography } = getMaterialUI();
-  const { isLoggedIn } = Session;
+  const { loggedIn } = useSession();
   if (!props.revisadoKey) return null;
   const key = props.revisadoKey;
   const [checked, setChecked] = useState(null);
@@ -219,7 +226,7 @@ export function RevisadoCheck(props) {
     return () => { window.removeEventListener(REALTIME_EVENT, onRemote); window.removeEventListener("isaj:checks-sync", onRemote); };
   }, [props.project, key]);
 
-  const canEdit = isLoggedIn?.();
+  const canEdit = loggedIn;
   function toggleCheck() {
     if (!canEdit || busy || checked === null) return;
     const next = !checked;
@@ -241,13 +248,6 @@ export function RevisadoCheck(props) {
   );
 }
 
-export function canExecSql() {
-  const { isLoggedIn, can } = Session;
-  if (!isLoggedIn?.()) return false;
-  if (typeof can === "function") return can("ejecutar_sql") || can("ejecutar_mssql") || can("guardar_langlab");
-  return true;
-}
-
 export function SqlBlock(props) {
   const { useRef, useState, useEffect } = getReact();
   const { Box, Stack, Typography, Chip, Tooltip, Button, Alert } = getMaterialUI();
@@ -259,7 +259,7 @@ export function SqlBlock(props) {
   const [err, setErr] = useState(null);
   const CM = window.CodeMirror;
   const db = props.dbTarget || (props.project === "clientesis" ? "clientesis" : "paty");
-  const allowed = canExecSql();
+  const { canExecSql: allowed } = useSession();
 
   useEffect(() => {
     if (ref.current && CM && !cm.current) {
