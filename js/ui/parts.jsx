@@ -260,9 +260,10 @@ function formatVideoMs(ms) {
 }
 
 export function VideoBlock(props) {
-  const { useState } = getReact();
+  const { useState, useEffect } = getReact();
   const { Box, Stack, Typography, Chip, Tabs, Tab, Table, TableBody, TableRow, TableCell, Alert } = getMaterialUI();
   const { Icon } = UI;
+  const { loggedIn } = useSession();
   const v = props.video || {};
   const summaryMd = v.summaryMd || v.summary || "";
   const transcript = v.transcript || {};
@@ -270,6 +271,10 @@ export function VideoBlock(props) {
   const meta = v.metadata || {};
   const [tab, setTab] = useState("resumen");
   const summaryHtml = summaryMd ? renderBitacoraMarkdown(summaryMd) : "";
+
+  useEffect(() => {
+    if (!loggedIn && tab === "metadatos") setTab("resumen");
+  }, [loggedIn, tab]);
 
   const metaRows = [
     ["Título", v.title || meta.title || "—"],
@@ -308,7 +313,9 @@ export function VideoBlock(props) {
       <Tabs value={tab} onChange={(_e, val) => setTab(val)} variant="scrollable" sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
         <Tab value="resumen" label="Resumen" icon={<Icon icon="mdi:text-box-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
         <Tab value="transcripcion" label="Transcripción" icon={<Icon icon="mdi:subtitles-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
-        <Tab value="metadatos" label="Metadatos" icon={<Icon icon="mdi:information-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
+        {loggedIn && (
+          <Tab value="metadatos" label="Metadatos" icon={<Icon icon="mdi:information-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
+        )}
       </Tabs>
       <Box sx={{ p: 2, overflow: "auto", flex: fill ? 1 : undefined, minHeight: fill ? 0 : undefined, maxHeight: fill ? undefined : 480 }}>
         {tab === "resumen" && (
@@ -328,7 +335,7 @@ export function VideoBlock(props) {
               ? <Typography variant="body2" component="pre" sx={{ whiteSpace: "pre-wrap", fontFamily: "inherit", m: 0 }}>{transcript.plainText}</Typography>
               : <Alert severity="info">Transcripción no disponible.</Alert>
         )}
-        {tab === "metadatos" && (
+        {tab === "metadatos" && loggedIn && (
           <Table size="small">
             <TableBody>
               {metaRows.map(([label, value]) => (
