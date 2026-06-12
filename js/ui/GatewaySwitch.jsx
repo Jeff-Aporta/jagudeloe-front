@@ -30,7 +30,7 @@ export function GatewaySwitch() {
 
   const isLocal = loggedIn && local;
   const tip = loggedIn
-    ? "Conexión: " + gatewayLabel(isLocal)
+    ? (isLocal ? "Entorno de desarrollo (local)" : "Entorno de producción")
     : "Producción (inicia sesión para cambiar el entorno)";
 
   return (
