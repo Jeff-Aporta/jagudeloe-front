@@ -21,12 +21,14 @@ export function tkDocSurfaceSx(extra: Record<string, unknown> = {}) {
   };
 }
 
-/** Página completa (?s → view=doc, driver=jsx). Mismo gradiente y padding horizontal. */
+/** Página completa (?s → view=doc, driver=jsx). Fondo fijo vía doc-view.css (#root.tk-doc-web). */
 export function tkDocPageSx(extra: Record<string, unknown> = {}) {
   return {
     minHeight: "100vh",
     boxSizing: "border-box",
-    ...TK_DOC_GRADIENT,
+    position: "relative",
+    zIndex: 1,
+    bgcolor: "transparent",
     ...TK_DOC_PAD,
     ...extra,
   };
