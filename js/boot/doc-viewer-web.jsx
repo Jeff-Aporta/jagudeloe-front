@@ -39,6 +39,7 @@ function DocWebPage({ tk, space, iticket }) {
   const { ThemeProvider, CssBaseline, Box } = getMaterialUI();
 
   const UI = window.ISAJ?.UI;
+  const ThemeSwitch = UI?.ThemeSwitch;
 
   const tm = useAppThemeMode();
 
@@ -102,7 +103,7 @@ function DocWebPage({ tk, space, iticket }) {
 
         <TkReportSwitch mode={reportView} onToggle={toggleReport} />
 
-        {UI?.ThemeSwitch && <UI.ThemeSwitch mode={tm.mode} onToggle={tm.toggle} />}
+        {ThemeSwitch ? <ThemeSwitch mode={tm.mode} onToggle={tm.toggle} /> : null}
 
       </Box>
 

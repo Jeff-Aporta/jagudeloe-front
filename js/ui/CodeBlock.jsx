@@ -1,58 +1,22 @@
-/* Bloque de código de solo lectura con CodeMirror. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+/* Bloque de código de solo lectura — delega en ISAFront.CodeMirrorPanel. */
+import { getMaterialUI } from "../core/runtime.ts";
 
 function cmMode(lang) {
   const l = String(lang || "sql").toLowerCase();
-  if (l === "json") return { name: "javascript", json: true };
-  if (l === "javascript" || l === "js") return "javascript";
-  if (l === "typescript" || l === "ts") return "text/typescript";
-  return "text/x-sql";
-}
-
-function cmTheme(paletteMode) {
-  return paletteMode === "dark" ? "dracula" : "default";
+  if (l === "json") return { json: true };
+  if (l === "javascript" || l === "js") return { mode: "javascript" };
+  if (l === "typescript" || l === "ts") return { mode: "text/typescript" };
+  return { mode: "sql" };
 }
 
 export function CodeBlock(props) {
-  const { useRef, useEffect } = getReact();
-  const { useTheme } = getMaterialUI();
+  const Panel = window.ISAFront?.CodeMirrorPanel;
   const { Box, Typography } = getMaterialUI();
-  const wrapRef = useRef(null);
-  const cmRef = useRef(null);
-  const theme = useTheme();
   const lang = props.language || "sql";
   const code = String(props.code ?? "");
+  const modeOpts = cmMode(lang);
 
-  useEffect(() => {
-    const CM = window.CodeMirror;
-    const el = wrapRef.current;
-    if (!el || !CM) return;
-    if (!cmRef.current) {
-      cmRef.current = CM(el, {
-        value: code,
-        mode: cmMode(lang),
-        theme: cmTheme(theme.palette.mode),
-        lineNumbers: true,
-        lineWrapping: true,
-        readOnly: true,
-        viewportMargin: Infinity,
-      });
-      setTimeout(() => cmRef.current && cmRef.current.refresh(), 30);
-    } else {
-      cmRef.current.setOption("theme", cmTheme(theme.palette.mode));
-      if (cmRef.current.getValue() !== code) cmRef.current.setValue(code);
-    }
-  }, [code, lang, theme.palette.mode]);
-
-  useEffect(() => () => {
-    if (cmRef.current) {
-      cmRef.current.toTextArea?.();
-      cmRef.current = null;
-    }
-  }, []);
-
-  const CM = window.CodeMirror;
-  if (!CM) {
+  if (!Panel) {
     return (
       <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
         {lang && (
@@ -74,7 +38,14 @@ export function CodeBlock(props) {
           {lang}
         </Typography>
       )}
-      <Box ref={wrapRef} className="tk-code-cm sql-cm" sx={{ maxWidth: "100%" }} />
+      <Panel
+        value={code}
+        readOnly
+        lineWrapping
+        minHeight="4rem"
+        className="tk-code-cm sql-cm"
+        {...modeOpts}
+      />
     </Box>
   );
 }

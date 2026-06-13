@@ -12,31 +12,41 @@ const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "v
 const NAV_LINE1 = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", minWidth: 0 };
 const NAV_BTN = { overflow: "hidden", minWidth: 0, width: "100%", display: "flex", alignItems: "center" };
 const NAV_TEXT = { ml: 1, minWidth: 0, flex: 1, my: 0, overflow: "hidden", "& .MuiListItemText-primary": NAV_LINE1, "& .MuiListItemText-secondary": NAV_LINE1 };
+/** Contador en árbol lateral — 80% del Chip sizeSmall del tema ISA. */
+const NAV_COUNT_CHIP_SX = {
+  mr: 0.5,
+  flexShrink: 0,
+  height: 22,
+  minHeight: 22,
+  py: "2px",
+  fontSize: "0.65rem",
+  "& .MuiChip-label": { px: 1, py: 0, lineHeight: 1.15 },
+};
 
 export function CheckDot(props) {
-  const { Tooltip, Box } = getMaterialUI();
+  const { Tooltip } = getMaterialUI();
   const state = props.state;
   if (!state) return null;
-  const palette = { complete: { bg: "#4caf50", title: "Todo revisado / ejecutado" }, partial: { bg: "#ff9800", title: "Revisión parcial" }, none: { bg: "#f44336", title: "Sin revisar" } };
-  const p = palette[state] || palette.none;
+  const titles = {
+    complete: "Revisado / ejecutado",
+    partial: "Revisión parcial",
+    warn: "Más de 7 h hábiles sin cerrar",
+    overdue: "Más de 14 h hábiles sin cerrar",
+    idle: "Pendiente",
+    none: "Sin revisar",
+  };
+  const title = titles[state] || titles.idle;
   return (
-    <Tooltip title={p.title}>
-      <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: p.bg, flexShrink: 0, display: "inline-block", boxShadow: state === "partial" ? "0 0 0 2px rgba(255,152,0,0.25)" : "none" }} aria-hidden />
+    <Tooltip title={title}>
+      <span className={"nav-status-dot nav-status-dot--" + state} aria-hidden />
     </Tooltip>
   );
 }
 
 /** Dot de estado en navegación: color si hay checks; gris 60% si no, para alinear iconos. */
 export function NavStatusDot(props) {
-  const { Box } = getMaterialUI();
   if (props.state) return <CheckDot state={props.state} />;
-  return (
-    <Box
-      component="span"
-      sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "rgba(158, 158, 158, 0.6)", flexShrink: 0, display: "inline-block" }}
-      aria-hidden
-    />
-  );
+  return <span className="nav-status-dot nav-status-dot--placeholder" aria-hidden />;
 }
 
 export function MockBanner() {
@@ -63,7 +73,7 @@ export function AccordionPanel(props) {
         {props.icon && <Icon icon={props.icon} />}
         <Typography sx={{ fontWeight: level === 0 ? 700 : 600, flexGrow: 1 }}>{props.title}</Typography>
         {props.secondary && <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>{props.secondary}</Typography>}
-        {props.count != null && <Chip size="small" label={props.count} />}
+        {props.count != null && <Chip size="small" label={props.count} sx={NAV_COUNT_CHIP_SX} />}
       </AccordionSummary>
       <AccordionDetails sx={{ pl: level === 0 ? 2 : 1.5 }}>{props.children}</AccordionDetails>
     </Accordion>
@@ -86,7 +96,7 @@ export function MonthTree(props) {
             <ListItemButton onClick={() => setOpen((o) => ({ ...o, [g.id]: !o[g.id] }))} sx={{ py: 0.25, ...NAV_BTN }}>
               <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={18} style={{ flexShrink: 0 }} />
               <ListItemText primary={g.label} sx={{ ...NAV_TEXT, ml: 1 }} primaryTypographyProps={{ fontWeight: 600, variant: "body2", sx: NAV_LINE1 }} />
-              {g.count != null && <Chip size="small" label={g.count} sx={{ mr: 0.5 }} />}
+              {g.count != null && <Chip size="small" label={g.count} sx={NAV_COUNT_CHIP_SX} />}
               <Icon icon={isOpen ? "mdi:chevron-down" : "mdi:chevron-right"} size={18} />
             </ListItemButton>
             <Collapse in={isOpen} unmountOnExit>
@@ -146,7 +156,7 @@ export function DateTree(props) {
         <ListItemButton onClick={() => toggle(key)} sx={{ pl: 1 + depth * 1.5, py: 0.25, ...NAV_BTN }}>
           <Icon icon={isOpen ? "mdi:folder-open-outline" : "mdi:folder-outline"} size={17} style={{ flexShrink: 0 }} />
           <ListItemText primary={label} sx={NAV_TEXT} primaryTypographyProps={{ fontWeight: 600, variant: "body2", sx: NAV_LINE1 }} />
-          {count != null && <Chip size="small" label={count} sx={{ mr: 0.5, height: 18, flexShrink: 0 }} />}
+          {count != null && <Chip size="small" label={count} sx={NAV_COUNT_CHIP_SX} />}
           <Icon icon={isOpen ? "mdi:chevron-down" : "mdi:chevron-right"} size={16} style={{ flexShrink: 0 }} />
         </ListItemButton>
       </Tooltip>
@@ -382,60 +392,28 @@ export function VideoBlock(props) {
 
 export function SqlBlock(props) {
   const { canExecSql, execSqlBlockReason } = useSession();
+  const SharedSqlBlock = UI.SqlBlock;
+  const Icon = UI.Icon;
+  if (typeof SharedSqlBlock !== "function") {
+    const { Alert } = getMaterialUI();
+    return <Alert severity="warning">Bloque SQL no disponible — recargue sin caché.</Alert>;
+  }
   const db = props.dbTarget || (props.project === "clientesis" ? "clientesis" : "paty");
   const capId = db === "clientesis" ? "sql.exec.mssql.clientesis" : "sql.exec.isa";
-
-  const { useRef, useState, useEffect } = getReact();
-  const { Box, Stack, Typography, Chip, Tooltip, IconButton, CircularProgress, Alert } = getMaterialUI();
-  const ref = useRef(null);
-  const cm = useRef(null);
-  const [exec, setExec] = useState(false);
-  const [res, setRes] = useState(null);
-  const [err, setErr] = useState(null);
-  const CM = window.CodeMirror;
-  const allowed = canExecSql(capId);
-  const tip = allowed ? ("Ejecutar en " + db) : execSqlBlockReason(capId);
-
-  useEffect(() => {
-    if (ref.current && CM && !cm.current) {
-      cm.current = CM(ref.current, { value: props.sql, mode: "text/x-sql", theme: "dracula", lineNumbers: true, readOnly: true, viewportMargin: Infinity });
-      setTimeout(() => cm.current && cm.current.refresh(), 30);
-    } else if (!CM && ref.current) {
-      ref.current.innerHTML = "";
-      const pre = document.createElement("pre");
-      pre.className = "sql-body";
-      pre.textContent = props.sql;
-      ref.current.appendChild(pre);
-    }
-  }, []);
-
-  function run() {
-    if (!allowed) return;
-    setExec(true); setErr(null); setRes(null);
-    execSql(props.project, { sql: props.sql, dbTarget: db, segmentId: props.segmentId })
-      .then((d) => setRes({ rows: d && d.rows, rowCount: d && (d.rowCount ?? (d.rows ? d.rows.length : undefined)) }))
-      .catch((e) => setErr(e instanceof Error ? e.message : String(e)))
-      .finally(() => setExec(false));
-  }
-
   return (
-    <Box sx={{ my: 1.5, border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ p: 1, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" }}>
-        <UI.Icon icon="mdi:database-search-outline" />
-        <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 120 }}>{props.title || "Consulta SQL"}</Typography>
-        <Chip size="small" color={db === "clientesis" ? "secondary" : "primary"} variant="outlined" label={"BD: " + db} />
-        {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)" showLabel />}
-        <Tooltip title={tip}>
-          <span>
-            <IconButton size="small" color="primary" disabled={!allowed || exec} onClick={run} aria-label={tip} sx={{ bgcolor: "primary.main", color: "#fff", "&:hover": { opacity: 0.92 } }}>
-              {exec ? <CircularProgress size={18} color="inherit" /> : <UI.Icon icon="mdi:play-circle-outline" size={22} />}
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Stack>
-      <Box ref={ref} className="sql-cm sql-cm-scroll" />
-      {res && <Alert severity="success" sx={{ m: 1 }}>{"Ejecución correcta" + (res.rowCount != null ? " — " + res.rowCount + " fila(s)" : "")}</Alert>}
-      {err && <Alert severity="error" sx={{ m: 1 }}>{err}</Alert>}
-    </Box>
+    <SharedSqlBlock
+      title={props.title || "Consulta SQL"}
+      sql={props.sql}
+      dbTarget={db}
+      project={props.project}
+      capId={capId}
+      canRun={canExecSql}
+      blockReason={execSqlBlockReason}
+      onExecute={(payload) => execSql(props.project, { ...payload, segmentId: props.segmentId })}
+      Icon={Icon}
+      extraToolbar={props.checkKey ? (
+        <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)" showLabel />
+      ) : null}
+    />
   );
 }

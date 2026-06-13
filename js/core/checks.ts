@@ -1,5 +1,7 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
-export type DotState = "complete" | "partial" | "none";
+import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
+
+export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none";
 
 export function aggregateDotState(keys: string[], map: Record<string, boolean>): DotState | null {
   const list = keys.filter(Boolean);
@@ -9,6 +11,35 @@ export function aggregateDotState(keys: string[], map: Record<string, boolean>):
   if (checked === list.length) return "complete";
   if (checked === 0) return "none";
   return "partial";
+}
+
+export function ticketRevisadoKey(iticket: string): string { return "tickets." + iticket; }
+
+const TK_WARN_HOURS = 7;
+const TK_OVERDUE_HOURS = 14;
+
+/** Dot en listado TK: verde revisado; gris joven; naranja >7 h hábiles; rojo >14 h. */
+export function ticketListDotState(
+  tk: Record<string, unknown>,
+  revisadoMap: Record<string, boolean>,
+  revisadoKey: string,
+): DotState | null {
+  const rev = aggregateDotState([revisadoKey], revisadoMap);
+  if (rev === "complete") return "complete";
+
+  const input = extractMetricInput(tk);
+  if (input.fechaCierre) return "idle";
+
+  const cre = input.fechaCreacion;
+  if (!cre) return "idle";
+
+  const mins = businessMinutesBetween(cre, new Date().toISOString(), input, DEFAULT_SCHEDULE);
+  if (mins == null) return "idle";
+
+  const hours = mins / 60;
+  if (hours > TK_OVERDUE_HOURS) return "overdue";
+  if (hours > TK_WARN_HOURS) return "warn";
+  return "idle";
 }
 
 export function collectSqlCheckKeys(
@@ -27,5 +58,3 @@ export function collectSqlCheckKeys(
   }
   return out;
 }
-
-export function ticketRevisadoKey(iticket: string): string { return "tickets." + iticket; }

@@ -1,25 +1,48 @@
 /* Galería de pantallazos InSoft (evidencias R2). */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { useGlassColors, glassCardSx } from "./glassSurface.ts";
 
-function useColors() {
-  const { useTheme } = getMaterialUI();
-  const dark = useTheme().palette.mode === "dark";
-  return {
-    cardBg: dark ? "#132f4c" : "#ffffff",
-    border: dark ? "rgba(158,197,235,0.3)" : "rgba(10,37,64,0.12)",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
-  };
+function probeImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+/** Solo evidencias cuya URL responde con una imagen válida. */
+function useLoadedEvidencias(items) {
+  const { useState, useEffect } = getReact();
+  const [loaded, setLoaded] = useState([]);
+
+  useEffect(() => {
+    if (!items?.length) {
+      setLoaded([]);
+      return;
+    }
+    let alive = true;
+    setLoaded([]);
+    Promise.all(
+      items.map(async (ev) => ((await probeImage(ev.url)) ? ev : null)),
+    ).then((rows) => {
+      if (alive) setLoaded(rows.filter(Boolean));
+    });
+    return () => { alive = false; };
+  }, [items?.map((i) => i.url).join("|") ?? ""]);
+
+  return loaded;
 }
 
 export function TicketMetricsEvidencias({ items }) {
-  const c = useColors();
+  const c = useGlassColors();
   const { Box, Paper, Typography, Stack } = getMaterialUI();
+  const visible = useLoadedEvidencias(items);
 
-  if (!items?.length) return null;
+  if (!visible.length) return null;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2.5, mb: 2, bgcolor: c.cardBg, borderColor: c.border }}>
+    <Paper variant="outlined" sx={glassCardSx(c, { p: 2.5, mb: 2 })}>
       <Typography variant="h6" sx={{ fontWeight: 600, color: c.text, mb: 0.5 }}>
         Evidencias
       </Typography>
@@ -27,7 +50,7 @@ export function TicketMetricsEvidencias({ items }) {
         Pantallazos InSoft y soporte visual del ticket.
       </Typography>
       <Stack spacing={2}>
-        {items.map((ev) => (
+        {visible.map((ev) => (
           <Box key={ev.url}>
             <Typography variant="body2" sx={{ fontWeight: 600, color: c.text, mb: 0.75 }}>
               {ev.label}

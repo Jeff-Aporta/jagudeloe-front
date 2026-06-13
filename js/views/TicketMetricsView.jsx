@@ -14,24 +14,14 @@ import { extractEmpresaReport, computeEmpresaDesfase } from "../core/tk-empresa-
 import { TicketAnalysisTimeline } from "../ui/TicketAnalysisTimeline.jsx";
 import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
 import { EmpresaDesfaseCard } from "../ui/EmpresaDesfaseCard.jsx";
+import { useGlassColors, glassCardGradientSx, glassInnerSx } from "../ui/glassSurface.ts";
 
-/** Colores explícitos — evita texto blanco sobre fondo blanco cuando sx no resuelve el palette. */
 function useDocColors() {
-  const { useTheme } = getMaterialUI();
-  const dark = useTheme().palette.mode === "dark";
-  return {
-    pageBg: "transparent",
-    cardBg: dark ? "rgba(15, 34, 54, 0.78)" : "rgba(255, 255, 255, 0.92)",
-    cardHi: dark ? "rgba(26, 58, 92, 0.85)" : "rgba(240, 247, 255, 0.95)",
-    border: dark ? "rgba(30,144,255,0.28)" : "rgba(30,144,255,0.16)",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
-    preBg: dark ? "rgba(13, 33, 55, 0.9)" : "#e8eef5",
-  };
+  return useGlassColors();
 }
 
 function cardSx(c, extra = {}) {
-  return { bgcolor: c.cardBg, borderColor: c.border, color: c.text, ...extra };
+  return glassCardGradientSx(c, extra);
 }
 
 function DocText({ variant, muted, bold, children, sx }) {
@@ -60,8 +50,8 @@ function MetricCard({ label, minutos, sub, highlight, warn, icon }) {
         flex: "1 1 140px",
         minWidth: 140,
         ...cardSx(c, {
-          bgcolor: highlight ? c.cardHi : warn ? c.cardBg : c.cardBg,
-          borderColor: highlight ? "#1e90ff" : warn ? "#ed6c02" : c.border,
+          tone: highlight ? "hi" : warn ? "warn" : "default",
+          borderColor: highlight ? "rgba(30,144,255,0.45)" : warn ? "rgba(237,108,2,0.45)" : c.border,
         }),
       }}
     >
@@ -90,7 +80,7 @@ function SectionCard({ title, icon, children }) {
   const { Paper, Stack } = getMaterialUI();
   const { Icon } = UI;
   return (
-    <Paper variant="outlined" sx={{ p: 2.5, mb: 2, ...cardSx(c) }}>
+    <Paper variant="outlined" sx={{ p: 2.5, mb: 2, ...cardSx(c, { tone: "default" }) }}>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
         {icon && <Icon icon={icon} size={22} />}
         <DocText variant="h6" bold>{title}</DocText>

@@ -5,7 +5,7 @@ import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
 import { resolveDocDriver } from "../core/doc-driver.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
-import { aggregateDotState } from "../core/checks.ts";
+import { ticketListDotState } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
@@ -16,7 +16,7 @@ import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 
-const ESTADO_COLOR = { abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error" };
+const ESTADO_DOT = { abierto: "warn", "en-progreso": "info", cerrado: "complete", bloqueado: "overdue" };
 /* Spaces reales de tickets; "general" los combina todos sin filtro. */
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
@@ -103,6 +103,18 @@ function DriverToggle({ driver, onChange }) {
   );
 }
 
+function TkEstadoDot({ estado }) {
+  const { Tooltip } = getMaterialUI();
+  if (!estado) return null;
+  const key = String(estado).toLowerCase();
+  const dot = ESTADO_DOT[key] || "idle";
+  return (
+    <Tooltip title={"Estado: " + String(estado)}>
+      <span className={"nav-status-dot nav-status-dot--" + dot} aria-label={"Estado: " + String(estado)} />
+    </Tooltip>
+  );
+}
+
 function TicketDetail(props) {
   const { useState, useEffect, useRef, useCallback } = getReact();
   const { Stack, Typography, Alert, CircularProgress, Chip, Box, useTheme } = getMaterialUI();
@@ -153,10 +165,18 @@ function TicketDetail(props) {
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
-        <Chip size="small" label={props.iticket} sx={{ bgcolor: "#fff", color: "#111", fontWeight: 700 }} />
         <RevisadoCheck project={tkSpace} revisadoKey={rKey} reloadKey={props.reloadKey} label={props.iticket} showLabel={false} hint="Marcar ticket como revisado y ejecutado" />
+        <Chip
+          size="small"
+          label={
+            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
+              <TkEstadoDot estado={tk.estado} />
+              {props.iticket}
+            </Box>
+          }
+          sx={{ bgcolor: "#fff", color: "#111", fontWeight: 700 }}
+        />
         <Chip size="small" variant="outlined" label={tkSpace} />
-        {tk.estado && <Chip size="small" color={ESTADO_COLOR[String(tk.estado)] || "default"} label={String(tk.estado)} />}
         {tk.tiempoTotalMinutos != null && <Chip size="small" variant="outlined" label={"Total " + String(tk.tiempoTotalMinutos) + " min"} />}
         <Box sx={{ flex: 1 }} />
         <TkReportSwitch mode={reportView} onToggle={toggleReport} />
@@ -200,6 +220,12 @@ export function TicketsDiligenciaView(props) {
   const bootSelRef = useRef(typeof boot.sel === "string" && boot.sel ? boot.sel : null);
   const [selected, setSelected] = useState(bootSelRef.current);
   const [revisadoMap, setRevisadoMap] = useState({});
+  const [ageTick, setAgeTick] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setAgeTick((n) => n + 1), 60000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -256,8 +282,9 @@ export function TicketsDiligenciaView(props) {
   const treeItems = rows.map((t) => {
     const id = ticketId(t);
     const rKey = revisadoKeyOf(t, id);
-    return { id, date: dateOf(t), label: id, secondary: String(t.titulo || t.title || ""), dotState: aggregateDotState([rKey], revisadoMap) };
+    return { id, date: dateOf(t), label: id, secondary: String(t.titulo || t.title || ""), dotState: ticketListDotState(t, revisadoMap, rKey) };
   });
+  void ageTick;
 
   return (
     <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>

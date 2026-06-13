@@ -1,5 +1,9 @@
 /** Monta CodeMirror en bloques `.tk-code-wrap` generados por el driver HTML. */
-import { readStoredThemeMode } from "../core/theme-mode.ts";
+function readStoredThemeMode(): "light" | "dark" {
+  const key = window.ThemeInit?.lsKey ?? "jagudeloe:theme";
+  const mode = window.ThemeInit?.readMode?.(key);
+  return mode === "light" || mode === "dark" ? mode : "dark";
+}
 
 function cmMode(lang: string): string | { name: string; json?: boolean } {
   const l = lang.toLowerCase();

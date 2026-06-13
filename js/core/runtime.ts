@@ -1,20 +1,4 @@
-/**
- * Runtime del stack (React / MUI). Llamar tras stack.mjs + loadIsaFront.
- */
-export function getReact() {
-  const r = globalThis.React;
-  if (!r?.useState) throw new Error("React no cargado — ejecutar stack.mjs primero");
-  return r;
-}
-
-export function getReactDOM() {
-  const r = globalThis.ReactDOM;
-  if (!r?.createRoot) throw new Error("ReactDOM no cargado — ejecutar stack.mjs primero");
-  return r;
-}
-
-export function getMaterialUI() {
-  const m = globalThis.MaterialUI;
-  if (!m?.ThemeProvider) throw new Error("MaterialUI no cargado — ejecutar stack.mjs primero");
-  return m;
-}
+/** Acceso al stack React/MUI (front-shared). */
+export const getReact = () => window.ISAFront.getReact();
+export const getReactDOM = () => window.ISAFront.getReactDOM();
+export const getMaterialUI = () => window.ISAFront.getMaterialUI();

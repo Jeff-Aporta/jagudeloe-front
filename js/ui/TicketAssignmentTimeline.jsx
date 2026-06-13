@@ -15,6 +15,7 @@ import {
   timelineSliderStep,
   xForTime,
 } from "../core/tk-timeline-chart.ts";
+import { useGlassColors, glassCardSx } from "./glassSurface.ts";
 
 const CHART_W = 920;
 const RANGE_STRIP_H = 22;
@@ -25,13 +26,11 @@ const TAB_IDS = [
 ];
 
 function useColors() {
+  const c = useGlassColors();
   const { useTheme } = getMaterialUI();
   const dark = useTheme().palette.mode === "dark";
   return {
-    cardBg: dark ? "#132f4c" : "#ffffff",
-    border: dark ? "rgba(158,197,235,0.3)" : "rgba(10,37,64,0.15)",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
+    ...c,
     grid: dark ? "rgba(158,197,235,0.12)" : "rgba(10,37,64,0.08)",
     conc: dark ? "rgba(30,144,255,0.45)" : "rgba(30,144,255,0.35)",
   };
@@ -375,7 +374,7 @@ export function TicketAssignmentTimeline({ tickets, project }) {
   );
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: c.cardBg, borderColor: c.border }}>
+    <Paper variant="outlined" sx={glassCardSx(c, { p: 2, mb: 3 })}>
       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: c.text, mb: 0.5 }}>
         Asignación temporal · todos los tickets
       </Typography>

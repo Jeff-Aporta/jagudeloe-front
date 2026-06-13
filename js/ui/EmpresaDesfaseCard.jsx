@@ -6,18 +6,17 @@ import {
   formatEmpresaHoras,
   formatHabilConDecimal,
 } from "../core/tk-empresa-report.ts";
+import { useGlassColors, glassCardGradientSx, glassInnerSx } from "./glassSurface.ts";
 
 function useColors() {
+  const c = useGlassColors();
   const { useTheme } = getMaterialUI();
   const dark = useTheme().palette.mode === "dark";
   return {
-    errBg: dark ? "rgba(211,47,47,0.12)" : "rgba(211,47,47,0.08)",
+    ...c,
     errBorder: dark ? "rgba(244,67,54,0.55)" : "#d32f2f",
     errText: dark ? "#ff8a80" : "#b71c1c",
-    warnBg: dark ? "rgba(237,108,2,0.12)" : "rgba(237,108,2,0.08)",
     warnBorder: dark ? "rgba(255,152,0,0.5)" : "#ed6c02",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
   };
 }
 
@@ -31,8 +30,8 @@ function DesfaseRow({ row, colors: c }) {
         p: 1.5,
         borderRadius: 1,
         border: 1,
-        borderColor: row.pendienteHitos ? c.warnBorder : inflado ? c.errBorder : "rgba(158,197,235,0.25)",
-        bgcolor: row.pendienteHitos ? c.warnBg : inflado ? "rgba(211,47,47,0.06)" : "transparent",
+        borderColor: row.pendienteHitos ? c.warnBorder : inflado ? c.errBorder : c.border,
+        ...glassInnerSx(c, row.pendienteHitos ? "warn" : inflado ? "err" : "node"),
       }}
     >
       <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: c.text, mb: 0.75 }}>{row.label}</Typography>
@@ -85,13 +84,13 @@ export function EmpresaDesfaseCard({ desfase }) {
   return (
     <Paper
       variant="outlined"
-      sx={{
+      sx={glassCardGradientSx(c, {
         p: 2,
         mb: 3,
-        bgcolor: isError ? c.errBg : isWarn ? c.warnBg : "transparent",
-        borderColor: isError ? c.errBorder : isWarn ? c.warnBorder : c.errBorder,
-        borderWidth: 2,
-      }}
+        tone: isError ? "err" : isWarn ? "warn" : "default",
+        borderColor: isError ? c.errBorder : isWarn ? c.warnBorder : c.border,
+        borderWidth: isError || isWarn ? 2 : 1,
+      })}
     >
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
         <Icon icon={isError ? "mdi:alert-octagon" : "mdi:alert-circle-outline"} size={22} />

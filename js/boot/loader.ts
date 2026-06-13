@@ -2,7 +2,7 @@
   "use strict";
 
   const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@05509e7/cdn/boot-helper.mjs?v=05509e7";
+    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9e576a1/cdn/boot-helper.mjs?v=9e576a1";
 
   const MODULE_LOADER = "./js/boot/module-graph.mjs";
   const ENTRY = "js/main.jsx";

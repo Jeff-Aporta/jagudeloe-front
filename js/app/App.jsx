@@ -6,7 +6,6 @@ import { invalidateRevisadoCache } from "../api/client.ts";
 import { useRealtimeNotifications } from "../ui/realtime.ts";
 import { BitacoraView } from "../views/BitacoraView.jsx";
 import { TicketsView } from "../views/TicketsView.jsx";
-import { LoginButton } from "./Login.jsx";
 
 const SPACES = [
   { id: "general", label: "General", icon: "mdi:view-grid-outline" },
@@ -52,7 +51,7 @@ function LegacyNav(props) {
 export function App() {
   const { useState, useEffect, useRef } = getReact();
   const { Box, Stack, Tooltip, IconButton } = getMaterialUI();
-  const { Icon } = UI;
+  const { Icon, LoginButton } = UI;
   const { show: toastShow } = Toast;
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
   const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";

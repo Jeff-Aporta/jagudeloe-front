@@ -319,6 +319,7 @@ function DataTable({ headers, rows, title }) {
 function BlockBody({ block }) {
 
   const { Box, Typography, Link, Accordion, AccordionSummary, AccordionDetails, Chip } = getMaterialUI();
+  const { Icon } = UI;
 
   const kind = String(block.kind || "text").toLowerCase();
 
@@ -446,7 +447,7 @@ function BlockBody({ block }) {
 
       <Accordion disableGutters variant="outlined" sx={{ my: 1, borderRadius: 2, "&:before": { display: "none" } }}>
 
-        <AccordionSummary expandIcon={<UI.Icon icon="mdi:chevron-down" size={20} />}>
+        <AccordionSummary expandIcon={<Icon icon="mdi:chevron-down" size={20} />}>
 
           <Typography variant="subtitle2" fontWeight={600}>{p.title ?? "Detalle"}</Typography>
 
@@ -503,6 +504,7 @@ function BlockBody({ block }) {
 function SectionCard({ icon, title, accent, children }) {
 
   const { Paper, Stack, Typography, Box } = getMaterialUI();
+  const { Icon } = UI;
 
   const color = accent || "#1e90ff";
 
@@ -610,7 +612,7 @@ function SectionCard({ icon, title, accent, children }) {
 
           >
 
-            <UI.Icon icon={icon} size={18} />
+            <Icon icon={icon} size={18} />
 
           </Box>
 

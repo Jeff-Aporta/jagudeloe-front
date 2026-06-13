@@ -25,5 +25,3 @@
 - **Tickets**: listado y detalle por estado
 - **Revisión**: marcar contenido como revisado
 - **Tema** claro/oscuro
-
-Icono: `mdi:notebook-outline` · tema `#37474f`

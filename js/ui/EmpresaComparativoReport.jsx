@@ -9,16 +9,14 @@ import {
 } from "../core/tk-empresa-comparativo.ts";
 import { TicketAssignmentTimeline } from "./TicketAssignmentTimeline.jsx";
 import { projectLabel } from "../core/tk-spaces.ts";
+import { useGlassColors, glassCardGradientSx, glassInnerSx } from "./glassSurface.ts";
 
 function useColors() {
+  const c = useGlassColors();
   const { useTheme } = getMaterialUI();
   const dark = useTheme().palette.mode === "dark";
   return {
-    pageBg: dark ? "#0a1929" : "#eef2f7",
-    cardBg: dark ? "#132f4c" : "#ffffff",
-    border: dark ? "rgba(158,197,235,0.3)" : "rgba(10,37,64,0.15)",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
+    ...c,
     pos: dark ? "#ff8a80" : "#c62828",
     neg: dark ? "#82b1ff" : "#1565c0",
     barHabil: "#1e90ff",
@@ -132,7 +130,7 @@ function SummaryBlock({ averages, colors: c }) {
   ];
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: c.cardBg, borderColor: c.border }}>
+    <Paper variant="outlined" sx={glassCardGradientSx(c, { p: 2, mb: 3 })}>
       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: c.text, mb: 1.5 }}>
         Resumen comparativo (promedios)
       </Typography>
@@ -141,7 +139,7 @@ function SummaryBlock({ averages, colors: c }) {
           <Paper
             key={b.title}
             variant="outlined"
-            sx={{ flex: "1 1 240px", p: 1.5, borderColor: c.border, bgcolor: c.cardBg }}
+            sx={glassCardGradientSx(c, { flex: "1 1 240px", p: 1.5, tone: "hi" })}
           >
             <Typography variant="body2" sx={{ fontWeight: 600, color: c.text, mb: 0.75 }}>{b.title}</Typography>
             <Stack spacing={0.35}>
@@ -191,7 +189,12 @@ function ComparativoTable({ rows, averages, colors: c }) {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography,
   } = getMaterialUI();
 
-  const headSx = { fontWeight: 700, color: c.text, bgcolor: c.cardBg, borderColor: c.border };
+  const headSx = {
+    fontWeight: 700,
+    color: c.text,
+    ...glassInnerSx(c, "chip"),
+    borderColor: c.border,
+  };
   const cellSx = { color: c.text, borderColor: c.border, verticalAlign: "top" };
 
   const avgRow = (
@@ -204,7 +207,7 @@ function ComparativoTable({ rows, averages, colors: c }) {
   );
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, borderColor: c.border, bgcolor: c.cardBg }}>
+    <TableContainer component={Paper} variant="outlined" sx={glassCardGradientSx(c, { mb: 3 })}>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>

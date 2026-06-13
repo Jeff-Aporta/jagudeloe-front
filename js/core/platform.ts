@@ -1,74 +1,53 @@
 /*
  * Puente lazy al runtime ISAFront (window.ISAJ tras isa-setup).
  */
-function isa(): IsajNs {
-  const j = window.ISAJ;
-  if (!j?.UI) throw new Error("ISAJ no registrado — ejecutar isa-setup.ts antes que platform");
-  return j;
-}
-
-function sessionApi() {
-  const j = isa();
-  if (j.Session) return j.Session;
-  const auth = j.Auth;
-  if (!auth) throw new Error("ISAJ Session/Auth no disponible");
-  return {
-    current() {
-      if (!auth.isLoggedIn()) return null;
-      return { username: auth.username(), expiresAt: null as string | null };
-    },
-    isLoggedIn: () => auth.isLoggedIn(),
-    username: () => auth.username(),
-    authHeader: () => auth.authHeader(),
-    login: (u: string, p: string) => auth.login(u, p),
-    logout: () => auth.logout(),
-    get EVENT() { return auth.EVENT; },
-  };
-}
+const bridge = () => window.ISAFront.createPlatformBridge("ISAJ", { sessionFromAuth: true });
 
 export const UI = {
-  get Icon() { return isa().UI.Icon; },
-  get TargetSwitch() { return isa().UI.TargetSwitch; },
-  get ThemeSwitch() { return isa().UI.ThemeSwitch; },
-  get Loading() { return isa().UI.Loading; },
-  get ErrorBox() { return isa().UI.ErrorBox; },
+  get Icon() { return bridge().UI.Icon; },
+  get TargetSwitch() { return bridge().UI.TargetSwitch; },
+  get ThemeSwitch() { return bridge().UI.ThemeSwitch; },
+  get Loading() { return bridge().UI.Loading; },
+  get ErrorBox() { return bridge().UI.ErrorBox; },
+  get LoginButton() { return bridge().UI.LoginButton; },
+  get SqlBlock() { return bridge().UI.SqlBlock; },
 };
 
 export const Session = {
-  current: () => sessionApi().current(),
-  isLoggedIn: () => sessionApi().isLoggedIn(),
-  username: () => sessionApi().username(),
-  authHeader: () => sessionApi().authHeader(),
-  appHeader: () => sessionApi().appHeader?.() ?? {},
-  appId: () => sessionApi().appId?.() ?? window.ISAJ?.APP_ID ?? null,
-  login: (u: string, p: string) => sessionApi().login(u, p),
-  logout: () => sessionApi().logout(),
-  refreshProfile: () => sessionApi().refreshProfile?.(),
-  capabilities: () => sessionApi().capabilities?.() ?? [],
-  can: (cap: string) => sessionApi().can?.(cap) ?? false,
-  blockReason: (cap: string) => sessionApi().blockReason?.(cap) ?? "Inicia sesión para usar este servicio",
-  get EVENT() { return sessionApi().EVENT; },
+  current: () => bridge().Session.current(),
+  isLoggedIn: () => bridge().Session.isLoggedIn(),
+  username: () => bridge().Session.username(),
+  authHeader: () => bridge().Session.authHeader(),
+  appHeader: () => bridge().Session.appHeader(),
+  appId: () => bridge().Session.appId(),
+  login: (u: string, p: string) => bridge().Session.login(u, p),
+  logout: () => bridge().Session.logout(),
+  refreshProfile: () => bridge().Session.refreshProfile(),
+  capabilities: () => bridge().Session.capabilities(),
+  can: (cap: string) => bridge().Session.can(cap),
+  blockReason: (cap: string) => bridge().Session.blockReason(cap),
+  get EVENT() { return bridge().Session.EVENT; },
 };
 
 export const Toast = {
   show: (opts: { message: string; severity?: string; durationMs?: number; title?: string }) =>
-    isa().Toast?.show?.(opts) ?? isa().Feedback?.toast?.show?.({ message: opts.message, severity: opts.severity, durationMs: opts.durationMs, title: opts.title }),
+    bridge().Toast.show(opts),
 };
 
 export const Feedback = {
-  get toast() { return isa().Feedback?.toast; },
-  get process() { return isa().Feedback?.process; },
-  runProcess: (opts: Record<string, unknown>) => isa().Feedback?.runProcess?.(opts),
-  confirm: (opts: Record<string, unknown>) => isa().Feedback?.confirm?.(opts),
+  get toast() { return bridge().Feedback.toast; },
+  get process() { return bridge().Feedback.process; },
+  runProcess: (opts: Record<string, unknown>) => bridge().Feedback.runProcess(opts),
+  confirm: (opts: Record<string, unknown>) => bridge().Feedback.confirm(opts),
 };
 
 export const Realtime = {
-  getStatus: () => isa().Realtime?.getStatus?.(),
+  getStatus: () => bridge().Realtime.getStatus(),
 };
 
 export const Config = {
-  base: () => isa().Config.base(),
-  apiUrl: (path: string) => isa().Config.apiUrl(path),
-  isLocal: () => isa().Config.isLocal?.() ?? false,
-  setLocal: (v: boolean) => isa().Config.setLocal?.(v),
+  base: () => bridge().Config.base(),
+  apiUrl: (path: string) => bridge().Config.apiUrl(path),
+  isLocal: () => bridge().Config.isLocal(),
+  setLocal: (v: boolean) => bridge().Config.setLocal(v),
 };

@@ -21,3 +21,43 @@ html[data-mui-color-scheme="dark"] .isa-view-frame > .MuiTabs-root {
 .isa-view-frame > .MuiTabs-root .MuiTab-root.Mui-selected {
   text-shadow: 0 0 12px rgba(30, 144, 255, 0.5);
 }
+
+/* Dots de navegación (bitácora / tickets) — colores explícitos, sin MUI bgcolor */
+.nav-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.nav-status-dot--placeholder {
+  background-color: rgba(158, 158, 158, 0.6);
+}
+
+.nav-status-dot--complete {
+  background-color: #2e9e5b;
+  box-shadow: 0 0 6px rgba(46, 158, 91, 0.55);
+}
+
+.nav-status-dot--partial,
+.nav-status-dot--warn {
+  background-color: #ed6c02;
+  box-shadow: 0 0 6px rgba(237, 108, 2, 0.45);
+}
+
+.nav-status-dot--overdue {
+  background-color: #d32f2f;
+  box-shadow: 0 0 6px rgba(211, 47, 47, 0.45);
+}
+
+.nav-status-dot--idle,
+.nav-status-dot--none {
+  background-color: rgba(158, 158, 158, 0.65);
+}
+
+.nav-status-dot--info {
+  background-color: #0288d1;
+  box-shadow: 0 0 6px rgba(2, 136, 209, 0.45);
+}

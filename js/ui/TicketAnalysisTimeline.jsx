@@ -2,11 +2,14 @@
 import { getMaterialUI } from "../core/runtime.ts";
 import { UI } from "../core/platform.ts";
 import { formatMinutos } from "../core/tk-metrics.ts";
+import { useGlassColors, glassInnerSx, glassGradient } from "./glassSurface.ts";
 
 function useColors() {
+  const base = useGlassColors();
   const { useTheme } = getMaterialUI();
   const dark = useTheme().palette.mode === "dark";
   return {
+    ...base,
     rail: dark ? "rgba(158,197,235,0.35)" : "rgba(10,37,64,0.18)",
     dot: "#1e90ff",
     dotDone: "#2e9e5b",
@@ -21,11 +24,7 @@ function useColors() {
     jornadaOutBg: dark ? "rgba(213,0,249,0.12)" : "rgba(213,0,249,0.08)",
     jornadaOutBorder: dark ? "rgba(213,0,249,0.45)" : "rgba(213,0,249,0.35)",
     segGap: dark ? "rgba(158,197,235,0.12)" : "rgba(10,37,64,0.06)",
-    text: dark ? "#e8f4ff" : "#0a2540",
-    muted: dark ? "#9ec5eb" : "#4a6278",
-    chipBg: dark ? "#1a3a5c" : "#f0f6ff",
-    cardBg: dark ? "rgba(15, 34, 54, 0.78)" : "rgba(255, 255, 255, 0.92)",
-    border: dark ? "rgba(30,144,255,0.28)" : "rgba(30,144,255,0.16)",
+    chipBg: dark ? "rgba(26, 58, 92, 0.55)" : "rgba(240, 247, 255, 0.65)",
     fecha: dark ? "#9aa8b4" : "#808080",
   };
 }
@@ -107,6 +106,7 @@ function DetailLine({ parts }) {
 
 function TimelineNode({ ms, isLast, colors: c }) {
   const { Box, Stack, Typography } = getMaterialUI();
+  const { Icon } = UI;
   const dc = dotColor(ms, c);
   const isJornada = !!ms.esJornada;
   const jCol = isJornada ? jornadaColors(ms, c) : null;
@@ -117,11 +117,13 @@ function TimelineNode({ ms, isLast, colors: c }) {
     : jCol
       ? jCol.border
       : c.border;
-  const cardBg = ms.esExclusion
-    ? "rgba(237,108,2,0.06)"
+  const nodeTone = ms.esExclusion
+    ? "excl"
     : jCol
-      ? jCol.bg
-      : c.cardBg;
+      ? jornadaTone(ms) === "in"
+        ? "jornadaIn"
+        : "jornadaOut"
+      : "node";
 
   const metaParts = [
     { text: ms.hora, mono: true, color: jCol ? jCol.color : c.text },
@@ -159,7 +161,7 @@ function TimelineNode({ ms, isLast, colors: c }) {
             mt: 1.1,
             bgcolor: dc,
             border: 2,
-            borderColor: c.cardBg,
+            borderColor: c.cardHi,
             boxShadow: `0 0 0 1px ${dc}55`,
             zIndex: 1,
           }}
@@ -173,11 +175,11 @@ function TimelineNode({ ms, isLast, colors: c }) {
             borderRadius: 1.5,
             border: 1,
             borderColor: cardBorder,
-            bgcolor: cardBg,
+            ...glassInnerSx(c, nodeTone),
           }}
         >
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.35 }}>
-            <UI.Icon icon={ms.icon} size={16} />
+            <Icon icon={ms.icon} size={16} />
             <Typography
               component="span"
               sx={{ fontWeight: 600, color: titleColor, fontSize: "0.875rem", lineHeight: 1.25 }}
@@ -237,7 +239,18 @@ function ProportionBar({ milestones, colors: c }) {
       <Typography variant="caption" sx={{ color: c.muted, display: "block", mb: 0.75 }}>
         Distribución del tiempo entre hitos (hábil vs excluido)
       </Typography>
-      <Stack direction="row" sx={{ height: 10, borderRadius: 1, overflow: "hidden", border: 1, borderColor: c.border }}>
+      <Stack
+        direction="row"
+        sx={{
+          height: 10,
+          borderRadius: 1,
+          overflow: "hidden",
+          border: 1,
+          borderColor: c.border,
+          background: glassGradient(c, "default"),
+          backdropFilter: "blur(8px)",
+        }}
+      >
         {segs.map((s, i) => (
           <Box
             key={i}
@@ -245,7 +258,10 @@ function ProportionBar({ milestones, colors: c }) {
             sx={{
               width: `${(s.mins / total) * 100}%`,
               minWidth: s.mins > 0 ? 4 : 0,
-              bgcolor: s.excl ? c.segExcl : c.segHabil,
+              background: s.excl
+                ? "linear-gradient(180deg, rgba(237,108,2,0.85), rgba(237,108,2,0.65))"
+                : "linear-gradient(180deg, rgba(30,144,255,0.85), rgba(99,102,241,0.65))",
+              opacity: 0.92,
             }}
           />
         ))}
@@ -266,7 +282,7 @@ function ProportionBar({ milestones, colors: c }) {
 
 export function TicketAnalysisTimeline({ milestones, resumen }) {
   const c = useColors();
-  const { Box, Paper, Typography, Stack } = getMaterialUI();
+  const { Box, Typography, Stack } = getMaterialUI();
 
   if (!milestones?.length) {
     return (
@@ -279,7 +295,7 @@ export function TicketAnalysisTimeline({ milestones, resumen }) {
   const last = milestones[milestones.length - 1];
 
   return (
-    <Paper variant="outlined" sx={{ p: 1.5, bgcolor: c.cardBg, borderColor: c.border }}>
+    <Box>
       {resumen && (
         <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1.5 }}>
           {resumen.map((r) => (
@@ -290,8 +306,8 @@ export function TicketAnalysisTimeline({ milestones, resumen }) {
                 py: 0.5,
                 borderRadius: 1,
                 border: 1,
-                borderColor: r.highlight ? c.segHabil : c.border,
-                bgcolor: r.highlight ? c.chipBg : "transparent",
+                borderColor: r.highlight ? "rgba(30,144,255,0.45)" : c.border,
+                ...(r.highlight ? glassInnerSx(c, "chip") : { background: "transparent" }),
               }}
             >
               <Typography variant="caption" sx={{ color: c.muted, display: "block", fontSize: "0.6875rem" }}>
@@ -337,10 +353,13 @@ export function TicketAnalysisTimeline({ milestones, resumen }) {
         <Box
           sx={{
             mt: 1,
-            pt: 1,
+            pt: 1.25,
+            px: 1,
+            borderRadius: 1.5,
             borderTop: 1,
             borderColor: c.border,
             textAlign: "center",
+            ...glassInnerSx(c, "hi"),
           }}
         >
           <Typography variant="caption" sx={{ color: c.muted, display: "block" }}>
@@ -351,6 +370,6 @@ export function TicketAnalysisTimeline({ milestones, resumen }) {
           </Typography>
         </Box>
       )}
-    </Paper>
+    </Box>
   );
 }
