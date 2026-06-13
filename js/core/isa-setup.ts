@@ -1,4 +1,5 @@
 /** Registra widgets compartidos en window.ISAJ vía ISAFront. */
+import { useThemeMode, makeNeonTheme } from "./theme.ts";
 
 /** URLs del orquestador (front-shared/constants.js). */
 const ORCH = {
@@ -7,8 +8,6 @@ const ORCH = {
   lsKey: "jeff:gateway-local",
   event: "jeff:gateway-target",
 };
-
-import { useThemeMode, makeNeonTheme } from "./theme.ts";
 
 window.ISAFront.registerApp({
   ns: "ISAJ",
