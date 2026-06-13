@@ -1,9 +1,9 @@
 /* css/markdown — render de segmentos markdown de la bitácora. */
 .md-body { line-height: 1.6; word-break: break-word; }
-.md-body h1, .md-body h2, .md-body h3 { color: #1e90ff; margin: 0.6em 0 0.3em; }
-.md-body code { background: rgba(30, 144, 255, 0.12); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
-.md-body pre { background: rgba(30, 144, 255, 0.08); padding: 12px; border-radius: 8px; overflow: auto; }
-.md-body a { color: #1e90ff; }
+.md-body h1, .md-body h2, .md-body h3 { color: var(--neon-blue, #1e90ff); margin: 0.6em 0 0.3em; text-shadow: 0 0 20px rgba(30,144,255,0.25); }
+.md-body code { background: rgba(30, 144, 255, 0.14); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; box-shadow: 0 0 8px rgba(30,144,255,0.08); }
+.md-body pre { background: linear-gradient(145deg, rgba(30,144,255,0.1), rgba(99,102,241,0.06)); padding: 12px; border-radius: 10px; overflow: auto; border: 1px solid rgba(30,144,255,0.2); }
+.md-body a { color: var(--neon-cyan, #00bcd4); }
 .md-body table { border-collapse: collapse; }
 .md-body th, .md-body td { border: 1px solid rgba(30, 144, 255, 0.3); padding: 4px 8px; }
 
