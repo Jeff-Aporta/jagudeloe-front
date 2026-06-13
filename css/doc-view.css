@@ -16,18 +16,60 @@ body.tk-doc-html {
 html.tk-doc-web,
 body.tk-doc-web {
   background: #0b1220;
+  background-attachment: fixed;
 }
 
 html[data-mui-color-scheme="light"].tk-doc-web,
 html[data-mui-color-scheme="light"] body.tk-doc-web,
 body[data-mui-color-scheme="light"].tk-doc-web {
   background: #f0f6ff;
+  background-attachment: fixed;
 }
 
+/* Full-page JSX — fondo fijo (no scroll). Oscuro ~10% más brillante que la app embebida. */
 html[data-mui-color-scheme="dark"].tk-doc-web,
 html[data-mui-color-scheme="dark"] body.tk-doc-web,
 body[data-mui-color-scheme="dark"].tk-doc-web {
-  background: #0b1220;
+  background: #0e182c;
+  background-attachment: fixed;
+}
+
+#root.tk-doc-web {
+  position: relative;
+  isolation: isolate;
+}
+
+#root.tk-doc-web::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-attachment: fixed;
+}
+
+html[data-mui-color-scheme="light"] #root.tk-doc-web::before {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 144, 255, 0.12), transparent 55%),
+    radial-gradient(ellipse 90% 55% at 15% -8%, rgba(30, 144, 255, 0.14), transparent 52%),
+    radial-gradient(ellipse 70% 45% at 92% 5%, rgba(99, 102, 241, 0.08), transparent 48%),
+    linear-gradient(180deg, #f0f6ff 0%, #f8fafc 100%);
+}
+
+html[data-mui-color-scheme="dark"] #root.tk-doc-web::before {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(99, 102, 241, 0.20), transparent 55%),
+    radial-gradient(ellipse 90% 55% at 15% -8%, rgba(99, 102, 241, 0.24), transparent 52%),
+    radial-gradient(ellipse 70% 45% at 92% 5%, rgba(0, 229, 255, 0.11), transparent 48%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(30, 144, 255, 0.088), transparent 55%),
+    linear-gradient(180deg, #0e182c 0%, #131f38 100%);
+}
+
+#root.tk-doc-web .tk-doc-web-surface {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  background-image: none !important;
 }
 
 html.tk-doc-mode #root,
