@@ -86,7 +86,10 @@ function appAssetUrl(path: string): string {
   return new URL(p, base).href;
 }
 
-async function runJsxDriver(tk: Record<string, unknown>): Promise<void> {
+async function runJsxDriver(
+  tk: Record<string, unknown>,
+  opts: { space: string; iticket: string },
+): Promise<void> {
   const BOOT_HELPER =
     "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@05509e7/cdn/boot-helper.mjs?v=05509e7";
 
@@ -100,7 +103,10 @@ async function runJsxDriver(tk: Record<string, unknown>): Promise<void> {
   await loadSharedUi(Babel);
   await importAppEntry("js/core/isa-setup.ts", Babel);
   const mod = await importAppEntry("js/boot/doc-viewer-web.jsx", Babel);
-  mod.mountDocWebView(tk);
+  mod.mountDocWebView(tk, {
+    space: opts.space,
+    iticket: opts.iticket,
+  });
 }
 
 export async function runDocViewer(boot: { space: string; sel: string; driver?: string }): Promise<void> {
@@ -124,7 +130,7 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
   document.title = title;
 
   if (driver === "jsx") {
-    await runJsxDriver(tk);
+    await runJsxDriver(tk, { space, iticket });
     return;
   }
   runHtmlDriver(root, tk);
