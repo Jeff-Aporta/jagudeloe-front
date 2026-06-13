@@ -27,5 +27,3 @@
 - **Tema** claro/oscuro
 
 Icono: `mdi:notebook-outline` · tema `#37474f`
-
-MIT · [Jeff-Aporta](https://github.com/Jeff-Aporta)
