@@ -1,5 +1,6 @@
 /** Tema neon / tech — jagudeloe (override de dodger en ISAJ.Theme). */
 import { getMaterialUI, getReact } from "./runtime.ts";
+import { applyThemeModeToDocument, type ThemeMode } from "./theme-mode.ts";
 
 export const LS_KEY = "jagudeloe:theme";
 export const NEON = {
@@ -161,12 +162,18 @@ export function makeNeonTheme(mode: string) {
 }
 
 export function useThemeMode() {
-  const { useState, useCallback, useMemo } = getReact();
+  const { useState, useCallback, useMemo, useEffect } = getReact();
   const [mode, setMode] = useState(initialMode);
+
+  useEffect(() => {
+    applyThemeModeToDocument(mode as ThemeMode);
+  }, [mode]);
+
   const toggle = useCallback(() => {
     setMode((m) => {
       const n = m === "dark" ? "light" : "dark";
       try { localStorage.setItem(LS_KEY, n); } catch { /* ignore */ }
+      applyThemeModeToDocument(n as ThemeMode);
       return n;
     });
   }, []);
