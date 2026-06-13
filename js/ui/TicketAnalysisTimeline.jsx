@@ -24,8 +24,8 @@ function useColors() {
     text: dark ? "#e8f4ff" : "#0a2540",
     muted: dark ? "#9ec5eb" : "#4a6278",
     chipBg: dark ? "#1a3a5c" : "#f0f6ff",
-    cardBg: dark ? "#132f4c" : "#ffffff",
-    border: dark ? "rgba(158,197,235,0.3)" : "rgba(10,37,64,0.12)",
+    cardBg: dark ? "rgba(15, 34, 54, 0.78)" : "rgba(255, 255, 255, 0.92)",
+    border: dark ? "rgba(30,144,255,0.28)" : "rgba(30,144,255,0.16)",
     fecha: dark ? "#9aa8b4" : "#808080",
   };
 }
