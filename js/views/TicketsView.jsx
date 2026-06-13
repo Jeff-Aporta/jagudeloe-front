@@ -13,7 +13,8 @@ import { buildDocEmailUrl, buildDocWebUrl } from "../core/doc-view-url.ts";
 import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
-import { TicketMetricsView } from "./TicketMetricsView.jsx";
+import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
+import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 
 const ESTADO_COLOR = { abierto: "warning", "en-progreso": "info", cerrado: "success", bloqueado: "error" };
 /* Spaces reales de tickets; "general" los combina todos sin filtro. */
@@ -103,15 +104,24 @@ function DriverToggle({ driver, onChange }) {
 }
 
 function TicketDetail(props) {
-  const { useState, useEffect, useRef } = getReact();
+  const { useState, useEffect, useRef, useCallback } = getReact();
   const { Stack, Typography, Alert, CircularProgress, Chip, Box, useTheme } = getMaterialUI();
   const { Loading, ErrorBox } = UI;
   const [state, setState] = useState({ loading: true, error: null, tk: null });
   const [driver, setDriver] = useState(() => resolveDocDriver(boot));
+  const [reportView, setReportView] = useState("diligencia");
   const htmlRef = useRef(null);
   const theme = useTheme();
 
   useEffect(() => subscribe((s) => setDriver(resolveDocDriver(s))), []);
+
+  useEffect(() => {
+    setReportView("diligencia");
+  }, [props.iticket]);
+
+  const toggleReport = useCallback(() => {
+    setReportView((prev) => (prev === "metricas" ? "diligencia" : "metricas"));
+  }, []);
 
   function onDriverChange(v) {
     merge({ driver: v });
@@ -149,11 +159,20 @@ function TicketDetail(props) {
         {tk.estado && <Chip size="small" color={ESTADO_COLOR[String(tk.estado)] || "default"} label={String(tk.estado)} />}
         {tk.tiempoTotalMinutos != null && <Chip size="small" variant="outlined" label={"Total " + String(tk.tiempoTotalMinutos) + " min"} />}
         <Box sx={{ flex: 1 }} />
-        <DriverToggle driver={driver} onChange={onDriverChange} />
-        <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} />
-        {driver === "html" && <CopyHtmlButton tk={tk} />}
+        <TkReportSwitch mode={reportView} onToggle={toggleReport} />
+        {reportView === "diligencia" && (
+          <>
+            <DriverToggle driver={driver} onChange={onDriverChange} />
+            <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} />
+            {driver === "html" && <CopyHtmlButton tk={tk} />}
+          </>
+        )}
       </Stack>
-      {driver === "jsx" ? (
+      {reportView === "metricas" ? (
+        <Box className="tk-doc-web-surface" sx={tkDocSurfaceSx()}>
+          <TicketMetricsDocument tk={tk} iticket={props.iticket} project={tkSpace} />
+        </Box>
+      ) : driver === "jsx" ? (
         <Box
           className="tk-doc-web-surface"
           sx={tkDocSurfaceSx()}
@@ -164,7 +183,7 @@ function TicketDetail(props) {
         <Box
           ref={htmlRef}
           className="tk-content"
-          sx={{ flex: 1, minHeight: 0, overflow: "auto", bgcolor: "#eef2f7", "& a": { wordBreak: "break-word" } }}
+          sx={{ flex: 1, minHeight: 0, overflow: "auto", bgcolor: "transparent", "& a": { wordBreak: "break-word" } }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
@@ -252,55 +271,13 @@ export function TicketsDiligenciaView(props) {
   );
 }
 
-const TK_TABS = [
-  { id: "diligencia", label: "Diligencia", icon: "mdi:clipboard-text-outline" },
-  { id: "metricas", label: "Métricas", icon: "mdi:chart-timeline-variant" },
-];
-
-/** Hub Tickets: Diligencia (listado) | Métricas (análisis TK). */
+/** Vista Tickets — listado + detalle (métricas efímeras desde toolbar del TK). */
 export function TicketsView(props) {
-  const { useState, useEffect } = getReact();
-  const bootTkTab = boot.sub === "metricas" || boot.tkTab === "metricas" ? "metricas" : "diligencia";
-  const [tkTab, setTkTab] = useState(TK_TABS.some((t) => t.id === bootTkTab) ? bootTkTab : "diligencia");
-  const ViewFrame = window.ISAFront?.Layout?.ViewFrame;
+  const { useEffect } = getReact();
 
-  useEffect(() => { merge({ sub: "tickets", tkTab }); }, [tkTab]);
+  useEffect(() => {
+    merge({ sub: "tickets", tkTab: undefined });
+  }, []);
 
-  const content = tkTab === "metricas"
-    ? <TicketMetricsView project={props.project} reloadKey={props.reloadKey} />
-    : <TicketsDiligenciaView project={props.project} reloadKey={props.reloadKey} />;
-
-  if (!ViewFrame) {
-    const { Box, Tabs, Tab } = getMaterialUI();
-    const { Icon } = UI;
-    return (
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-        <Tabs value={tkTab} onChange={(_e, v) => setTkTab(v)} variant="scrollable" sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
-          {TK_TABS.map((t) => (
-            <Tab
-              key={t.id}
-              value={t.id}
-              label={(
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-                  <Icon icon={t.icon} size={18} />
-                  <span>{t.label}</span>
-                </span>
-              )}
-              sx={{ minHeight: 40, textTransform: "none" }}
-            />
-          ))}
-        </Tabs>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{content}</Box>
-      </Box>
-    );
-  }
-
-  return (
-    <ViewFrame
-      navRow={{ ns: "ISAJ", value: tkTab, onChange: setTkTab, tabs: TK_TABS, minHeight: 40 }}
-      scroll={false}
-    >
-      {content}
-    </ViewFrame>
-  );
+  return <TicketsDiligenciaView project={props.project} reloadKey={props.reloadKey} />;
 }
