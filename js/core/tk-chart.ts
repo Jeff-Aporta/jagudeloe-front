@@ -133,13 +133,49 @@ function escapeXml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Render SVG estático (email / HTML driver). */
-export function renderChartSvg(spec: ChartSpec, theme: ChartTheme): string {
+export interface ChartBarLayout {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  value: number;
+  label: string;
+  seriesLabel: string;
+  labelIndex: number;
+  datasetIndex: number;
+}
+
+export interface ChartLayout {
+  width: number;
+  height: number;
+  padL: number;
+  padR: number;
+  padT: number;
+  padB: number;
+  plotW: number;
+  plotH: number;
+  titleY: number;
+  subtitleY: number;
+  bars: ChartBarLayout[];
+  grid: { y: number; val: number }[];
+  legend: { x: number; y: number; color: string; label: string }[];
+  xLabels: { x: number; y: number; text: string; rotate: number }[];
+  title: string;
+  subtitle: string;
+  yAxisLabel: string;
+  showValues: boolean;
+  rotateLabels: number;
+}
+
+/** Geometría del gráfico (web interactiva + SVG estático). */
+export function computeChartLayout(spec: ChartSpec): ChartLayout | null {
   const labels = spec.labels;
   const datasets = spec.datasets;
   const series = datasets.length || 1;
   const n = labels.length;
-  if (!n || !datasets.length) return "";
+  if (!n || !datasets.length) return null;
 
   const allVals = datasets.flatMap((d) => d.data);
   const rawMax = Math.max(...allVals, 0);
@@ -148,49 +184,47 @@ export function renderChartSvg(spec: ChartSpec, theme: ChartTheme): string {
   const ySpan = yMax - yMin || 1;
 
   const W = Math.max(480, Math.min(920, 56 + n * (series > 1 ? 42 : 72)));
-  const H = spec.rotateLabels ? 340 : 300;
+  const H = spec.rotateLabels ? 360 : 320;
   const padL = 56;
   const padR = 16;
-  const padT = spec.title ? 36 : 16;
   const padB = spec.rotateLabels ? 88 : 52;
+
+  const hasTitle = Boolean(spec.title?.trim());
+  const hasSubtitle = Boolean(spec.subtitle?.trim());
+  const titleY = hasTitle ? 18 : 0;
+  const subtitleY = hasSubtitle ? (hasTitle ? 34 : 18) : 0;
+  /** Leyenda en fila propia, debajo del título (evita solaparse con título centrado). */
+  const legendY = hasSubtitle ? 52 : hasTitle ? 38 : 14;
+  const padT = (datasets.length ? legendY : hasSubtitle ? subtitleY : hasTitle ? titleY : 12) + 14;
+
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
-  const parts: string[] = [];
-  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" class="tk-doc-chart-svg" style="width:100%;max-width:${W}px;height:auto;display:block;">`);
-  parts.push(`<rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="${theme.panel}" stroke="${theme.border}" stroke-width="1"/>`);
-
-  if (spec.title) {
-    parts.push(`<text x="${W / 2}" y="22" text-anchor="middle" fill="${theme.text}" font-size="13" font-weight="700" font-family="Tahoma,Arial,sans-serif">${escapeXml(spec.title)}</text>`);
-  }
-  if (spec.subtitle) {
-    parts.push(`<text x="${W / 2}" y="${spec.title ? 38 : 22}" text-anchor="middle" fill="${theme.muted}" font-size="11" font-family="Tahoma,Arial,sans-serif">${escapeXml(spec.subtitle)}</text>`);
-  }
-
-  const legendY = padT - 6;
-  let legendX = padL;
+  const legend: ChartLayout["legend"] = [];
+  let legendWidth = 0;
+  datasets.forEach((ds, di) => {
+    if (di > 0) legendWidth += 18;
+    legendWidth += 14 + ds.label.length * 6.2;
+  });
+  let legendX = Math.max(padL, (W - legendWidth) / 2);
   datasets.forEach((ds, di) => {
     const c = Array.isArray(ds.color) ? pickColor(ds.color, 0) : pickColor(ds.color, di);
-    parts.push(`<rect x="${legendX}" y="${legendY - 8}" width="10" height="10" rx="2" fill="${c}"/>`);
-    parts.push(`<text x="${legendX + 14}" y="${legendY}" fill="${theme.muted}" font-size="10" font-family="Tahoma,Arial,sans-serif">${escapeXml(ds.label)}</text>`);
+    legend.push({ x: legendX, y: legendY, color: c, label: ds.label });
     legendX += 14 + ds.label.length * 6.2 + 18;
   });
 
+  const grid: ChartLayout["grid"] = [];
   const gridLines = 5;
   for (let g = 0; g <= gridLines; g += 1) {
     const y = padT + plotH - (g / gridLines) * plotH;
-    const val = yMin + (g / gridLines) * ySpan;
-    parts.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${theme.grid}" stroke-width="1"/>`);
-    parts.push(`<text x="${padL - 6}" y="${y + 4}" text-anchor="end" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(fmtNum(val))}</text>`);
-  }
-
-  if (spec.yAxisLabel) {
-    parts.push(`<text x="14" y="${padT + plotH / 2}" transform="rotate(-90 14 ${padT + plotH / 2})" text-anchor="middle" fill="${theme.muted}" font-size="10" font-family="Tahoma,Arial,sans-serif">${escapeXml(spec.yAxisLabel)}</text>`);
+    grid.push({ y, val: yMin + (g / gridLines) * ySpan });
   }
 
   const slotW = plotW / n;
   const gap = series > 1 ? 4 : 8;
   const barW = Math.max(6, (slotW - gap * (series + 1)) / series);
+  const bars: ChartBarLayout[] = [];
+  const xLabels: ChartLayout["xLabels"] = [];
 
   labels.forEach((label, li) => {
     const slotX = padL + li * slotW;
@@ -199,19 +233,92 @@ export function renderChartSvg(spec: ChartSpec, theme: ChartTheme): string {
       const h = Math.max(0, ((v - yMin) / ySpan) * plotH);
       const x = slotX + gap + di * (barW + gap);
       const y = padT + plotH - h;
-      const c = barColor(ds, di, li);
-      parts.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${c}" opacity="0.92"/>`);
-      if (spec.showValues !== false && h > 12) {
-        parts.push(`<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" fill="${theme.text}" font-size="9" font-weight="600" font-family="Tahoma,Arial,sans-serif">${escapeXml(fmtNum(v))}</text>`);
-      }
+      bars.push({
+        id: `${li}-${di}`,
+        x,
+        y,
+        w: barW,
+        h,
+        color: barColor(ds, di, li),
+        value: v,
+        label,
+        seriesLabel: ds.label,
+        labelIndex: li,
+        datasetIndex: di,
+      });
     });
 
     const lx = slotX + slotW / 2;
     const ly = padT + plotH + (spec.rotateLabels ? 14 : 18);
-    if (spec.rotateLabels) {
-      parts.push(`<text x="${lx}" y="${ly}" transform="rotate(-${spec.rotateLabels} ${lx} ${ly})" text-anchor="end" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(label)}</text>`);
+    xLabels.push({ x: lx, y: ly, text: label, rotate: spec.rotateLabels ? spec.rotateLabels : 0 });
+  });
+
+  return {
+    width: W,
+    height: H,
+    padL,
+    padR,
+    padT,
+    padB,
+    plotW,
+    plotH,
+    titleY,
+    subtitleY,
+    bars,
+    grid,
+    legend,
+    xLabels,
+    title: spec.title ?? "",
+    subtitle: spec.subtitle ?? "",
+    yAxisLabel: spec.yAxisLabel ?? "",
+    showValues: spec.showValues !== false,
+    rotateLabels: spec.rotateLabels ?? 0,
+  };
+}
+
+/** Render SVG estático (email / HTML driver). */
+export function renderChartSvg(spec: ChartSpec, theme: ChartTheme): string {
+  const layout = computeChartLayout(spec);
+  if (!layout) return "";
+
+  const { width: W, height: H, padL, padR, padT, padB, bars, grid, legend, xLabels } = layout;
+  const parts: string[] = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" class="tk-doc-chart-svg" style="width:100%;max-width:${W}px;height:auto;display:block;">`);
+  parts.push(`<rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="${theme.panel}" stroke="${theme.border}" stroke-width="1"/>`);
+
+  if (layout.title) {
+    parts.push(`<text x="${W / 2}" y="${layout.titleY}" text-anchor="middle" fill="${theme.text}" font-size="13" font-weight="700" font-family="Tahoma,Arial,sans-serif">${escapeXml(layout.title)}</text>`);
+  }
+  if (layout.subtitle) {
+    parts.push(`<text x="${W / 2}" y="${layout.subtitleY}" text-anchor="middle" fill="${theme.muted}" font-size="11" font-family="Tahoma,Arial,sans-serif">${escapeXml(layout.subtitle)}</text>`);
+  }
+
+  legend.forEach((item) => {
+    parts.push(`<rect x="${item.x}" y="${item.y - 8}" width="10" height="10" rx="2" fill="${item.color}"/>`);
+    parts.push(`<text x="${item.x + 14}" y="${item.y}" fill="${theme.muted}" font-size="10" font-family="Tahoma,Arial,sans-serif">${escapeXml(item.label)}</text>`);
+  });
+
+  grid.forEach(({ y, val }) => {
+    parts.push(`<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${theme.grid}" stroke-width="1"/>`);
+    parts.push(`<text x="${padL - 6}" y="${y + 4}" text-anchor="end" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(fmtNum(val))}</text>`);
+  });
+
+  if (layout.yAxisLabel) {
+    parts.push(`<text x="14" y="${padT + layout.plotH / 2}" transform="rotate(-90 14 ${padT + layout.plotH / 2})" text-anchor="middle" fill="${theme.muted}" font-size="10" font-family="Tahoma,Arial,sans-serif">${escapeXml(layout.yAxisLabel)}</text>`);
+  }
+
+  bars.forEach((bar) => {
+    parts.push(`<rect x="${bar.x.toFixed(1)}" y="${bar.y.toFixed(1)}" width="${bar.w.toFixed(1)}" height="${bar.h.toFixed(1)}" rx="3" fill="${bar.color}" opacity="0.92"/>`);
+    if (layout.showValues && bar.h > 12) {
+      parts.push(`<text x="${(bar.x + bar.w / 2).toFixed(1)}" y="${(bar.y - 4).toFixed(1)}" text-anchor="middle" fill="${theme.text}" font-size="9" font-weight="600" font-family="Tahoma,Arial,sans-serif">${escapeXml(fmtNum(bar.value))}</text>`);
+    }
+  });
+
+  xLabels.forEach(({ x, y, text, rotate }) => {
+    if (rotate) {
+      parts.push(`<text x="${x}" y="${y}" transform="rotate(-${rotate} ${x} ${y})" text-anchor="end" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(text)}</text>`);
     } else {
-      parts.push(`<text x="${lx}" y="${ly}" text-anchor="middle" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(label)}</text>`);
+      parts.push(`<text x="${x}" y="${y}" text-anchor="middle" fill="${theme.muted}" font-size="9" font-family="Tahoma,Arial,sans-serif">${escapeXml(text)}</text>`);
     }
   });
 

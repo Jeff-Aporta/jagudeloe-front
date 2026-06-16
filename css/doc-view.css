@@ -167,6 +167,116 @@ body.tk-doc-mode #root,
   height: auto;
 }
 
+/* Gráficos TK — neón + spotlight del cursor (solo vista web) */
+.tk-doc-chart-neon {
+  cursor: crosshair;
+  isolation: isolate;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.tk-doc-chart-neon.is-active {
+  border-color: rgba(30, 144, 255, 0.35) !important;
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-chart-neon.is-active,
+body[data-mui-color-scheme="dark"] .tk-doc-chart-neon.is-active {
+  box-shadow:
+    0 0 32px rgba(30, 144, 255, 0.18),
+    0 0 64px rgba(99, 102, 241, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.tk-doc-chart-neon.is-hover-bar .tk-doc-chart-title {
+  filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.45));
+}
+
+.tk-doc-chart-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: radial-gradient(
+    circle 140px at var(--chart-cx, 50%) var(--chart-cy, 50%),
+    rgba(30, 144, 255, 0.14),
+    transparent 72%
+  );
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-chart-spotlight {
+  background: radial-gradient(
+    circle 160px at var(--chart-cx, 50%) var(--chart-cy, 50%),
+    rgba(0, 229, 255, 0.12),
+    rgba(99, 102, 241, 0.06) 45%,
+    transparent 72%
+  );
+}
+
+.tk-doc-chart-neon.is-active .tk-doc-chart-spotlight {
+  opacity: 1;
+}
+
+.tk-doc-chart-neon .tk-doc-chart-svg {
+  position: relative;
+  z-index: 1;
+}
+
+.tk-doc-chart-bar-group {
+  transition: opacity 0.2s ease;
+}
+
+.tk-doc-chart-bar-group.is-dim {
+  opacity: 0.38;
+}
+
+.tk-doc-chart-bar-glow {
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.tk-doc-chart-bar-group.is-active .tk-doc-chart-bar-glow {
+  opacity: 1;
+}
+
+.tk-doc-chart-grid {
+  transition: stroke 0.2s ease;
+}
+
+.tk-doc-chart-neon.is-active .tk-doc-chart-grid {
+  stroke: rgba(30, 144, 255, 0.28);
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-chart-neon.is-active .tk-doc-chart-grid {
+  stroke: rgba(0, 229, 255, 0.22);
+}
+
+.tk-doc-chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(30, 144, 255, 0.35);
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  box-shadow:
+    0 0 16px rgba(30, 144, 255, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+html[data-mui-color-scheme="light"] .tk-doc-chart-tooltip,
+body[data-mui-color-scheme="light"] .tk-doc-chart-tooltip {
+  background: rgba(255, 255, 255, 0.94);
+  color: #0b2e4e;
+  border-color: rgba(30, 144, 255, 0.22);
+  box-shadow:
+    0 0 20px rgba(30, 144, 255, 0.15),
+    0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
 html[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code,
 body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code {
   background: rgba(255, 255, 255, 0.06);
@@ -177,4 +287,35 @@ body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code {
 html[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-link,
 body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-link {
   color: #7ec8ff;
+}
+
+/* ── Diagrama de secuencia (neon, reutiliza spotlight de charts) ── */
+.tk-doc-sequence-neon {
+  position: relative;
+}
+
+.tk-doc-sequence-neon .tk-doc-seq-msg {
+  transition: opacity 0.2s ease;
+}
+
+.tk-doc-sequence-neon .tk-doc-seq-msg.is-dim {
+  opacity: 0.35;
+}
+
+.tk-doc-sequence-neon .tk-doc-seq-msg.is-active .tk-doc-seq-lifeline,
+.tk-doc-sequence-neon.is-hover-msg .tk-doc-seq-lifeline {
+  stroke: rgba(30, 144, 255, 0.32);
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-sequence-neon.is-hover-msg .tk-doc-seq-lifeline {
+  stroke: rgba(0, 229, 255, 0.28);
+}
+
+.tk-doc-sequence-neon .tk-doc-seq-actor.is-active rect {
+  filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.45));
+}
+
+.tk-doc-sequence-svg {
+  position: relative;
+  z-index: 1;
 }

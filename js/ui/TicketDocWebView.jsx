@@ -19,6 +19,7 @@ import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 
 import { CodeBlock } from "../ui/CodeBlock.jsx";
 import { TkDocChart } from "../ui/TkDocChart.jsx";
+import { TkDocSequence } from "../ui/TkDocSequence.jsx";
 
 
 
@@ -33,6 +34,12 @@ const SECTION_META = {
   table: { icon: "mdi:table-large", title: "Tabla", accent: "#6366f1" },
 
   chart: { icon: "mdi:chart-bar", title: "Gráfico", accent: "#0ea5e9" },
+
+  sequence: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
+
+  secuencia: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
+
+  sequenceDiagram: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
 
   code: { icon: "mdi:code-tags", title: "Código", accent: "#0ea5e9" },
 
@@ -414,6 +421,12 @@ function BlockBody({ block }) {
   if (kind === "chart" || kind === "grafico" || kind === "graph") {
 
     return <TkDocChart payload={p} />;
+
+  }
+
+  if (kind === "sequence" || kind === "secuencia" || kind === "sequenceDiagram") {
+
+    return <TkDocSequence payload={p} />;
 
   }
 

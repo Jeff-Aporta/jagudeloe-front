@@ -7,6 +7,7 @@ import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
 import { filterDisplayBlocks } from "../core/tk-content.ts";
 import { chartSpecFromPayload, renderChartSvg, chartThemeLight } from "../core/tk-chart.ts";
+import { sequenceSpecFromPayload, renderSequenceSvg, sequenceThemeLight, tk1431662SequenceSpec } from "../core/tk-sequence.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -228,6 +229,13 @@ function chartDriver(p: Record<string, unknown>): string {
   return `<div class="tk-doc-chart-email">${renderChartSvg(spec, chartThemeLight())}${note}</div>`;
 }
 
+function sequenceDriver(p: Record<string, unknown>): string {
+  const spec = p.preset === "tk1431662" ? tk1431662SequenceSpec() : sequenceSpecFromPayload(p);
+  if (!spec) return `<p style="color:${C.muted};">Diagrama de secuencia no disponible.</p>`;
+  const note = p.caption ? `<p style="margin:6px 0 0;font-size:11px;color:${C.muted};">${esc(String(p.caption))}</p>` : "";
+  return `<div class="tk-doc-sequence-email">${renderSequenceSvg(spec, sequenceThemeLight())}${note}</div>`;
+}
+
 /* ── Drivers por kind: payload JSON → HTML interno (sin tarjeta) ── */
 const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   markdown: (p) => mdBody(String(p.text ?? p.body ?? "")),
@@ -241,6 +249,9 @@ const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   chart: chartDriver,
   grafico: chartDriver,
   graph: chartDriver,
+  sequence: sequenceDriver,
+  secuencia: sequenceDriver,
+  sequenceDiagram: sequenceDriver,
   image: (p) => {
     const src = esc(p.url ?? p.src ?? "");
     const alt = esc(p.alt ?? p.caption ?? "");
@@ -288,6 +299,9 @@ const SECTION_META: Record<string, { icon: string; title: string }> = {
   chart: { icon: "mdi:chart-bar", title: "Gráfico" },
   grafico: { icon: "mdi:chart-bar", title: "Gráfico" },
   graph: { icon: "mdi:chart-bar", title: "Gráfico" },
+  sequence: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
+  secuencia: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
+  sequenceDiagram: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
   code: { icon: "mdi:code-tags", title: "Código" },
   sql: { icon: "mdi:database-search-outline", title: "SQL" },
   image: { icon: "mdi:eye-outline", title: "Evidencia" },
