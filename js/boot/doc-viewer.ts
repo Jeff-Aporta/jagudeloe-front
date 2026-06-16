@@ -91,7 +91,7 @@ async function runJsxDriver(
   opts: { space: string; iticket: string },
 ): Promise<void> {
   const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@445b1bb/cdn/boot-helper.mjs?v=445b1bb";
+    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/boot-helper.mjs?v=a87602c";
 
   const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(BOOT_HELPER);
   const { importAppEntry } = await import(appAssetUrl("js/boot/module-graph.mjs"));
