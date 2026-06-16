@@ -5,6 +5,8 @@
 
 import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
+import { filterDisplayBlocks } from "../core/tk-content.ts";
+import { chartSpecFromPayload, renderChartSvg, chartThemeLight } from "../core/tk-chart.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -49,11 +51,13 @@ function codeChipWeb(text: string): string {
   return `<code class="tk-inline-code">${text}</code>`;
 }
 
-/** Inline markdown ligero: **negrilla**, `código`, [label](url). Escapa el resto. */
+/** Inline markdown ligero: **negrilla**, ~~tachado~~, *cursiva*, `código`, [label](url). Escapa el resto. */
 export function inlineMd(raw: string): string {
   let s = esc(raw);
   s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
   s = s.replace(/`([^`]+)`/g, (_m, code) => codeChip(code));
+  s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer" style="color:${C.blue};">$1</a>`);
   return s;
 }
@@ -62,9 +66,46 @@ export function inlineMd(raw: string): string {
 export function inlineMdWeb(raw: string): string {
   let s = esc(raw);
   s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
   s = s.replace(/`([^`]+)`/g, (_m, code) => codeChipWeb(code));
+  s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="tk-inline-link">$1</a>');
   return s;
+}
+
+export function isMarkdownTableRow(line: string): boolean {
+  const t = String(line || "").trim();
+  return t.startsWith("|") && t.endsWith("|") && t.length > 2;
+}
+
+export function isMarkdownTableSeparator(line: string): boolean {
+  if (!isMarkdownTableRow(line)) return false;
+  return String(line).trim().replace(/^\|/, "").replace(/\|$/, "").split("|").every((c) => /^[\s:-]+$/.test(c.trim()));
+}
+
+export function parseMarkdownTableCells(line: string): string[] {
+  return String(line).trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+}
+
+export function parseMarkdownTableBlock(lines: string[]): { headers: string[]; rows: string[][] } | null {
+  if (lines.length < 2) return null;
+  if (!isMarkdownTableRow(lines[0]) || !isMarkdownTableSeparator(lines[1])) return null;
+  const headers = parseMarkdownTableCells(lines[0]);
+  const rows = lines.slice(2).filter(isMarkdownTableRow).map(parseMarkdownTableCells);
+  if (!headers.length) return null;
+  return { headers, rows };
+}
+
+export function collectMarkdownTableLines(allLines: string[], start: number): { lines: string[]; next: number } {
+  const block: string[] = [];
+  let i = start;
+  while (i < allLines.length) {
+    const t = allLines[i].trim();
+    if (!t || !isMarkdownTableRow(t)) break;
+    block.push(t);
+    i += 1;
+  }
+  return { lines: block, next: i };
 }
 
 function bulletRow(iconName: string, html: string): string {
@@ -121,16 +162,29 @@ const BULLET_ICONS: Record<string, string> = {
   default: "mdi:check",
 };
 
-/** Markdown por bloques: párrafos, viñetas "- ", subtítulos "## ". */
+/** Markdown por bloques: párrafos, viñetas "- ", subtítulos "## ", tablas GFM. */
 function mdBody(text: string): string {
   const out: string[] = [];
   let para: string[] = [];
+  const allLines = String(text || "").split("\n");
+
   function flushPara() {
     if (para.length) { out.push(`<p style="margin:0 0 8px;">${inlineMd(para.join(" "))}</p>`); para = []; }
   }
-  for (const rawLine of String(text).split("\n")) {
-    const line = rawLine.trim();
+
+  for (let i = 0; i < allLines.length; i += 1) {
+    const line = allLines[i].trim();
     if (!line) { flushPara(); continue; }
+
+    if (isMarkdownTableRow(line)) {
+      flushPara();
+      const { lines: tableLines, next } = collectMarkdownTableLines(allLines, i);
+      i = next - 1;
+      const parsed = parseMarkdownTableBlock(tableLines);
+      if (parsed) out.push(dataTable(parsed.headers, parsed.rows));
+      continue;
+    }
+
     if (line.startsWith("## ") || line.startsWith("# ")) {
       flushPara();
       out.push(`<p style="margin:14px 0 4px;font-weight:bold;color:${C.navy};">${inlineMd(line.replace(/^#+\s*/, ""))}</p>`);
@@ -141,6 +195,11 @@ function mdBody(text: string): string {
       const body = line.replace(/^[-*]\s+/, "");
       const key = /^objetivo/i.test(body) ? "objetivo" : /^restricci/i.test(body) ? "restriccion" : "default";
       out.push(bulletRow(BULLET_ICONS[key], inlineMd(body)));
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      flushPara();
+      out.push(`<blockquote style="margin:0 0 8px;padding:10px 12px;border-left:3px solid ${C.blue};background:${C.band};border-radius:0 6px 6px 0;color:${C.text};">${inlineMd(line.slice(2))}</blockquote>`);
       continue;
     }
     para.push(line);
@@ -162,6 +221,13 @@ function badgePill(payload: Record<string, unknown>): string {
 
 export type TkBlock = { kind?: string; payload?: Record<string, unknown>; sortKey?: number };
 
+function chartDriver(p: Record<string, unknown>): string {
+  const spec = chartSpecFromPayload(p);
+  if (!spec) return `<p style="color:${C.muted};">Gráfico no disponible.</p>`;
+  const note = p.caption ? `<p style="margin:6px 0 0;font-size:11px;color:${C.muted};">${esc(String(p.caption))}</p>` : "";
+  return `<div class="tk-doc-chart-email">${renderChartSvg(spec, chartThemeLight())}${note}</div>`;
+}
+
 /* ── Drivers por kind: payload JSON → HTML interno (sin tarjeta) ── */
 const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   markdown: (p) => mdBody(String(p.text ?? p.body ?? "")),
@@ -172,6 +238,9 @@ const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   code: (p) => codeBlock(String(p.code ?? p.text ?? p.sql ?? ""), String(p.language ?? "sql")),
   sql: (p) => codeBlock(String(p.code ?? p.text ?? p.sql ?? ""), String(p.language ?? "sql")),
   table: (p) => dataTable((p.headers as string[]) ?? [], (p.rows as unknown[][]) ?? []),
+  chart: chartDriver,
+  grafico: chartDriver,
+  graph: chartDriver,
   image: (p) => {
     const src = esc(p.url ?? p.src ?? "");
     const alt = esc(p.alt ?? p.caption ?? "");
@@ -216,6 +285,9 @@ const SECTION_META: Record<string, { icon: string; title: string }> = {
   md: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo" },
   text: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo" },
   table: { icon: "mdi:table-large", title: "Tabla" },
+  chart: { icon: "mdi:chart-bar", title: "Gráfico" },
+  grafico: { icon: "mdi:chart-bar", title: "Gráfico" },
+  graph: { icon: "mdi:chart-bar", title: "Gráfico" },
   code: { icon: "mdi:code-tags", title: "Código" },
   sql: { icon: "mdi:database-search-outline", title: "SQL" },
   image: { icon: "mdi:eye-outline", title: "Evidencia" },
@@ -319,7 +391,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     : "";
   const estado = String(tk.estado ?? "").toLowerCase();
 
-  const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b));
+  const content = filterDisplayBlocks(sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b)));
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
   const blocks = content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
@@ -364,7 +436,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   const contexts = (tk.contexts as Record<string, unknown>[]) ?? [];
   const allCommits: Record<string, unknown>[] = [];
   for (const ctx of contexts) {
-    for (const b of sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !isInfoTiquete(x))) {
+    for (const b of filterDisplayBlocks(sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !isInfoTiquete(x)))) {
       const kind = String(b.kind ?? "text").toLowerCase();
       const meta = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle" };
       const title = String((b.payload && (b.payload.title as string)) || meta.title);

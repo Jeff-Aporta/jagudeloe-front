@@ -61,3 +61,12 @@ html[data-mui-color-scheme="dark"] .isa-view-frame > .MuiTabs-root {
   background-color: #0288d1;
   box-shadow: 0 0 6px rgba(2, 136, 209, 0.45);
 }
+
+.nav-alert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ed6c02;
+  line-height: 0;
+  filter: drop-shadow(0 0 4px rgba(237, 108, 2, 0.45));
+}

@@ -11,6 +11,7 @@ import { extractTipoSolicitudApertura } from "../core/tk-normativa.ts";
 import { extractTicketEvidencias } from "../core/tk-evidencias.ts";
 import { buildTicketTimeline, buildTicketMilestones } from "../core/tk-timeline.ts";
 import { extractEmpresaReport, computeEmpresaDesfase } from "../core/tk-empresa-report.ts";
+import { extractTicketPendingTasks } from "../core/checks.ts";
 import { TicketAnalysisTimeline } from "../ui/TicketAnalysisTimeline.jsx";
 import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
 import { EmpresaDesfaseCard } from "../ui/EmpresaDesfaseCard.jsx";
@@ -100,6 +101,7 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
   const timeline = buildTicketTimeline(iticket, tk.titulo || tk.title || "", m, input);
   const milestones = buildTicketMilestones(m, input);
   const evidencias = extractTicketEvidencias(tk);
+  const tareasPendientes = extractTicketPendingTasks(tk).filter((t) => !t.done);
   const tipoApertura = extractTipoSolicitudApertura(tk);
 
   return (
@@ -123,6 +125,19 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
       {m.fechaCreacion && !m.fechaCierre && (
         <Alert severity="info" sx={{ mb: 3 }}>
           Ticket abierto — sin cierre InSoft. Métricas de atención activa y total se calcularán al registrar {"fechaCierre"}.
+        </Alert>
+      )}
+
+      {tareasPendientes.length > 0 && (
+        <Alert severity="warning" icon={<UI.Icon icon="mdi:alert-circle-outline" />} sx={{ mb: 3 }}>
+          <DocText bold sx={{ mb: 0.75 }}>Tareas pendientes</DocText>
+          <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+            {tareasPendientes.map((t) => (
+              <Box component="li" key={t.texto} sx={{ mb: 0.35 }}>
+                <DocText variant="body2">{t.texto}</DocText>
+              </Box>
+            ))}
+          </Box>
         </Alert>
       )}
 

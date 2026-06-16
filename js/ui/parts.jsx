@@ -28,11 +28,12 @@ export function CheckDot(props) {
   const state = props.state;
   if (!state) return null;
   const titles = {
-    complete: "Revisado / ejecutado",
+    complete: "Revisado / cerrado",
     partial: "Revisión parcial",
-    warn: "Más de 7 h hábiles sin cerrar",
-    overdue: "Más de 14 h hábiles sin cerrar",
-    idle: "Pendiente",
+    warn: "Abierto o tareas pendientes",
+    overdue: "Bloqueado o >14 h hábiles",
+    idle: "Sin novedad",
+    info: "En progreso",
     none: "Sin revisar",
   };
   const title = titles[state] || titles.idle;
@@ -174,8 +175,16 @@ export function DateTree(props) {
     return (
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
         <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
-          <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
-            <NavStatusDot state={it.dotState} />
+          <Box sx={{ mr: 0.5, display: "flex", alignItems: "center", flexShrink: 0, width: it.alert ? 16 : 10, justifyContent: "flex-start" }}>
+            {it.alert ? (
+              <Tooltip title="Tareas pendientes por realizar">
+                <span className="nav-alert-icon" aria-label="Tareas pendientes">
+                  <Icon icon="mdi:alert-circle" size={15} />
+                </span>
+              </Tooltip>
+            ) : (
+              <NavStatusDot state={it.dotState} />
+            )}
           </Box>
           <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
           <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />

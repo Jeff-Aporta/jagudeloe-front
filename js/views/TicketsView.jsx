@@ -5,7 +5,7 @@ import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
 import { resolveDocDriver } from "../core/doc-driver.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
-import { ticketListDotState } from "../core/checks.ts";
+import { ticketListDotState, ticketHasPendingTasks, ticketEstadoDotState } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
@@ -16,7 +16,19 @@ import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 
-const ESTADO_DOT = { abierto: "warn", "en-progreso": "info", cerrado: "complete", bloqueado: "overdue" };
+function mergeTicketRow(row, detail) {
+  if (!detail) return row;
+  return {
+    ...row,
+    ...detail,
+    iticket: detail.iticket || row.iticket,
+    estado: detail.estado || row.estado,
+    normativa: detail.normativa || row.normativa,
+    meta: detail.meta || row.meta,
+    detallesExtra: detail.detallesExtra || row.detallesExtra,
+    contexts: detail.contexts || row.contexts,
+  };
+}
 /* Spaces reales de tickets; "general" los combina todos sin filtro. */
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
@@ -103,14 +115,14 @@ function DriverToggle({ driver, onChange }) {
   );
 }
 
-function TkEstadoDot({ estado }) {
+function TkEstadoDot({ tk }) {
   const { Tooltip } = getMaterialUI();
-  if (!estado) return null;
-  const key = String(estado).toLowerCase();
-  const dot = ESTADO_DOT[key] || "idle";
+  if (!tk) return null;
+  const dot = ticketEstadoDotState(tk);
+  const estado = String(tk.estado || "").trim() || "sin estado";
   return (
-    <Tooltip title={"Estado: " + String(estado)}>
-      <span className={"nav-status-dot nav-status-dot--" + dot} aria-label={"Estado: " + String(estado)} />
+    <Tooltip title={"Estado: " + estado}>
+      <span className={"nav-status-dot nav-status-dot--" + dot} aria-label={"Estado: " + estado} />
     </Tooltip>
   );
 }
@@ -143,7 +155,12 @@ function TicketDetail(props) {
     let alive = true;
     setState({ loading: true, error: null, tk: null });
     getTicket(props.project, props.iticket)
-      .then((d) => { if (alive) setState({ loading: false, error: null, tk: d.ticket || d }); })
+      .then((d) => {
+        if (!alive) return;
+        const tk = d.ticket || d;
+        setState({ loading: false, error: null, tk });
+        props.onLoaded?.(props.iticket, tk);
+      })
       .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), tk: null }); });
     return () => { alive = false; };
   }, [props.project, props.iticket, props.reloadKey]);
@@ -170,7 +187,7 @@ function TicketDetail(props) {
           size="small"
           label={
             <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
-              <TkEstadoDot estado={tk.estado} />
+              <TkEstadoDot tk={tk} />
               {props.iticket}
             </Box>
           }
@@ -212,7 +229,7 @@ function TicketDetail(props) {
 }
 
 export function TicketsDiligenciaView(props) {
-  const { useState, useEffect, useRef } = getReact();
+  const { useState, useEffect, useRef, useCallback } = getReact();
   const { Box, Typography, Alert, CircularProgress } = getMaterialUI();
   const { Loading, ErrorBox } = UI;
   const [state, setState] = useState({ loading: true, error: null, rows: [] });
@@ -220,7 +237,12 @@ export function TicketsDiligenciaView(props) {
   const bootSelRef = useRef(typeof boot.sel === "string" && boot.sel ? boot.sel : null);
   const [selected, setSelected] = useState(bootSelRef.current);
   const [revisadoMap, setRevisadoMap] = useState({});
+  const [detailById, setDetailById] = useState({});
   const [ageTick, setAgeTick] = useState(0);
+
+  const onTicketLoaded = useCallback((iticket, tk) => {
+    setDetailById((prev) => ({ ...prev, [iticket]: tk }));
+  }, []);
 
   useEffect(() => {
     const id = window.setInterval(() => setAgeTick((n) => n + 1), 60000);
@@ -281,18 +303,26 @@ export function TicketsDiligenciaView(props) {
 
   const treeItems = rows.map((t) => {
     const id = ticketId(t);
-    const rKey = revisadoKeyOf(t, id);
-    return { id, date: dateOf(t), label: id, secondary: String(t.titulo || t.title || ""), dotState: ticketListDotState(t, revisadoMap, rKey) };
+    const merged = mergeTicketRow(t, detailById[id]);
+    const rKey = revisadoKeyOf(merged, id);
+    return {
+      id,
+      date: dateOf(merged),
+      label: id,
+      secondary: String(merged.titulo || merged.title || ""),
+      dotState: ticketListDotState(merged, revisadoMap, rKey),
+      alert: ticketHasPendingTasks(merged),
+    };
   });
   void ageTick;
 
   return (
     <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
-      <Box sx={{ width: 260, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
+      <Box sx={{ width: 272, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
         <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="items" />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        {selected ? <TicketDetail project={props.project} iticket={selected} reloadKey={props.reloadKey} /> : <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>}
+        {selected ? <TicketDetail project={props.project} iticket={selected} reloadKey={props.reloadKey} onLoaded={onTicketLoaded} /> : <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>}
       </Box>
     </Box>
   );

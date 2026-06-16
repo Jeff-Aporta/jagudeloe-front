@@ -439,10 +439,23 @@ export function formatTicketTs(iso: string | null): string {
 }
 
 export function extractMetricInput(tk: Record<string, unknown>): TicketMetricInput {
-  const meta = (tk.meta || {}) as Record<string, unknown>;
-  const metricas = (meta.metricas || meta.metrics || tk.metricas || {}) as Record<string, unknown>;
-  const det = (tk.detallesExtra || {}) as Record<string, unknown>;
-  const detMet = (det.metricas || {}) as Record<string, unknown>;
+  function parseRecord(v: unknown): Record<string, unknown> {
+    if (!v) return {};
+    if (typeof v === "string") {
+      try {
+        const parsed = JSON.parse(v) as unknown;
+        return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+      } catch {
+        return {};
+      }
+    }
+    return typeof v === "object" ? (v as Record<string, unknown>) : {};
+  }
+
+  const meta = parseRecord(tk.meta);
+  const metricas = parseRecord(meta.metricas || meta.metrics || tk.metricas);
+  const det = parseRecord(tk.detallesExtra);
+  const detMet = parseRecord(det.metricas);
   const src = { ...detMet, ...metricas };
 
   let horaInicio = parseTicketDate(src.horaInicioAtencion || src.horaInicio || src.inicioAtencion);

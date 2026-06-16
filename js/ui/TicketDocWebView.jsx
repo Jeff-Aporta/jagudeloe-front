@@ -10,13 +10,15 @@ import { getMaterialUI } from "../core/runtime.ts";
 
 import { UI } from "../core/platform.ts";
 
-import { inlineMdWeb } from "../ui/tkHtml.ts";
+import { inlineMdWeb, isMarkdownTableRow, parseMarkdownTableBlock, collectMarkdownTableLines } from "../ui/tkHtml.ts";
+import { filterDisplayBlocks } from "../core/tk-content.ts";
 
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "../ui/tkHeroAuthors.ts";
 
 import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 
 import { CodeBlock } from "../ui/CodeBlock.jsx";
+import { TkDocChart } from "../ui/TkDocChart.jsx";
 
 
 
@@ -29,6 +31,8 @@ const SECTION_META = {
   text: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo", accent: "#1e90ff" },
 
   table: { icon: "mdi:table-large", title: "Tabla", accent: "#6366f1" },
+
+  chart: { icon: "mdi:chart-bar", title: "Gráfico", accent: "#0ea5e9" },
 
   code: { icon: "mdi:code-tags", title: "Código", accent: "#0ea5e9" },
 
@@ -76,11 +80,13 @@ function isInfoTiquete(b) {
 
 function MdBody({ text }) {
 
-  const { Box, Typography } = getMaterialUI();
+  const { Box, Typography, Paper } = getMaterialUI();
 
   const out = [];
 
   let para = [];
+
+  const allLines = String(text || "").split("\n");
 
   function flush() {
 
@@ -108,11 +114,27 @@ function MdBody({ text }) {
 
   }
 
-  for (const rawLine of String(text || "").split("\n")) {
+  for (let i = 0; i < allLines.length; i += 1) {
 
-    const line = rawLine.trim();
+    const line = allLines[i].trim();
 
     if (!line) { flush(); continue; }
+
+    if (isMarkdownTableRow(line)) {
+
+      flush();
+
+      const { lines: tableLines, next } = collectMarkdownTableLines(allLines, i);
+
+      i = next - 1;
+
+      const parsed = parseMarkdownTableBlock(tableLines);
+
+      if (parsed) out.push(<DataTable key={out.length} headers={parsed.headers} rows={parsed.rows} />);
+
+      continue;
+
+    }
 
     if (line.startsWith("## ") || line.startsWith("# ")) {
 
@@ -167,6 +189,50 @@ function MdBody({ text }) {
           </Typography>
 
         </Box>,
+
+      );
+
+      continue;
+
+    }
+
+    if (line.startsWith("> ")) {
+
+      flush();
+
+      out.push(
+
+        <Paper
+
+          key={out.length}
+
+          variant="outlined"
+
+          sx={{
+
+            mb: 1.5,
+
+            p: 1.5,
+
+            borderLeft: 3,
+
+            borderColor: "primary.main",
+
+            bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(30,144,255,0.08)" : "#f0f7ff"),
+
+            borderRadius: "0 8px 8px 0",
+
+          }}
+
+        >
+
+          <Typography variant="body1" sx={{ lineHeight: 1.65 }}>
+
+            <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(line.slice(2)) }} />
+
+          </Typography>
+
+        </Paper>,
 
       );
 
@@ -258,7 +324,7 @@ function DataTable({ headers, rows, title }) {
 
                 >
 
-                  {h}
+                  <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(h ?? "")) }} />
 
                 </TableCell>
 
@@ -342,6 +408,12 @@ function BlockBody({ block }) {
   if (kind === "table") {
 
     return <DataTable headers={p.headers} rows={p.rows} title={p.title} />;
+
+  }
+
+  if (kind === "chart" || kind === "grafico" || kind === "graph") {
+
+    return <TkDocChart payload={p} />;
 
   }
 
@@ -1165,7 +1237,7 @@ export function TicketDocWebView({ tk }) {
 
   const iticket = String(tk.iticket ?? "");
 
-  const content = sortBlocks(tk.content).filter((b) => !isInfoTiquete(b));
+  const content = filterDisplayBlocks(sortBlocks(tk.content).filter((b) => !isInfoTiquete(b)));
 
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
@@ -1249,9 +1321,7 @@ export function TicketDocWebView({ tk }) {
 
       {contexts.map((ctx, ci) =>
 
-        sortBlocks(ctx.content)
-
-          .filter((b) => !isInfoTiquete(b))
+        filterDisplayBlocks(sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b)))
 
           .map((b, bi) => renderBlockSection(b, `ctx-${ci}-${bi}`)),
 

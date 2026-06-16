@@ -151,6 +151,22 @@ body.tk-doc-mode #root,
   text-decoration: underline;
 }
 
+.tk-doc-markdown del {
+  opacity: 0.65;
+}
+
+.tk-doc-markdown i {
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.tk-doc-chart svg,
+.tk-doc-chart-email svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 html[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code,
 body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code {
   background: rgba(255, 255, 255, 0.06);
