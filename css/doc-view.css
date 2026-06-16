@@ -164,7 +164,15 @@ body.tk-doc-mode #root,
 .tk-doc-chart-email svg {
   display: block;
   width: 100%;
+  max-width: 100%;
   height: auto;
+  margin-inline: auto;
+}
+
+.tk-doc-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Gráficos TK — neón + spotlight del cursor (solo vista web) */
@@ -172,6 +180,7 @@ body.tk-doc-mode #root,
   cursor: crosshair;
   isolation: isolate;
   transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  box-sizing: border-box;
 }
 
 .tk-doc-chart-neon.is-active {
@@ -305,6 +314,15 @@ body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-link {
 .tk-doc-sequence-neon .tk-doc-seq-msg.is-active .tk-doc-seq-lifeline,
 .tk-doc-sequence-neon.is-hover-msg .tk-doc-seq-lifeline {
   stroke: rgba(30, 144, 255, 0.32);
+}
+
+.tk-doc-diagram img {
+  background: transparent !important;
+}
+
+html[data-mui-color-scheme="dark"] .tk-doc-themed-image img,
+body[data-mui-color-scheme="dark"] .tk-doc-themed-image img {
+  background: transparent !important;
 }
 
 html[data-mui-color-scheme="dark"] .tk-doc-sequence-neon.is-hover-msg .tk-doc-seq-lifeline {

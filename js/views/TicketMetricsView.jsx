@@ -163,7 +163,7 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
         </SectionCard>
       )}
 
-      <TicketMetricsEvidencias items={evidencias} />
+      <TicketMetricsEvidencias items={evidencias} galleryId={`tk-${iticket}`} />
     </Box>
   );
 }

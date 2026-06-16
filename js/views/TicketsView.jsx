@@ -181,12 +181,12 @@ function TicketDetail(props) {
 
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" className="tk-detail-toolbar" sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
         <RevisadoCheck project={tkSpace} revisadoKey={rKey} reloadKey={props.reloadKey} label={props.iticket} showLabel={false} hint="Marcar ticket como revisado y ejecutado" />
         <Chip
           size="small"
           label={
-            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
+            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, lineHeight: 1 }}>
               <TkEstadoDot tk={tk} />
               {props.iticket}
             </Box>
@@ -295,7 +295,20 @@ export function TicketsDiligenciaView(props) {
   }, [props.project]);
 
   const rows = state.rows.slice().sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
-  useEffect(() => { if (rows.length && !selected) setSelected(ticketId(rows[0])); }, [state.rows]);
+  useEffect(() => {
+    if (!rows.length || selected) return;
+    const id = ticketId(rows[0]);
+    setSelected(id);
+    merge({ sel: id });
+  }, [rows.length, selected]);
+
+  useEffect(() => {
+    return subscribe((s) => {
+      const sel = typeof s.sel === "string" ? s.sel.trim() : "";
+      if (!sel || sel === selected) return;
+      if (rows.some((t) => ticketId(t) === sel)) setSelected(sel);
+    });
+  }, [rows, selected]);
 
   if (state.loading) return Loading ? <Loading label="Cargando tickets…" /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
@@ -319,7 +332,13 @@ export function TicketsDiligenciaView(props) {
   return (
     <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
       <Box sx={{ width: 272, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
-        <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="items" />
+        <DateTree
+          items={treeItems}
+          selectedId={selected}
+          onSelect={(id) => { setSelected(id); merge({ sel: id }); }}
+          mode="items"
+          storageKey={"jagudeloe:nav-folders:tickets:" + props.project}
+        />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {selected ? <TicketDetail project={props.project} iticket={selected} reloadKey={props.reloadKey} onLoaded={onTicketLoaded} /> : <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>}

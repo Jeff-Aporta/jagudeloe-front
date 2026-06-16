@@ -2,6 +2,7 @@
 const GITHUB_REPO: Record<string, string> = {
   "ISS-AyudasCPIA": "Dev-InSoft/ISS-AyudasCPIA",
   PatyIA: "Dev-InSoft/ISS-AyudasCPIA",
+  "ISA-DOC": "Dev-InSoft/ISA-DOC",
   "isa-patyia": "Jeff-Aporta/isa-patyia",
   ISA: "Jeff-Aporta/isa-patyia",
   "ISW-ClientesIS": "Dev-InSoft/ISW-ClientesIS",

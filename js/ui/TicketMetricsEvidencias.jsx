@@ -1,6 +1,7 @@
-/* Galería de pantallazos InSoft (evidencias R2). */
+/* Galería de pantallazos InSoft (evidencias R2) + lightbox. */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { useGlassColors, glassCardSx } from "./glassSurface.ts";
+import { TkLightboxHost, TkLightboxImage } from "./TkLightbox.jsx";
 
 function probeImage(url) {
   return new Promise((resolve) => {
@@ -34,7 +35,7 @@ function useLoadedEvidencias(items) {
   return loaded;
 }
 
-export function TicketMetricsEvidencias({ items }) {
+export function TicketMetricsEvidencias({ items, galleryId = "tk-evidencias" }) {
   const c = useGlassColors();
   const { Box, Paper, Typography, Stack } = getMaterialUI();
   const visible = useLoadedEvidencias(items);
@@ -42,36 +43,28 @@ export function TicketMetricsEvidencias({ items }) {
   if (!visible.length) return null;
 
   return (
-    <Paper variant="outlined" sx={glassCardSx(c, { p: 2.5, mb: 2 })}>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: c.text, mb: 0.5 }}>
-        Evidencias
-      </Typography>
-      <Typography variant="body2" sx={{ color: c.muted, mb: 2, fontSize: "0.9rem" }}>
-        Pantallazos InSoft y soporte visual del ticket.
-      </Typography>
-      <Stack spacing={2}>
-        {visible.map((ev) => (
-          <Box key={ev.url}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: c.text, mb: 0.75 }}>
-              {ev.label}
-            </Typography>
-            <Box
-              component="a"
-              href={ev.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ display: "block", textDecoration: "none" }}
-            >
-              <Box
-                component="img"
+    <TkLightboxHost galleryId={galleryId}>
+      <Paper variant="outlined" sx={glassCardSx(c, { p: 2.5, mb: 2 })}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: c.text, mb: 0.5 }}>
+          Evidencias
+        </Typography>
+        <Typography variant="body2" sx={{ color: c.muted, mb: 2, fontSize: "0.9rem" }}>
+          Pantallazos InSoft y soporte visual del ticket. Clic para ampliar; flechas ← → entre imágenes.
+        </Typography>
+        <Stack spacing={2}>
+          {visible.map((ev) => (
+            <Box key={ev.url}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: c.text, mb: 0.75 }}>
+                {ev.label}
+              </Typography>
+              <TkLightboxImage
+                href={ev.url}
                 src={ev.url}
+                caption={ev.label}
                 alt={ev.label}
-                loading="lazy"
-                sx={{
+                imgSx={{
                   width: "100%",
                   maxWidth: 860,
-                  height: "auto",
-                  display: "block",
                   borderRadius: 1.5,
                   border: 1,
                   borderColor: c.border,
@@ -79,9 +72,9 @@ export function TicketMetricsEvidencias({ items }) {
                 }}
               />
             </Box>
-          </Box>
-        ))}
-      </Stack>
-    </Paper>
+          ))}
+        </Stack>
+      </Paper>
+    </TkLightboxHost>
   );
 }

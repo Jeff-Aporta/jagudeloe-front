@@ -39,7 +39,7 @@ function TkDocChartSvg({ layout, theme, dark, hoverId, onBarEnter, onBarLeave })
       role="img"
       aria-label={title || "Gráfico de métricas"}
       className="tk-doc-chart-svg"
-      style={{ width: "100%", maxWidth: W, height: "auto", display: "block" }}
+      style={{ width: "100%", height: "auto", display: "block", marginInline: "auto" }}
     >
       <defs>
         <filter id={`${uid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
@@ -274,7 +274,7 @@ export function TkDocChart({ payload }) {
   const caption = payload?.caption ?? payload?.note ?? "";
 
   return (
-    <Box className="tk-doc-chart" sx={{ my: 0.5 }}>
+    <Box className="tk-doc-chart" sx={{ my: 0.5, textAlign: "center" }}>
       <Box
         ref={containerRef}
         className={`tk-doc-chart-neon${cursor.active ? " is-active" : ""}${hoverBar ? " is-hover-bar" : ""}`}
@@ -282,6 +282,9 @@ export function TkDocChart({ payload }) {
         onMouseLeave={onPointerLeave}
         sx={{
           position: "relative",
+          width: "100%",
+          maxWidth: layout.width,
+          mx: "auto",
           borderRadius: 2,
           overflow: "hidden",
           border: 1,

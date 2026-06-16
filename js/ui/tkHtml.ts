@@ -7,7 +7,7 @@ import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
 import { filterDisplayBlocks } from "../core/tk-content.ts";
 import { chartSpecFromPayload, renderChartSvg, chartThemeLight } from "../core/tk-chart.ts";
-import { sequenceSpecFromPayload, renderSequenceSvg, sequenceThemeLight, tk1431662SequenceSpec } from "../core/tk-sequence.ts";
+import { mermaidInkDiagramUrl } from "../core/tk-diagram.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -236,6 +236,20 @@ function sequenceDriver(p: Record<string, unknown>): string {
   return `<div class="tk-doc-sequence-email">${renderSequenceSvg(spec, sequenceThemeLight())}${note}</div>`;
 }
 
+function diagramDriver(p: Record<string, unknown>): string {
+  const engine = String(p.engine ?? "mermaid").toLowerCase();
+  if (engine === "plantuml" || engine === "puml") {
+    const cap = esc(String(p.caption || "Diagrama PlantUML (ver vista web)."));
+    return `<p style="margin:8px 0;color:${C.muted};font-size:12px;">${cap}</p>`;
+  }
+  const url = mermaidInkDiagramUrl(p, false, "svg");
+  const alt = esc(p.caption ?? p.alt ?? "Diagrama");
+  if (!url) return `<p style="color:${C.muted};">Diagrama no disponible.</p>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:8px 0;">
+    <img src="${esc(url)}" alt="${alt}" style="display:block;width:100%;max-width:920px;height:auto;border:1px solid ${C.border};border-radius:6px;background:transparent;"/>
+    ${p.caption ? `<div style="${FONT}font-size:11px;color:${C.muted};margin-top:6px;">${esc(String(p.caption))}</div>` : ""}</td></tr></table>`;
+}
+
 /* ── Drivers por kind: payload JSON → HTML interno (sin tarjeta) ── */
 const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   markdown: (p) => mdBody(String(p.text ?? p.body ?? "")),
@@ -252,6 +266,9 @@ const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   sequence: sequenceDriver,
   secuencia: sequenceDriver,
   sequenceDiagram: sequenceDriver,
+  diagram: diagramDriver,
+  mermaid: diagramDriver,
+  plantuml: diagramDriver,
   image: (p) => {
     const src = esc(p.url ?? p.src ?? "");
     const alt = esc(p.alt ?? p.caption ?? "");
@@ -306,6 +323,9 @@ const SECTION_META: Record<string, { icon: string; title: string }> = {
   sql: { icon: "mdi:database-search-outline", title: "SQL" },
   image: { icon: "mdi:eye-outline", title: "Evidencia" },
   img: { icon: "mdi:eye-outline", title: "Evidencia" },
+  diagram: { icon: "mdi:chart-tree", title: "Diagrama" },
+  mermaid: { icon: "mdi:chart-tree", title: "Diagrama" },
+  plantuml: { icon: "mdi:chart-tree", title: "Diagrama" },
   url: { icon: "mdi:link-variant", title: "Enlaces" },
   link: { icon: "mdi:link-variant", title: "Enlaces" },
   accordion: { icon: "mdi:unfold-more-horizontal", title: "Detalle" },
@@ -369,14 +389,31 @@ function commitsTable(commits: Record<string, unknown>[]): string {
       : short;
     return [
       hashCell,
-      esc(String(c.proyecto ?? "")),
       inlineMd(String(c.descripcion ?? "")),
       pill("+" + Number(c.insCount ?? 0), C.green, "#e9f7ee"),
       pill("−" + Number(c.delCount ?? 0), "#c0392b", "#fdecea"),
       esc(`${Number(c.minutos ?? 0)} min`),
+      esc(String(c.proyecto ?? "")),
     ];
   });
-  return dataTable(["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"], rows, { raw: true });
+  const totals = commits.reduce(
+    (acc, c) => ({
+      count: acc.count + 1,
+      ins: acc.ins + Number(c.insCount ?? 0),
+      del: acc.del + Number(c.delCount ?? 0),
+      min: acc.min + Number(c.minutos ?? 0),
+    }),
+    { count: 0, ins: 0, del: 0, min: 0 },
+  );
+  rows.push([
+    `<strong>Resumen · ${totals.count} commits</strong>`,
+    "",
+    pill("+" + totals.ins, C.green, "#e9f7ee"),
+    pill("−" + totals.del, "#c0392b", "#fdecea"),
+    `<strong>${totals.min} min</strong>`,
+    "",
+  ]);
+  return dataTable(["Commit", "Descripción", "Ins", "Del", "Tiempo", "Proyecto"], rows, { raw: true });
 }
 
 function timeRow(label: string, hint: string, mins: number, bold = false): string {

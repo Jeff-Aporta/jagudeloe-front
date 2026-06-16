@@ -70,3 +70,31 @@ html[data-mui-color-scheme="dark"] .isa-view-frame > .MuiTabs-root {
   line-height: 0;
   filter: drop-shadow(0 0 4px rgba(237, 108, 2, 0.45));
 }
+
+/* Barra detalle ticket — corrige chips desalineados (theme global: height auto + py en label) */
+.tk-detail-toolbar {
+  align-items: center;
+}
+
+.tk-detail-toolbar .MuiChip-sizeSmall {
+  height: 26px;
+  min-height: 26px;
+  padding-top: 0;
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+.tk-detail-toolbar .MuiChip-sizeSmall .MuiChip-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.tk-detail-toolbar .nav-status-dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: 0;
+}

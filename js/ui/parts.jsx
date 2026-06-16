@@ -5,6 +5,12 @@ import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
+import {
+  folderKeysForDate,
+  loadNavFolderOpen,
+  mergeAncestryOpen,
+  saveNavFolderOpen,
+} from "../core/nav-folder-state.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };
 const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
@@ -127,9 +133,37 @@ export function monthLabel(ym) {
 }
 
 export function DateTree(props) {
-  const { useState, Fragment } = getReact();
+  const { useState, useEffect, Fragment } = getReact();
   const { Typography, List, ListItemButton, ListItemText, Chip, Box, Tooltip } = getMaterialUI();
   const { Icon } = UI;
+  const mode = props.mode === "day" ? "day" : "items";
+  const storageKey = props.storageKey || "jagudeloe:nav-folders:default";
+  const [open, setOpen] = useState(() => loadNavFolderOpen(storageKey));
+
+  useEffect(() => {
+    setOpen(loadNavFolderOpen(storageKey));
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!props.selectedId) return;
+    const item = props.items.find((it) => it.id === props.selectedId);
+    if (!item?.date) return;
+    const keys = folderKeysForDate(item.date, mode);
+    setOpen((prev) => {
+      const next = mergeAncestryOpen(prev, keys);
+      saveNavFolderOpen(storageKey, next);
+      return next;
+    });
+  }, [props.selectedId, props.items, mode, storageKey]);
+
+  const toggle = (k) => {
+    setOpen((prev) => {
+      const next = { ...prev, [k]: !prev[k] };
+      saveNavFolderOpen(storageKey, next);
+      return next;
+    });
+  };
+
   const tree = {};
   props.items.forEach((it) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(it.date || "");
@@ -138,17 +172,6 @@ export function DateTree(props) {
     (mm[d] = mm[d] || []).push(it);
   });
   const years = Object.keys(tree).sort().reverse();
-  const RECENT_DAYS = 15;
-  const initial = {};
-  Array.from(new Set(props.items.map((it) => it.date).filter(Boolean))).sort().reverse().slice(0, RECENT_DAYS).forEach((dt) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dt);
-    if (!m) return;
-    initial[m[1]] = true;
-    initial[m[1] + "/" + m[2]] = true;
-    if (props.mode === "items") initial[m[1] + "/" + m[2] + "/" + m[3]] = true;
-  });
-  const [open, setOpen] = useState(initial);
-  const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   if (!years.length) return <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>{props.emptyLabel || "Sin elementos."}</Typography>;
 
   function folderRow(key, label, depth, count, isOpen) {

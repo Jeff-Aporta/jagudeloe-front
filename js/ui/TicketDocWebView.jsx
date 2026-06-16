@@ -12,6 +12,7 @@ import { UI } from "../core/platform.ts";
 
 import { inlineMdWeb, isMarkdownTableRow, parseMarkdownTableBlock, collectMarkdownTableLines } from "../ui/tkHtml.ts";
 import { filterDisplayBlocks } from "../core/tk-content.ts";
+import { formatMinutos } from "../core/tk-metrics.ts";
 
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "../ui/tkHeroAuthors.ts";
 
@@ -20,10 +21,9 @@ import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 import { CodeBlock } from "../ui/CodeBlock.jsx";
 import { TkDocChart } from "../ui/TkDocChart.jsx";
 import { TkDocSequence } from "../ui/TkDocSequence.jsx";
-
-
-
-const SECTION_META = {
+import { TkDocThemedImage } from "../ui/TkDocThemedImage.jsx";
+import { TkDocDiagram } from "../ui/TkDocDiagram.jsx";
+import { TkLightboxHost } from "../ui/TkLightbox.jsx";
 
   markdown: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo", accent: "#1e90ff" },
 
@@ -48,6 +48,12 @@ const SECTION_META = {
   image: { icon: "mdi:eye-outline", title: "Evidencia", accent: "#8b5cf6" },
 
   img: { icon: "mdi:eye-outline", title: "Evidencia", accent: "#8b5cf6" },
+
+  diagram: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
+
+  mermaid: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
+
+  plantuml: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
 
   url: { icon: "mdi:link-variant", title: "Enlaces", accent: "#14b8a6" },
 
@@ -432,49 +438,13 @@ function BlockBody({ block }) {
 
   if (kind === "image" || kind === "img") {
 
-    const src = p.url ?? p.src ?? "";
+    return <TkDocThemedImage payload={p} />;
 
-    return (
+  }
 
-      <Box sx={{ textAlign: "center", my: 1 }}>
+  if (kind === "diagram" || kind === "mermaid" || kind === "plantuml") {
 
-        <Box
-
-          component="img"
-
-          src={src}
-
-          alt={p.alt ?? p.caption ?? ""}
-
-          sx={{
-
-            maxWidth: "100%",
-
-            borderRadius: 2,
-
-            border: 1,
-
-            borderColor: "divider",
-
-            boxShadow: (t) => (t.palette.mode === "dark" ? "0 8px 32px rgba(0,0,0,0.4)" : "0 12px 40px rgba(15,23,42,0.12)"),
-
-          }}
-
-        />
-
-        {p.caption && (
-
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-
-            {p.caption}
-
-          </Typography>
-
-        )}
-
-      </Box>
-
-    );
+    return <TkDocDiagram payload={p} />;
 
   }
 
@@ -721,11 +691,26 @@ function SectionCard({ icon, title, accent, children }) {
 
 
 
+function commitTotals(commits) {
+  return (commits || []).reduce(
+    (acc, c) => ({
+      count: acc.count + 1,
+      ins: acc.ins + Number(c.insCount ?? 0),
+      del: acc.del + Number(c.delCount ?? 0),
+      min: acc.min + Number(c.minutos ?? 0),
+    }),
+    { count: 0, ins: 0, del: 0, min: 0 },
+  );
+}
+
 function CommitsTable({ commits }) {
 
   const { Table, TableHead, TableBody, TableRow, TableCell, Paper, Chip, Typography } = getMaterialUI();
 
   if (!commits?.length) return null;
+
+  const totals = commitTotals(commits);
+  const headers = ["Commit", "Descripción", "Ins", "Del", "Tiempo", "Proyecto"];
 
   return (
 
@@ -737,7 +722,7 @@ function CommitsTable({ commits }) {
 
           <TableRow>
 
-            {["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"].map((h) => (
+            {headers.map((h) => (
 
               <TableCell
 
@@ -803,8 +788,6 @@ function CommitsTable({ commits }) {
 
                 </TableCell>
 
-                <TableCell>{c.proyecto}</TableCell>
-
                 <TableCell><span dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(c.descripcion ?? "")) }} /></TableCell>
 
                 <TableCell align="right">
@@ -821,11 +804,35 @@ function CommitsTable({ commits }) {
 
                 <TableCell align="right">{Number(c.minutos ?? 0)} min</TableCell>
 
+                <TableCell>{c.proyecto}</TableCell>
+
               </TableRow>
 
             );
 
           })}
+
+          <TableRow sx={{ bgcolor: "action.selected", "& td": { fontWeight: 700, borderTop: 2, borderColor: "divider" } }}>
+
+            <TableCell colSpan={2}>Resumen · {totals.count} commits</TableCell>
+
+            <TableCell align="right">
+
+              <Chip size="small" label={"+" + totals.ins} color="success" variant="filled" />
+
+            </TableCell>
+
+            <TableCell align="right">
+
+              <Chip size="small" label={"−" + totals.del} color="error" variant="filled" />
+
+            </TableCell>
+
+            <TableCell align="right">{totals.min} min</TableCell>
+
+            <TableCell />
+
+          </TableRow>
 
         </TableBody>
 
@@ -1134,43 +1141,45 @@ function TimeSummary({ tiempos }) {
 
   const { Box, Stack, Typography, LinearProgress } = getMaterialUI();
 
+  const secondarySx = {
+    fontSize: "0.75rem",
+    fontWeight: 400,
+    lineHeight: 1.45,
+  };
+
   if (!tiempos.length) return null;
 
   const total = tiempos.reduce((s, t) => s + t.minutos, 0) || 1;
 
   return (
 
-    <Stack spacing={1.75}>
+    <Stack spacing={1.75} className="tk-doc-time-summary">
 
       {tiempos.map((t) => (
 
         <Box key={t.name}>
 
-          <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, lineHeight: 1.5 }}>
 
-            <Typography variant="body2" fontWeight={600}>
+            {t.name}
 
-              {t.name}
+            {t.detail ? (
 
-              {t.detail ? (
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ...secondarySx, ml: 0.75 }}>
 
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                ({t.detail})
 
-                  ({t.detail})
+              </Typography>
 
-                </Typography>
+            ) : null}
 
-              ) : null}
+            <Typography component="span" variant="caption" color="text.secondary" sx={{ ...secondarySx, ml: 0.75 }}>
 
-            </Typography>
-
-            <Typography variant="body2" fontWeight={700} color="primary.main">
-
-              {t.minutos} min
+              {formatMinutos(t.minutos)}
 
             </Typography>
 
-          </Stack>
+          </Typography>
 
           <LinearProgress
 
@@ -1202,9 +1211,9 @@ function TimeSummary({ tiempos }) {
 
       ))}
 
-      <Typography variant="caption" color="text.secondary" sx={{ pt: 0.5 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ pt: 0.5, fontSize: "0.75rem" }}>
 
-        Total registrado: {total} min
+        Total registrado: {formatMinutos(total)}
 
       </Typography>
 
@@ -1274,6 +1283,8 @@ export function TicketDocWebView({ tk }) {
 
   return (
 
+    <TkLightboxHost galleryId={`tk-${iticket}`}>
+
     <Box className="tk-doc-markdown" sx={{ maxWidth: 920, mx: "auto", width: "100%" }}>
 
       <HeroHeader tk={tk} space={space} iticket={iticket} badges={badges} />
@@ -1314,9 +1325,23 @@ export function TicketDocWebView({ tk }) {
 
           <Typography
 
+            variant="overline"
+
+            color="text.secondary"
+
+            sx={{ display: "block", mb: 0.75, letterSpacing: 0.6, fontWeight: 600 }}
+
+          >
+
+            Resumen
+
+          </Typography>
+
+          <Typography
+
             variant="body1"
 
-            sx={{ lineHeight: 1.65 }}
+            sx={{ lineHeight: 1.65, fontSize: "1.02rem" }}
 
             dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(tk.resumen)) }}
 
@@ -1371,6 +1396,8 @@ export function TicketDocWebView({ tk }) {
       )}
 
     </Box>
+
+    </TkLightboxHost>
 
   );
 
