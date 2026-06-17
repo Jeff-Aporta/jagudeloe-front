@@ -5,9 +5,10 @@
 
 import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
-import { filterDisplayBlocks } from "../core/tk-content.ts";
-import { chartSpecFromPayload, renderChartSvg, chartThemeLight } from "../core/tk-chart.ts";
-import { mermaidInkDiagramUrl } from "../core/tk-diagram.ts";
+import { normalizeTkContentBlock, tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage, stripDisallowedCodeFromHtml } from "../core/tk-code-policy.ts";
+import { tkLinkHtml } from "../core/tk-link.ts";
+import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS } from "../core/tk-table.ts";
+import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -52,13 +53,11 @@ function codeChipWeb(text: string): string {
   return `<code class="tk-inline-code">${text}</code>`;
 }
 
-/** Inline markdown ligero: **negrilla**, ~~tachado~~, *cursiva*, `código`, [label](url). Escapa el resto. */
+/** Inline markdown ligero: **negrilla**, `código`, [label](url). Escapa el resto. */
 export function inlineMd(raw: string): string {
   let s = esc(raw);
   s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
   s = s.replace(/`([^`]+)`/g, (_m, code) => codeChip(code));
-  s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer" style="color:${C.blue};">$1</a>`);
   return s;
 }
@@ -67,46 +66,9 @@ export function inlineMd(raw: string): string {
 export function inlineMdWeb(raw: string): string {
   let s = esc(raw);
   s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
   s = s.replace(/`([^`]+)`/g, (_m, code) => codeChipWeb(code));
-  s = s.replace(/\*([^*]+)\*/g, "<i>$1</i>");
   s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="tk-inline-link">$1</a>');
   return s;
-}
-
-export function isMarkdownTableRow(line: string): boolean {
-  const t = String(line || "").trim();
-  return t.startsWith("|") && t.endsWith("|") && t.length > 2;
-}
-
-export function isMarkdownTableSeparator(line: string): boolean {
-  if (!isMarkdownTableRow(line)) return false;
-  return String(line).trim().replace(/^\|/, "").replace(/\|$/, "").split("|").every((c) => /^[\s:-]+$/.test(c.trim()));
-}
-
-export function parseMarkdownTableCells(line: string): string[] {
-  return String(line).trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
-}
-
-export function parseMarkdownTableBlock(lines: string[]): { headers: string[]; rows: string[][] } | null {
-  if (lines.length < 2) return null;
-  if (!isMarkdownTableRow(lines[0]) || !isMarkdownTableSeparator(lines[1])) return null;
-  const headers = parseMarkdownTableCells(lines[0]);
-  const rows = lines.slice(2).filter(isMarkdownTableRow).map(parseMarkdownTableCells);
-  if (!headers.length) return null;
-  return { headers, rows };
-}
-
-export function collectMarkdownTableLines(allLines: string[], start: number): { lines: string[]; next: number } {
-  const block: string[] = [];
-  let i = start;
-  while (i < allLines.length) {
-    const t = allLines[i].trim();
-    if (!t || !isMarkdownTableRow(t)) break;
-    block.push(t);
-    i += 1;
-  }
-  return { lines: block, next: i };
 }
 
 function bulletRow(iconName: string, html: string): string {
@@ -137,14 +99,17 @@ function plainCard(bodyHtml: string): string {
 
 function dataTable(headers: string[], rows: unknown[][], opts: { title?: string; raw?: boolean } = {}): string {
   const cell = (c: unknown) => (opts.raw ? String(c ?? "") : inlineMd(String(c ?? "")));
-  const th = headers.map((h) => `<th style="${FONT}font-size:11px;color:#fff;background:${C.navy};padding:6px 8px;text-align:left;font-weight:bold;">${inlineMd(String(h))}</th>`).join("");
-  const trs = rows.map((row, i) => {
-    const bg = i % 2 ? C.zebra : "#ffffff";
-    const tds = (row || []).map((c) => `<td style="${FONT}font-size:12px;color:${C.text};padding:6px 8px;border-bottom:1px solid ${C.border};text-align:left;background:${bg};">${cell(c)}</td>`).join("");
+  const th = headers.map((h) => `<th style="${FONT}font-size:12px;color:${C.text};background:${C.zebra};padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid ${C.border};">${inlineMd(String(h))}</th>`).join("");
+  const trs = rows.map((row) => {
+    const tds = (row || []).map((c, j) => {
+      const descClamp = isTkDescColumn(headers[j]);
+      const extra = descClamp ? TK_TABLE_DESC_CLAMP_CSS : "";
+      return `<td style="${FONT}font-size:13px;color:${C.text};padding:8px 12px;border-bottom:1px solid ${C.border};text-align:left;background:#ffffff;${extra}">${cell(c)}</td>`;
+    }).join("");
     return `<tr>${tds}</tr>`;
   }).join("");
-  const title = opts.title ? `<p style="margin:0 0 6px;font-weight:bold;color:${C.navy};">${esc(opts.title)}</p>` : "";
-  return `${title}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${C.border};border-radius:6px;overflow:hidden;margin:6px 0;"><tr>${th}</tr>${trs}</table>`;
+  const title = opts.title ? `<p style="margin:0 0 8px;font-weight:600;font-size:13px;color:${C.muted};">${esc(opts.title)}</p>` : "";
+  return `${title}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${C.border};border-radius:0.5rem;overflow:hidden;margin:8px 0;"><tr>${th}</tr>${trs}</table>`;
 }
 
 function pill(text: string, fg: string, bg: string): string {
@@ -152,9 +117,13 @@ function pill(text: string, fg: string, bg: string): string {
 }
 
 function codeBlock(code: string, lang = "sql"): string {
+  if (isDisallowedTkCodeLanguage(lang)) {
+    return `<p style="margin:6px 0;color:${C.muted};">${inlineMd(TK_CODE_OMITTED_NOTE)}</p>`;
+  }
+  const l = tkCodeLanguageForRender(lang);
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0;max-width:100%;table-layout:fixed;border:1px solid ${C.border};border-radius:6px;background:${C.zebra};overflow:visible;">
-    <tr><td style="padding:5px 10px;border-bottom:1px solid ${C.border};${FONT}font-size:10px;color:${C.muted};text-transform:uppercase;letter-spacing:.5px;">${esc(lang)}</td></tr>
-    <tr><td style="padding:0;max-width:100%;overflow:visible;"><div class="tk-code-wrap" data-lang="${esc(lang)}" style="max-width:100%;overflow:visible;"><pre class="tk-code-block" style="margin:0;${MONO}font-size:12px;color:${C.chipFg};line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow:visible;">${esc(code)}</pre></div></td></tr></table>`;
+    <tr><td style="padding:5px 10px;border-bottom:1px solid ${C.border};${FONT}font-size:10px;color:${C.muted};text-transform:uppercase;letter-spacing:.5px;">${esc(l)}</td></tr>
+    <tr><td style="padding:0;max-width:100%;overflow:visible;"><div class="tk-code-wrap" data-lang="${esc(l)}" style="max-width:100%;overflow:visible;"><pre class="tk-code-block" style="margin:0;${MONO}font-size:12px;color:${C.chipFg};line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow:visible;">${esc(code)}</pre></div></td></tr></table>`;
 }
 
 const BULLET_ICONS: Record<string, string> = {
@@ -163,49 +132,21 @@ const BULLET_ICONS: Record<string, string> = {
   default: "mdi:check",
 };
 
-/** Markdown por bloques: párrafos, viñetas "- ", subtítulos "## ", tablas GFM. */
+/** Markdown por bloques: párrafos, viñetas, subtítulos, tablas pipe. */
 function mdBody(text: string): string {
   const out: string[] = [];
-  let para: string[] = [];
-  const allLines = String(text || "").split("\n");
-
-  function flushPara() {
-    if (para.length) { out.push(`<p style="margin:0 0 8px;">${inlineMd(para.join(" "))}</p>`); para = []; }
+  for (const block of splitMarkdownBlocks(text)) {
+    if (block.type === "heading") {
+      out.push(`<p style="margin:14px 0 4px;font-weight:bold;color:${C.navy};">${inlineMd(block.text)}</p>`);
+    } else if (block.type === "bullet") {
+      const key = /^objetivo/i.test(block.text) ? "objetivo" : /^restricci/i.test(block.text) ? "restriccion" : "default";
+      out.push(bulletRow(BULLET_ICONS[key], inlineMd(block.text)));
+    } else if (block.type === "table") {
+      out.push(dataTable(block.table.headers, block.table.rows));
+    } else {
+      out.push(`<p style="margin:0 0 8px;">${inlineMd(block.text)}</p>`);
+    }
   }
-
-  for (let i = 0; i < allLines.length; i += 1) {
-    const line = allLines[i].trim();
-    if (!line) { flushPara(); continue; }
-
-    if (isMarkdownTableRow(line)) {
-      flushPara();
-      const { lines: tableLines, next } = collectMarkdownTableLines(allLines, i);
-      i = next - 1;
-      const parsed = parseMarkdownTableBlock(tableLines);
-      if (parsed) out.push(dataTable(parsed.headers, parsed.rows));
-      continue;
-    }
-
-    if (line.startsWith("## ") || line.startsWith("# ")) {
-      flushPara();
-      out.push(`<p style="margin:14px 0 4px;font-weight:bold;color:${C.navy};">${inlineMd(line.replace(/^#+\s*/, ""))}</p>`);
-      continue;
-    }
-    if (/^[-*]\s+/.test(line)) {
-      flushPara();
-      const body = line.replace(/^[-*]\s+/, "");
-      const key = /^objetivo/i.test(body) ? "objetivo" : /^restricci/i.test(body) ? "restriccion" : "default";
-      out.push(bulletRow(BULLET_ICONS[key], inlineMd(body)));
-      continue;
-    }
-    if (line.startsWith("> ")) {
-      flushPara();
-      out.push(`<blockquote style="margin:0 0 8px;padding:10px 12px;border-left:3px solid ${C.blue};background:${C.band};border-radius:0 6px 6px 0;color:${C.text};">${inlineMd(line.slice(2))}</blockquote>`);
-      continue;
-    }
-    para.push(line);
-  }
-  flushPara();
   return out.join("");
 }
 
@@ -222,53 +163,16 @@ function badgePill(payload: Record<string, unknown>): string {
 
 export type TkBlock = { kind?: string; payload?: Record<string, unknown>; sortKey?: number };
 
-function chartDriver(p: Record<string, unknown>): string {
-  const spec = chartSpecFromPayload(p);
-  if (!spec) return `<p style="color:${C.muted};">Gráfico no disponible.</p>`;
-  const note = p.caption ? `<p style="margin:6px 0 0;font-size:11px;color:${C.muted};">${esc(String(p.caption))}</p>` : "";
-  return `<div class="tk-doc-chart-email">${renderChartSvg(spec, chartThemeLight())}${note}</div>`;
-}
-
-function sequenceDriver(p: Record<string, unknown>): string {
-  const spec = p.preset === "tk1431662" ? tk1431662SequenceSpec() : sequenceSpecFromPayload(p);
-  if (!spec) return `<p style="color:${C.muted};">Diagrama de secuencia no disponible.</p>`;
-  const note = p.caption ? `<p style="margin:6px 0 0;font-size:11px;color:${C.muted};">${esc(String(p.caption))}</p>` : "";
-  return `<div class="tk-doc-sequence-email">${renderSequenceSvg(spec, sequenceThemeLight())}${note}</div>`;
-}
-
-function diagramDriver(p: Record<string, unknown>): string {
-  const engine = String(p.engine ?? "mermaid").toLowerCase();
-  if (engine === "plantuml" || engine === "puml") {
-    const cap = esc(String(p.caption || "Diagrama PlantUML (ver vista web)."));
-    return `<p style="margin:8px 0;color:${C.muted};font-size:12px;">${cap}</p>`;
-  }
-  const url = mermaidInkDiagramUrl(p, false, "svg");
-  const alt = esc(p.caption ?? p.alt ?? "Diagrama");
-  if (!url) return `<p style="color:${C.muted};">Diagrama no disponible.</p>`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:8px 0;">
-    <img src="${esc(url)}" alt="${alt}" style="display:block;width:100%;max-width:920px;height:auto;border:1px solid ${C.border};border-radius:6px;background:transparent;"/>
-    ${p.caption ? `<div style="${FONT}font-size:11px;color:${C.muted};margin-top:6px;">${esc(String(p.caption))}</div>` : ""}</td></tr></table>`;
-}
-
 /* ── Drivers por kind: payload JSON → HTML interno (sin tarjeta) ── */
 const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   markdown: (p) => mdBody(String(p.text ?? p.body ?? "")),
   md: (p) => mdBody(String(p.text ?? p.body ?? "")),
   text: (p) => mdBody(String(p.text ?? p.body ?? "")),
-  html: (p) => stripInfoTiquete(String(p.html ?? p.body ?? p.content ?? "")),
-  body: (p) => stripInfoTiquete(String(p.html ?? p.body ?? p.content ?? "")),
+  html: (p) => stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? "")),
+  body: (p) => stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? "")),
   code: (p) => codeBlock(String(p.code ?? p.text ?? p.sql ?? ""), String(p.language ?? "sql")),
-  sql: (p) => codeBlock(String(p.code ?? p.text ?? p.sql ?? ""), String(p.language ?? "sql")),
+  sql: (p) => codeBlock(String(p.code ?? p.text ?? p.sql ?? ""), "sql"),
   table: (p) => dataTable((p.headers as string[]) ?? [], (p.rows as unknown[][]) ?? []),
-  chart: chartDriver,
-  grafico: chartDriver,
-  graph: chartDriver,
-  sequence: sequenceDriver,
-  secuencia: sequenceDriver,
-  sequenceDiagram: sequenceDriver,
-  diagram: diagramDriver,
-  mermaid: diagramDriver,
-  plantuml: diagramDriver,
   image: (p) => {
     const src = esc(p.url ?? p.src ?? "");
     const alt = esc(p.alt ?? p.caption ?? "");
@@ -279,13 +183,18 @@ const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
   img: (p) => DRIVERS.image(p),
   badge: badgePill,
   chip: badgePill,
-  url: (p) => {
-    const href = esc(p.href ?? p.url ?? "#");
-    return bulletRow("mdi:link-variant", `<a href="${href}" target="_blank" rel="noreferrer" style="color:${C.blue};font-weight:bold;">${esc(p.label ?? href)}</a>`);
-  },
+  url: (p) => bulletRow(
+    "mdi:link-variant",
+    tkLinkHtml(p, { esc, linkStyle: `color:${C.blue};font-weight:bold;` }),
+  ),
   link: (p) => DRIVERS.url(p),
   accordion: (p) => {
-    const body = String(p.html ?? "") || (p.code ? codeBlock(String(p.code), String(p.language ?? "sql")) : "");
+    const lang = String(p.language ?? "sql");
+    const body = String(p.html ?? "") || (p.code && !isDisallowedTkCodeLanguage(lang)
+      ? codeBlock(String(p.code), lang)
+      : p.code
+        ? `<p style="margin:6px 0;color:${C.muted};">${inlineMd(TK_CODE_OMITTED_NOTE)}</p>`
+        : "");
     return `<details style="margin:6px 0;border:1px solid ${C.border};border-radius:6px;padding:8px 12px;background:${C.zebra};">
       <summary style="${FONT}font-size:13px;font-weight:bold;color:${C.navy};cursor:pointer;">${esc(p.title ?? "Detalle")}</summary>
       <div style="margin-top:8px;">${body}</div></details>`;
@@ -302,10 +211,11 @@ const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
 DRIVERS["cambios_bd"] = DRIVERS["cambio-bd"];
 
 export function renderBlockBody(block: TkBlock): string {
-  const kind = String(block.kind ?? "text").toLowerCase();
+  const normalized = normalizeTkContentBlock(block) as TkBlock;
+  const kind = String(normalized.kind ?? "text").toLowerCase();
   const driver = DRIVERS[kind];
-  if (!driver) return `<pre style="margin:0;${MONO}font-size:12px;color:${C.chipFg};white-space:pre-wrap;">${esc(JSON.stringify(block.payload ?? {}, null, 2))}</pre>`;
-  return driver(block.payload ?? {});
+  if (!driver) return `<pre style="margin:0;${MONO}font-size:12px;color:${C.chipFg};white-space:pre-wrap;">${esc(JSON.stringify(normalized.payload ?? {}, null, 2))}</pre>`;
+  return driver(normalized.payload ?? {});
 }
 
 const SECTION_META: Record<string, { icon: string; title: string }> = {
@@ -313,19 +223,10 @@ const SECTION_META: Record<string, { icon: string; title: string }> = {
   md: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo" },
   text: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo" },
   table: { icon: "mdi:table-large", title: "Tabla" },
-  chart: { icon: "mdi:chart-bar", title: "Gráfico" },
-  grafico: { icon: "mdi:chart-bar", title: "Gráfico" },
-  graph: { icon: "mdi:chart-bar", title: "Gráfico" },
-  sequence: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
-  secuencia: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
-  sequenceDiagram: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia" },
   code: { icon: "mdi:code-tags", title: "Código" },
   sql: { icon: "mdi:database-search-outline", title: "SQL" },
   image: { icon: "mdi:eye-outline", title: "Evidencia" },
   img: { icon: "mdi:eye-outline", title: "Evidencia" },
-  diagram: { icon: "mdi:chart-tree", title: "Diagrama" },
-  mermaid: { icon: "mdi:chart-tree", title: "Diagrama" },
-  plantuml: { icon: "mdi:chart-tree", title: "Diagrama" },
   url: { icon: "mdi:link-variant", title: "Enlaces" },
   link: { icon: "mdi:link-variant", title: "Enlaces" },
   accordion: { icon: "mdi:unfold-more-horizontal", title: "Detalle" },
@@ -336,13 +237,71 @@ const SECTION_META: Record<string, { icon: string; title: string }> = {
 };
 
 function sortBlocks(blocks: TkBlock[]): TkBlock[] {
-  return blocks.slice().sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
+  return blocks.slice().sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0)).map((b) => normalizeTkContentBlock(b) as TkBlock);
 }
 
 /* Tablas "Información del tiquete": datos inferibles desde la cabecera, no se renderizan. */
 function isInfoTiquete(b: TkBlock): boolean {
   const title = String((b.payload && (b.payload.title as string)) || "").toLowerCase();
   return title.includes("información del tiquete") || title.includes("informacion del tiquete");
+}
+
+/** Texto visible aproximado (sin etiquetas HTML). */
+export function visibleHtmlText(html: string): string {
+  return String(html ?? "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Quita del HTML legacy (diligencias temp) la cabecera duplicada del hero y
+ * secciones de metadatos/tiempos ya cubiertas por TicketDocWebView y métricas.
+ */
+function stripDiligenciaHeader(html: string): string {
+  let out = html;
+  out = out.replace(/^\s*<h1\b[^>]*>[\s\S]*?<\/h1>\s*/i, (m) => (/TK-\d+/i.test(m) ? "" : m));
+  out = out.replace(/^\s*<p\b[^>]*>[\s\S]*?Solicitante\s*:?[\s\S]*?<\/p>\s*/i, "");
+  out = out.replace(/^\s*<p\b[^>]*>[\s\S]*?Tipo\s+apertura\s*:?[\s\S]*?<\/p>\s*/i, "");
+  out = out.replace(
+    /^\s*<h2\b[^>]*>[\s\S]*?Tiempos\s+InSoft[\s\S]*?<\/h2>\s*<table\b[\s\S]*?<\/table>\s*/i,
+    "",
+  );
+  out = out.replace(
+    /^\s*<h2\b[^>]*>[\s\S]*?M[eé]tricas\s+h[aá]biles[\s\S]*?<\/h2>\s*<ul\b[\s\S]*?<\/ul>\s*/i,
+    "",
+  );
+  return out;
+}
+
+/** Hero incrustado de renderTicketViewHtml (tabla navy #0b2e4e) al inicio del bloque html. */
+function stripEmbeddedEmailHero(html: string): string {
+  const rx = /^\s*<tr>\s*<td[^>]*>\s*<table[^>]*background:\s*#0b2e4e[\s\S]*?<\/table>\s*<\/td>\s*<\/tr>\s*/i;
+  return rx.test(html) ? html.replace(rx, "") : html;
+}
+
+/** Limpia HTML passthrough: info-tiquete + cabecera/métricas duplicadas. */
+export function stripRedundantTicketHtml(html: string): string {
+  let out = stripDisallowedCodeFromHtml(stripInfoTiquete(String(html ?? "")));
+  for (let i = 0; i < 6; i++) {
+    const prev = out;
+    out = stripDiligenciaHeader(out);
+    out = stripEmbeddedEmailHero(out);
+    if (out === prev) break;
+  }
+  return out.trim();
+}
+
+export function isRedundantTicketBlock(b: TkBlock): boolean {
+  if (isInfoTiquete(b)) return true;
+  const kind = String(b.kind ?? "").toLowerCase();
+  if (kind === "html" || kind === "body") {
+    const raw = String((b.payload?.html ?? b.payload?.body ?? b.payload?.content) ?? "");
+    return !visibleHtmlText(stripRedundantTicketHtml(raw));
+  }
+  return false;
 }
 
 /**
@@ -389,39 +348,27 @@ function commitsTable(commits: Record<string, unknown>[]): string {
       : short;
     return [
       hashCell,
+      esc(String(c.proyecto ?? "")),
       inlineMd(String(c.descripcion ?? "")),
       pill("+" + Number(c.insCount ?? 0), C.green, "#e9f7ee"),
       pill("−" + Number(c.delCount ?? 0), "#c0392b", "#fdecea"),
       esc(`${Number(c.minutos ?? 0)} min`),
-      esc(String(c.proyecto ?? "")),
     ];
   });
-  const totals = commits.reduce(
-    (acc, c) => ({
-      count: acc.count + 1,
-      ins: acc.ins + Number(c.insCount ?? 0),
-      del: acc.del + Number(c.delCount ?? 0),
-      min: acc.min + Number(c.minutos ?? 0),
-    }),
-    { count: 0, ins: 0, del: 0, min: 0 },
-  );
-  rows.push([
-    `<strong>Resumen · ${totals.count} commits</strong>`,
-    "",
-    pill("+" + totals.ins, C.green, "#e9f7ee"),
-    pill("−" + totals.del, "#c0392b", "#fdecea"),
-    `<strong>${totals.min} min</strong>`,
-    "",
-  ]);
-  return dataTable(["Commit", "Descripción", "Ins", "Del", "Tiempo", "Proyecto"], rows, { raw: true });
+  return dataTable(["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"], rows, { raw: true });
 }
 
 function timeRow(label: string, hint: string, mins: number, bold = false): string {
-  const style = bold
+  const labelStyle = bold
     ? `${FONT}font-size:14px;color:${C.navy};font-weight:bold;padding:8px 0;`
-    : `${FONT}font-size:13px;color:${C.text};padding:6px 0;border-bottom:1px solid ${C.border};`;
-  return `<tr><td style="${style}">${esc(label)}${hint ? ` <span style="color:${C.muted};">(${esc(hint)})</span>` : ""}</td>
-    <td align="right" style="${style}white-space:nowrap;">${mins} min</td></tr>`;
+    : `${FONT}font-size:13px;color:${C.text};font-weight:600;padding:6px 0;border-bottom:1px solid ${C.border};`;
+  const metaStyle = `font-size:11px;color:${C.muted};font-weight:400;`;
+  const timeStyle = bold
+    ? `${metaStyle}white-space:nowrap;padding:8px 0;font-weight:600;color:${C.navy};font-size:12px;`
+    : `${metaStyle}white-space:nowrap;padding:6px 0;border-bottom:1px solid ${C.border};`;
+  const hintHtml = hint ? ` <span style="${metaStyle}">(${esc(hint)})</span>` : "";
+  return `<tr><td style="${labelStyle}">${esc(label)}${hintHtml}</td>
+    <td align="right" style="${timeStyle}">&nbsp;${mins} min</td></tr>`;
 }
 
 
@@ -442,7 +389,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     : "";
   const estado = String(tk.estado ?? "").toLowerCase();
 
-  const content = filterDisplayBlocks(sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isInfoTiquete(b)));
+  const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isRedundantTicketBlock(b));
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
   const blocks = content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
@@ -487,7 +434,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   const contexts = (tk.contexts as Record<string, unknown>[]) ?? [];
   const allCommits: Record<string, unknown>[] = [];
   for (const ctx of contexts) {
-    for (const b of filterDisplayBlocks(sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !isInfoTiquete(x)))) {
+    for (const b of sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !isRedundantTicketBlock(x))) {
       const kind = String(b.kind ?? "text").toLowerCase();
       const meta = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle" };
       const title = String((b.payload && (b.payload.title as string)) || meta.title);
@@ -528,7 +475,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     const body = `<p style="margin:0 0 8px;color:${C.muted};">Distribución del esfuerzo según la naturaleza del trabajo.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         ${timeRows}
-        ${timeRow("Total", "", timeTotal, true)}
+        ${timeRow("Tiempo invertido por estimación", "", timeTotal, true)}
       </table>`;
     rows.push(section("mdi:clock-outline", "Resumen de tiempos", body));
   }

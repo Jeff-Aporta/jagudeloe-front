@@ -1,5 +1,7 @@
 /** Fondo y padding compartidos del driver JSX (app embebida y vista full-page). */
 
+export { TK_DOC_RADIUS } from "../core/tk-table.ts";
+
 const TK_DOC_GRADIENT = {
   background: (t: { palette: { mode: string } }) =>
     t.palette.mode === "dark"

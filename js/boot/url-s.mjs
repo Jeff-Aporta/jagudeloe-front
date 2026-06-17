@@ -41,6 +41,23 @@ export function buildShareUrl(state, originPath) {
   return location.origin + path + "?" + encodeS(state);
 }
 
+/** diligencia | metricas — solo persiste en vista full-page (?s → view=doc). */
+export function parseDocReportView(search = location.search) {
+  const s = decodeS(search);
+  return s.report === "metricas" ? "metricas" : "diligencia";
+}
+
+/** Actualiza ?s= con report=metricas o lo omite (diligencia por defecto). */
+export function writeDocReportView(reportView, search = location.search) {
+  const s = decodeS(search);
+  const next = { ...s };
+  if (reportView === "metricas") next.report = "metricas";
+  else delete next.report;
+  const qs = encodeS(next);
+  const url = location.pathname + "?" + qs;
+  history.replaceState(null, "", url);
+}
+
 /** Vista documento: solo ticket, sin shell. driver: html (correo) | jsx (web). */
 export function docBootFromSearch(search = location.search) {
   const s = decodeS(search);
@@ -49,5 +66,6 @@ export function docBootFromSearch(search = location.search) {
   const sel = typeof s.sel === "string" ? s.sel.trim() : "";
   if (!space || !sel) return null;
   const driver = s.driver === "html" ? "html" : "jsx";
-  return { space, sel, driver };
+  const reportView = parseDocReportView(search);
+  return { space, sel, driver, reportView };
 }

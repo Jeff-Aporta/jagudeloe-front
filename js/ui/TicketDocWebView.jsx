@@ -10,20 +10,28 @@ import { getMaterialUI } from "../core/runtime.ts";
 
 import { UI } from "../core/platform.ts";
 
-import { inlineMdWeb, isMarkdownTableRow, parseMarkdownTableBlock, collectMarkdownTableLines } from "../ui/tkHtml.ts";
-import { filterDisplayBlocks } from "../core/tk-content.ts";
-import { formatMinutos } from "../core/tk-metrics.ts";
+import { inlineMdWeb, stripRedundantTicketHtml, isRedundantTicketBlock } from "../ui/tkHtml.ts";
 
-import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "../ui/tkHeroAuthors.ts";
+import { formatTiqueteCreadoPor, resolveDocumentadorBlock, ticketEstadoCierre } from "../ui/tkHeroAuthors.ts";
 
 import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 
-import { CodeBlock } from "../ui/CodeBlock.jsx";
-import { TkDocChart } from "../ui/TkDocChart.jsx";
-import { TkDocSequence } from "../ui/TkDocSequence.jsx";
-import { TkDocThemedImage } from "../ui/TkDocThemedImage.jsx";
-import { TkDocDiagram } from "../ui/TkDocDiagram.jsx";
-import { TkLightboxHost } from "../ui/TkLightbox.jsx";
+import { extractTicketEvidencias } from "../core/tk-evidencias.ts";
+
+import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
+
+import { LightboxImage } from "./ImageLightbox.jsx";
+
+import { CodeBlock } from "./CodeBlock.jsx";
+
+import { normalizeTkContentBlock, tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage } from "../core/tk-code-policy.ts";
+import { tkLinkHref, tkLinkLabel, tkLinkShowsPath } from "../core/tk-link.ts";
+import { isTkDescColumn, TK_TABLE_DESC_CLAMP_SX, tkTablePlainText, TK_DOC_TABLE_PAPER_SX, TK_DOC_TABLE_HEAD_CELL_SX, TK_DOC_TABLE_ROW_SX, TK_DOC_TABLE_BODY_CELL_SX, TK_DOC_RADIUS, TK_COMMIT_INS_CHIP_SX, TK_COMMIT_DEL_CHIP_SX } from "../core/tk-table.ts";
+import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
+
+
+
+const SECTION_META = {
 
   markdown: { icon: "mdi:clipboard-text-outline", title: "Solicitud y objetivo", accent: "#1e90ff" },
 
@@ -33,14 +41,6 @@ import { TkLightboxHost } from "../ui/TkLightbox.jsx";
 
   table: { icon: "mdi:table-large", title: "Tabla", accent: "#6366f1" },
 
-  chart: { icon: "mdi:chart-bar", title: "Gráfico", accent: "#0ea5e9" },
-
-  sequence: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
-
-  secuencia: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
-
-  sequenceDiagram: { icon: "mdi:source-branch-sync", title: "Diagrama de secuencia", accent: "#6366f1" },
-
   code: { icon: "mdi:code-tags", title: "Código", accent: "#0ea5e9" },
 
   sql: { icon: "mdi:database-search-outline", title: "SQL", accent: "#0ea5e9" },
@@ -48,12 +48,6 @@ import { TkLightboxHost } from "../ui/TkLightbox.jsx";
   image: { icon: "mdi:eye-outline", title: "Evidencia", accent: "#8b5cf6" },
 
   img: { icon: "mdi:eye-outline", title: "Evidencia", accent: "#8b5cf6" },
-
-  diagram: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
-
-  mermaid: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
-
-  plantuml: { icon: "mdi:chart-tree", title: "Diagrama", accent: "#6366f1" },
 
   url: { icon: "mdi:link-variant", title: "Enlaces", accent: "#14b8a6" },
 
@@ -75,89 +69,89 @@ import { TkLightboxHost } from "../ui/TkLightbox.jsx";
 
 function sortBlocks(blocks) {
 
-  return (blocks || []).slice().sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0));
+  return (blocks || []).slice().sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0)).map(normalizeTkContentBlock);
+
+}
+
+
+
+function isImageBlock(b) {
+
+  const kind = String(b?.kind || "").toLowerCase();
+
+  return kind === "image" || kind === "img";
+
+}
+
+function imageBlockUrl(b) {
+  const p = b?.payload || {};
+  const raw = String(p.url ?? p.src ?? "").trim();
+  if (!raw) return "";
+  return /^https?:\/\//i.test(raw) ? raw : `https://pub-1c290cc606c8478899f5764899278571.r2.dev/${raw.replace(/^\//, "")}`;
+}
+
+
+
+/** Agrupa imágenes consecutivas en un solo card de Evidencia. */
+function groupImageBlocks(blocks) {
+
+  const out = [];
+
+  let i = 0;
+
+  while (i < blocks.length) {
+
+    if (!isImageBlock(blocks[i])) {
+
+      out.push(blocks[i]);
+
+      i++;
+
+      continue;
+
+    }
+
+    const group = [];
+
+    while (i < blocks.length && isImageBlock(blocks[i])) {
+
+      group.push(blocks[i]);
+
+      i++;
+
+    }
+
+    out.push(group.length === 1 ? group[0] : { kind: "image-group", blocks: group, sortKey: group[0].sortKey ?? 0 });
+
+  }
+
+  return out;
 
 }
 
 
 
 function isInfoTiquete(b) {
-
-  const title = String((b.payload && b.payload.title) || "").toLowerCase();
-
-  return title.includes("información del tiquete") || title.includes("informacion del tiquete");
-
+  return isRedundantTicketBlock(b);
 }
 
 
 
 function MdBody({ text }) {
 
-  const { Box, Typography, Paper } = getMaterialUI();
+  const { Box, Typography } = getMaterialUI();
 
   const out = [];
 
-  let para = [];
+  for (const block of splitMarkdownBlocks(text)) {
 
-  const allLines = String(text || "").split("\n");
-
-  function flush() {
-
-    if (para.length) {
-
-      out.push(
-
-        <Typography
-
-          key={out.length}
-
-          variant="body1"
-
-          sx={{ mb: 1.25, lineHeight: 1.65, color: "text.primary" }}
-
-          dangerouslySetInnerHTML={{ __html: inlineMdWeb(para.join(" ")) }}
-
-        />,
-
-      );
-
-      para = [];
-
-    }
-
-  }
-
-  for (let i = 0; i < allLines.length; i += 1) {
-
-    const line = allLines[i].trim();
-
-    if (!line) { flush(); continue; }
-
-    if (isMarkdownTableRow(line)) {
-
-      flush();
-
-      const { lines: tableLines, next } = collectMarkdownTableLines(allLines, i);
-
-      i = next - 1;
-
-      const parsed = parseMarkdownTableBlock(tableLines);
-
-      if (parsed) out.push(<DataTable key={out.length} headers={parsed.headers} rows={parsed.rows} />);
-
-      continue;
-
-    }
-
-    if (line.startsWith("## ") || line.startsWith("# ")) {
-
-      flush();
+    if (block.type === "heading") {
 
       out.push(
 
         <Typography key={out.length} variant="subtitle1" sx={{ mt: 2, mb: 0.75, fontWeight: 700, letterSpacing: -0.2 }}>
 
-          <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(line.replace(/^#+\s*/, "")) }} />
+          <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(block.text) }} />
 
         </Typography>,
 
@@ -167,9 +161,7 @@ function MdBody({ text }) {
 
     }
 
-    if (/^[-*]\s+/.test(line)) {
-
-      flush();
+    if (block.type === "bullet") {
 
       out.push(
 
@@ -197,7 +189,7 @@ function MdBody({ text }) {
 
           <Typography variant="body1" sx={{ lineHeight: 1.6, flex: 1 }}>
 
-            <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(line.replace(/^[-*]\s+/, "")) }} />
+            <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(block.text) }} />
 
           </Typography>
 
@@ -209,43 +201,15 @@ function MdBody({ text }) {
 
     }
 
-    if (line.startsWith("> ")) {
-
-      flush();
+    if (block.type === "table") {
 
       out.push(
 
-        <Paper
+        <Box key={out.length} sx={{ my: 1 }}>
 
-          key={out.length}
+          <DataTable headers={block.table.headers} rows={block.table.rows} />
 
-          variant="outlined"
-
-          sx={{
-
-            mb: 1.5,
-
-            p: 1.5,
-
-            borderLeft: 3,
-
-            borderColor: "primary.main",
-
-            bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(30,144,255,0.08)" : "#f0f7ff"),
-
-            borderRadius: "0 8px 8px 0",
-
-          }}
-
-        >
-
-          <Typography variant="body1" sx={{ lineHeight: 1.65 }}>
-
-            <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(line.slice(2)) }} />
-
-          </Typography>
-
-        </Paper>,
+        </Box>,
 
       );
 
@@ -253,11 +217,23 @@ function MdBody({ text }) {
 
     }
 
-    para.push(line);
+    out.push(
+
+      <Typography
+
+        key={out.length}
+
+        variant="body1"
+
+        sx={{ mb: 1.25, lineHeight: 1.65, color: "text.primary" }}
+
+        dangerouslySetInnerHTML={{ __html: inlineMdWeb(block.text) }}
+
+      />,
+
+    );
 
   }
-
-  flush();
 
   return <Box>{out}</Box>;
 
@@ -267,31 +243,15 @@ function MdBody({ text }) {
 
 function DataTable({ headers, rows, title }) {
 
-  const { Table, TableHead, TableBody, TableRow, TableCell, Typography, Paper, Box } = getMaterialUI();
+  const { Table, TableHead, TableBody, TableRow, TableCell, Typography, Paper, Box, Tooltip } = getMaterialUI();
 
   return (
 
     <Box sx={{ my: 0.5 }}>
 
-      {title && <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>{title}</Typography>}
+      {title && <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: "text.secondary" }}>{title}</Typography>}
 
-      <Paper
-
-        variant="outlined"
-
-        sx={{
-
-          overflow: "auto",
-
-          borderRadius: 2,
-
-          borderColor: "divider",
-
-          boxShadow: (t) => (t.palette.mode === "dark" ? "none" : "0 4px 24px rgba(15,23,42,0.06)"),
-
-        }}
-
-      >
+      <Paper variant="outlined" sx={TK_DOC_TABLE_PAPER_SX}>
 
         <Table size="small">
 
@@ -301,43 +261,9 @@ function DataTable({ headers, rows, title }) {
 
               {(headers || []).map((h) => (
 
-                <TableCell
+                <TableCell key={h} sx={TK_DOC_TABLE_HEAD_CELL_SX}>
 
-                  key={h}
-
-                  sx={(t) => ({
-
-                    fontWeight: 700,
-
-                    whiteSpace: "nowrap",
-
-                    borderBottom: 1,
-
-                    borderColor: "divider",
-
-                    ...(t.palette.mode === "dark"
-
-                      ? {
-
-                          background: "linear-gradient(90deg, #0b2e4e, #1e5a8a)",
-
-                          color: "#fff",
-
-                        }
-
-                      : {
-
-                          bgcolor: "action.hover",
-
-                          color: "text.primary",
-
-                        }),
-
-                  })}
-
-                >
-
-                  <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(h ?? "")) }} />
+                  {h}
 
                 </TableCell>
 
@@ -351,31 +277,63 @@ function DataTable({ headers, rows, title }) {
 
             {(rows || []).map((row, i) => (
 
-              <TableRow
+              <TableRow key={i} sx={TK_DOC_TABLE_ROW_SX}>
 
-                key={i}
+                {(row || []).map((c, j) => {
 
-                sx={{
+                  const header = (headers || [])[j];
 
-                  bgcolor: i % 2 ? "action.hover" : "background.paper",
+                  const clampDesc = isTkDescColumn(header);
 
-                  transition: "background-color 0.15s",
+                  const raw = String(c ?? "");
 
-                  "&:hover": { bgcolor: "action.selected" },
+                  const html = inlineMdWeb(raw);
 
-                }}
+                  const inner = (
 
-              >
+                    <Box
 
-                {(row || []).map((c, j) => (
+                      component="span"
 
-                  <TableCell key={j} sx={{ fontSize: "0.875rem" }}>
+                      sx={clampDesc ? TK_TABLE_DESC_CLAMP_SX : undefined}
 
-                    <span dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(c ?? "")) }} />
+                      dangerouslySetInnerHTML={{ __html: html }}
 
-                  </TableCell>
+                    />
 
-                ))}
+                  );
+
+                  return (
+
+                    <TableCell
+
+                      key={j}
+
+                      sx={{
+
+                        ...TK_DOC_TABLE_BODY_CELL_SX,
+
+                        ...(clampDesc ? { maxWidth: 420 } : {}),
+
+                      }}
+
+                    >
+
+                      {clampDesc ? (
+
+                        <Tooltip title={tkTablePlainText(raw)} arrow placement="top">
+
+                          {inner}
+
+                        </Tooltip>
+
+                      ) : inner}
+
+                    </TableCell>
+
+                  );
+
+                })}
 
               </TableRow>
 
@@ -414,7 +372,9 @@ function BlockBody({ block }) {
 
   if (kind === "code" || kind === "sql") {
 
-    return <CodeBlock code={p.code ?? p.text ?? p.sql ?? ""} language={p.language || "sql"} />;
+    const lang = tkCodeLanguageForRender(p.language || "sql");
+
+    return <CodeBlock code={p.code ?? p.text ?? p.sql ?? ""} language={lang} />;
 
   }
 
@@ -424,45 +384,88 @@ function BlockBody({ block }) {
 
   }
 
-  if (kind === "chart" || kind === "grafico" || kind === "graph") {
-
-    return <TkDocChart payload={p} />;
-
-  }
-
-  if (kind === "sequence" || kind === "secuencia" || kind === "sequenceDiagram") {
-
-    return <TkDocSequence payload={p} />;
-
-  }
-
   if (kind === "image" || kind === "img") {
 
-    return <TkDocThemedImage payload={p} />;
+    const src = p.url ?? p.src ?? "";
 
-  }
+    return (
 
-  if (kind === "diagram" || kind === "mermaid" || kind === "plantuml") {
+      <Box sx={{ textAlign: "center", my: 1 }}>
 
-    return <TkDocDiagram payload={p} />;
+        <LightboxImage
+          src={src}
+          alt={p.alt ?? p.caption ?? ""}
+          caption={p.caption}
+          sx={{
+            maxWidth: "100%",
+            borderRadius: TK_DOC_RADIUS,
+            boxShadow: (t) => (t.palette.mode === "dark" ? "0 8px 32px rgba(0,0,0,0.4)" : "0 12px 40px rgba(15,23,42,0.12)"),
+          }}
+        />
+
+        {p.caption && (
+
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+
+            {p.caption}
+
+          </Typography>
+
+        )}
+
+      </Box>
+
+    );
 
   }
 
   if (kind === "url" || kind === "link") {
 
-    const href = p.href ?? p.url ?? "#";
+    const href = tkLinkHref(p);
+
+    const label = tkLinkLabel(p, href);
+
+    const showPath = tkLinkShowsPath(p);
 
     return (
 
-      <Typography variant="body1">
+      <Box>
 
-        <Link href={href} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
+        <Typography variant="body1">
 
-          {p.label ?? href}
+          <Link href={href} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
 
-        </Link>
+            {label}
 
-      </Typography>
+          </Link>
+
+        </Typography>
+
+        {showPath && (
+
+          <Typography
+
+            variant="caption"
+
+            component="div"
+
+            color="text.secondary"
+
+            sx={{ mt: 0.25, wordBreak: "break-all", fontFamily: "monospace", fontSize: "0.8rem", lineHeight: 1.45 }}
+
+          >
+
+            <Link href={href} target="_blank" rel="noreferrer" sx={{ color: "inherit", fontWeight: 400, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+
+              {href}
+
+            </Link>
+
+          </Typography>
+
+        )}
+
+      </Box>
 
     );
 
@@ -492,15 +495,17 @@ function BlockBody({ block }) {
 
   if (kind === "accordion") {
 
-    const inner = p.code
-
-      ? <CodeBlock code={p.code} language={p.language || "sql"} />
-
-      : <Box dangerouslySetInnerHTML={{ __html: String(p.html ?? "") }} />;
+    const lang = String(p.language ?? "sql").toLowerCase();
+    const code = String(p.code ?? "");
+    const inner = code && !isDisallowedTkCodeLanguage(lang)
+      ? <CodeBlock code={code} language={tkCodeLanguageForRender(lang)} />
+      : code
+        ? <MdBody text={TK_CODE_OMITTED_NOTE} />
+        : <Box dangerouslySetInnerHTML={{ __html: String(p.html ?? "") }} />;
 
     return (
 
-      <Accordion disableGutters variant="outlined" sx={{ my: 1, borderRadius: 2, "&:before": { display: "none" } }}>
+      <Accordion disableGutters variant="outlined" sx={{ my: 1, borderRadius: TK_DOC_RADIUS, "&:before": { display: "none" } }}>
 
         <AccordionSummary expandIcon={<Icon icon="mdi:chevron-down" size={20} />}>
 
@@ -546,7 +551,9 @@ function BlockBody({ block }) {
 
   if (kind === "html" || kind === "body") {
 
-    return <Box dangerouslySetInnerHTML={{ __html: String(p.html ?? p.body ?? p.content ?? "") }} />;
+    const cleaned = stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? ""));
+
+    return <Box dangerouslySetInnerHTML={{ __html: cleaned }} />;
 
   }
 
@@ -573,7 +580,7 @@ function SectionCard({ icon, title, accent, children }) {
 
         mb: 2.5,
 
-        borderRadius: 2.5,
+        borderRadius: TK_DOC_RADIUS,
 
         overflow: "hidden",
 
@@ -691,30 +698,15 @@ function SectionCard({ icon, title, accent, children }) {
 
 
 
-function commitTotals(commits) {
-  return (commits || []).reduce(
-    (acc, c) => ({
-      count: acc.count + 1,
-      ins: acc.ins + Number(c.insCount ?? 0),
-      del: acc.del + Number(c.delCount ?? 0),
-      min: acc.min + Number(c.minutos ?? 0),
-    }),
-    { count: 0, ins: 0, del: 0, min: 0 },
-  );
-}
-
 function CommitsTable({ commits }) {
 
-  const { Table, TableHead, TableBody, TableRow, TableCell, Paper, Chip, Typography } = getMaterialUI();
+  const { Table, TableHead, TableBody, TableRow, TableCell, Paper, Chip, Typography, Box, Tooltip } = getMaterialUI();
 
   if (!commits?.length) return null;
 
-  const totals = commitTotals(commits);
-  const headers = ["Commit", "Descripción", "Ins", "Del", "Tiempo", "Proyecto"];
-
   return (
 
-    <Paper variant="outlined" sx={{ overflow: "auto", borderRadius: 2 }}>
+    <Paper variant="outlined" sx={TK_DOC_TABLE_PAPER_SX}>
 
       <Table size="small">
 
@@ -722,7 +714,7 @@ function CommitsTable({ commits }) {
 
           <TableRow>
 
-            {headers.map((h) => (
+            {["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"].map((h) => (
 
               <TableCell
 
@@ -730,7 +722,7 @@ function CommitsTable({ commits }) {
 
                 align={h === "Ins" || h === "Del" || h === "Tiempo" ? "right" : "left"}
 
-                sx={{ fontWeight: 700, bgcolor: "action.hover" }}
+                sx={TK_DOC_TABLE_HEAD_CELL_SX}
 
               >
 
@@ -754,9 +746,9 @@ function CommitsTable({ commits }) {
 
             return (
 
-              <TableRow key={i} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+              <TableRow key={i} sx={TK_DOC_TABLE_ROW_SX}>
 
-                <TableCell>
+                <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX}>
 
                   {hash ? (
 
@@ -788,51 +780,45 @@ function CommitsTable({ commits }) {
 
                 </TableCell>
 
-                <TableCell><span dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(c.descripcion ?? "")) }} /></TableCell>
+                <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX}>{c.proyecto}</TableCell>
 
-                <TableCell align="right">
+                <TableCell sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, maxWidth: 420 }}>
 
-                  <Chip size="small" label={"+" + Number(c.insCount ?? 0)} color="success" variant="outlined" />
+                  <Tooltip title={tkTablePlainText(c.descripcion ?? "")} arrow placement="top">
+
+                    <Box
+
+                      component="span"
+
+                      sx={TK_TABLE_DESC_CLAMP_SX}
+
+                      dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(c.descripcion ?? "")) }}
+
+                    />
+
+                  </Tooltip>
 
                 </TableCell>
 
-                <TableCell align="right">
+                <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
 
-                  <Chip size="small" label={"−" + Number(c.delCount ?? 0)} color="error" variant="outlined" />
+                  <Chip size="small" label={"+" + Number(c.insCount ?? 0)} sx={TK_COMMIT_INS_CHIP_SX} />
 
                 </TableCell>
 
-                <TableCell align="right">{Number(c.minutos ?? 0)} min</TableCell>
+                <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
 
-                <TableCell>{c.proyecto}</TableCell>
+                  <Chip size="small" label={"−" + Number(c.delCount ?? 0)} sx={TK_COMMIT_DEL_CHIP_SX} />
+
+                </TableCell>
+
+                <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>{Number(c.minutos ?? 0)} min</TableCell>
 
               </TableRow>
 
             );
 
           })}
-
-          <TableRow sx={{ bgcolor: "action.selected", "& td": { fontWeight: 700, borderTop: 2, borderColor: "divider" } }}>
-
-            <TableCell colSpan={2}>Resumen · {totals.count} commits</TableCell>
-
-            <TableCell align="right">
-
-              <Chip size="small" label={"+" + totals.ins} color="success" variant="filled" />
-
-            </TableCell>
-
-            <TableCell align="right">
-
-              <Chip size="small" label={"−" + totals.del} color="error" variant="filled" />
-
-            </TableCell>
-
-            <TableCell align="right">{totals.min} min</TableCell>
-
-            <TableCell />
-
-          </TableRow>
 
         </TableBody>
 
@@ -854,6 +840,28 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
   const documentador = resolveDocumentadorBlock(tk);
 
+  const heroBadgeSx = (tone, t) => {
+    if (tone === "warning") {
+      return {
+        bgcolor: t.palette.mode === "dark" ? "rgba(245,158,11,0.22)" : "rgba(245,158,11,0.14)",
+        color: t.palette.mode === "dark" ? "#fde68a" : "#b45309",
+        borderColor: t.palette.mode === "dark" ? "rgba(245,158,11,0.55)" : "rgba(245,158,11,0.45)",
+      };
+    }
+    if (tone === "success") {
+      return {
+        bgcolor: t.palette.mode === "dark" ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.12)",
+        color: t.palette.mode === "dark" ? "#a7f3d0" : "#047857",
+        borderColor: t.palette.mode === "dark" ? "rgba(16,185,129,0.5)" : "rgba(16,185,129,0.4)",
+      };
+    }
+    return {
+      bgcolor: t.palette.mode === "dark" ? "rgba(255,255,255,0.15)" : "rgba(30,144,255,0.1)",
+      color: t.palette.mode === "dark" ? "#fff" : t.palette.primary.dark,
+      borderColor: t.palette.mode === "dark" ? "rgba(255,255,255,0.35)" : "rgba(30,144,255,0.35)",
+    };
+  };
+
   return (
 
     <Box
@@ -868,7 +876,7 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
           overflow: "hidden",
 
-          borderRadius: { xs: 2.5, md: 3 },
+          borderRadius: TK_DOC_RADIUS,
 
           mb: 3,
 
@@ -1083,6 +1091,34 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
             )}
 
+            {documentador.nota && (
+
+              <Typography
+
+                variant="caption"
+
+                sx={(t) => ({
+
+                  display: "block",
+
+                  mt: 0.5,
+
+                  lineHeight: 1.45,
+
+                  fontWeight: 600,
+
+                  color: t.palette.mode === "dark" ? "#fde68a" : "#b45309",
+
+                })}
+
+              >
+
+                {documentador.nota}
+
+              </Typography>
+
+            )}
+
           </Box>
 
         )}
@@ -1103,15 +1139,7 @@ function HeroHeader({ tk, space, iticket, badges }) {
 
                 sx={(t) => ({
 
-                  bgcolor:
-
-                    t.palette.mode === "dark" ? "rgba(255,255,255,0.15)" : "rgba(30,144,255,0.1)",
-
-                  color: t.palette.mode === "dark" ? "#fff" : t.palette.primary.dark,
-
-                  borderColor:
-
-                    t.palette.mode === "dark" ? "rgba(255,255,255,0.35)" : "rgba(30,144,255,0.35)",
+                  ...heroBadgeSx(b.payload?.tone, t),
 
                   backdropFilter: "blur(8px)",
 
@@ -1141,11 +1169,7 @@ function TimeSummary({ tiempos }) {
 
   const { Box, Stack, Typography, LinearProgress } = getMaterialUI();
 
-  const secondarySx = {
-    fontSize: "0.75rem",
-    fontWeight: 400,
-    lineHeight: 1.45,
-  };
+  const metaSx = { component: "span", variant: "caption", color: "text.secondary", sx: { fontSize: "0.75rem" } };
 
   if (!tiempos.length) return null;
 
@@ -1153,29 +1177,29 @@ function TimeSummary({ tiempos }) {
 
   return (
 
-    <Stack spacing={1.75} className="tk-doc-time-summary">
+    <Stack spacing={1.75}>
 
       {tiempos.map((t) => (
 
         <Box key={t.name}>
 
-          <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, lineHeight: 1.5 }}>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, lineHeight: 1.45 }}>
 
             {t.name}
 
             {t.detail ? (
 
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ...secondarySx, ml: 0.75 }}>
+              <Typography {...metaSx}>
 
-                ({t.detail})
+                {" "}({t.detail})
 
               </Typography>
 
             ) : null}
 
-            <Typography component="span" variant="caption" color="text.secondary" sx={{ ...secondarySx, ml: 0.75 }}>
+            <Typography {...metaSx}>
 
-              {formatMinutos(t.minutos)}
+              {" "}{t.minutos} min
 
             </Typography>
 
@@ -1211,9 +1235,15 @@ function TimeSummary({ tiempos }) {
 
       ))}
 
-      <Typography variant="caption" color="text.secondary" sx={{ pt: 0.5, fontSize: "0.75rem" }}>
+      <Typography variant="body2" fontWeight={600} sx={{ pt: 0.5 }}>
 
-        Total registrado: {formatMinutos(total)}
+        Tiempo invertido por estimación:
+
+        <Typography {...metaSx}>
+
+          {" "}{total} min
+
+        </Typography>
 
       </Typography>
 
@@ -1225,13 +1255,56 @@ function TimeSummary({ tiempos }) {
 
 
 
+function sectionTitleForBlock(b, meta) {
+  if (b.payload?.title) return b.payload.title;
+  const kind = String(b.kind || "text").toLowerCase();
+  if (kind === "html" || kind === "body") {
+    const cleaned = stripRedundantTicketHtml(String(b.payload?.html ?? b.payload?.body ?? b.payload?.content ?? ""));
+    const m = /<h2\b[^>]*>([\s\S]*?)<\/h2>/i.exec(cleaned);
+    if (m) return m[1].replace(/<[^>]+>/g, "").trim();
+  }
+  return meta.title;
+}
+
+
+
 function renderBlockSection(b, key) {
 
   const kind = String(b.kind || "text").toLowerCase();
 
   const meta = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" };
 
-  const title = b.payload?.title || meta.title;
+
+
+  if (kind === "image-group") {
+
+    const imgMeta = SECTION_META.image;
+
+    const { Stack } = getMaterialUI();
+
+    return (
+
+      <SectionCard key={key} icon={imgMeta.icon} title={imgMeta.title} accent={imgMeta.accent}>
+
+        <Stack spacing={2.5}>
+
+          {(b.blocks || []).map((img, idx) => (
+
+            <BlockBody key={idx} block={img} />
+
+          ))}
+
+        </Stack>
+
+      </SectionCard>
+
+    );
+
+  }
+
+
+
+  const title = sectionTitleForBlock(b, meta);
 
   return (
 
@@ -1259,17 +1332,27 @@ export function TicketDocWebView({ tk }) {
 
   const iticket = String(tk.iticket ?? "");
 
-  const content = filterDisplayBlocks(sortBlocks(tk.content).filter((b) => !isInfoTiquete(b)));
+  const content = sortBlocks(tk.content).filter((b) => !isInfoTiquete(b));
 
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
-  const blocks = content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()));
+  const evidencias = extractTicketEvidencias(tk);
+
+  const evidenciaUrls = new Set(evidencias.map((e) => e.url));
+
+  const blocks = content
+
+    .filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()))
+
+    .filter((b) => !evidenciaUrls.has(imageBlockUrl(b)));
 
 
 
   const contexts = tk.contexts || [];
 
   const allCommits = [...contexts.flatMap((c) => c.commits || []), ...(tk.rootCommits || [])];
+
+  const estadoCierre = ticketEstadoCierre(tk);
 
 
 
@@ -1282,8 +1365,6 @@ export function TicketDocWebView({ tk }) {
 
 
   return (
-
-    <TkLightboxHost galleryId={`tk-${iticket}`}>
 
     <Box className="tk-doc-markdown" sx={{ maxWidth: 920, mx: "auto", width: "100%" }}>
 
@@ -1303,7 +1384,7 @@ export function TicketDocWebView({ tk }) {
 
             p: { xs: 2, sm: 2.5 },
 
-            borderRadius: 2.5,
+            borderRadius: TK_DOC_RADIUS,
 
             border: 1,
 
@@ -1325,23 +1406,9 @@ export function TicketDocWebView({ tk }) {
 
           <Typography
 
-            variant="overline"
-
-            color="text.secondary"
-
-            sx={{ display: "block", mb: 0.75, letterSpacing: 0.6, fontWeight: 600 }}
-
-          >
-
-            Resumen
-
-          </Typography>
-
-          <Typography
-
             variant="body1"
 
-            sx={{ lineHeight: 1.65, fontSize: "1.02rem" }}
+            sx={{ lineHeight: 1.65 }}
 
             dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(tk.resumen)) }}
 
@@ -1353,15 +1420,29 @@ export function TicketDocWebView({ tk }) {
 
 
 
-      {blocks.map((b, i) => renderBlockSection(b, i))}
+      {groupImageBlocks(blocks).map((b, i) => renderBlockSection(b, i))}
+
+
+
+      {evidencias.length > 0 && (
+
+        <Box sx={{ mb: 2.5 }}>
+
+          <TicketMetricsEvidencias items={evidencias} />
+
+        </Box>
+
+      )}
 
 
 
       {contexts.map((ctx, ci) =>
 
-        filterDisplayBlocks(sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b)))
+        groupImageBlocks(
 
-          .map((b, bi) => renderBlockSection(b, `ctx-${ci}-${bi}`)),
+          sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b)),
+
+        ).map((b, bi) => renderBlockSection(b, `ctx-${ci}-${bi}`)),
 
       )}
 
@@ -1369,7 +1450,7 @@ export function TicketDocWebView({ tk }) {
 
       {allCommits.length > 0 && (
 
-        <SectionCard icon="mdi:source-commit" title="Commits que entregan la solución" accent="#10b981">
+        <SectionCard icon="mdi:source-commit" title={estadoCierre === "cerrado" ? "Commits que entregan la solución" : "Commits relacionados"} accent="#10b981">
 
           <CommitsTable commits={allCommits} />
 
@@ -1396,8 +1477,6 @@ export function TicketDocWebView({ tk }) {
       )}
 
     </Box>
-
-    </TkLightboxHost>
 
   );
 

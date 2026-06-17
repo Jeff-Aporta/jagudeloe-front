@@ -3,14 +3,9 @@ import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI, Toast } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
+import { dotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
-import {
-  folderKeysForDate,
-  loadNavFolderOpen,
-  mergeAncestryOpen,
-  saveNavFolderOpen,
-} from "../core/nav-folder-state.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };
 const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
@@ -33,18 +28,8 @@ export function CheckDot(props) {
   const { Tooltip } = getMaterialUI();
   const state = props.state;
   if (!state) return null;
-  const titles = {
-    complete: "Revisado / cerrado",
-    partial: "Revisión parcial",
-    warn: "Abierto o tareas pendientes",
-    overdue: "Bloqueado o >14 h hábiles",
-    idle: "Sin novedad",
-    info: "En progreso",
-    none: "Sin revisar",
-  };
-  const title = titles[state] || titles.idle;
   return (
-    <Tooltip title={title}>
+    <Tooltip title={dotStateLabel(state)}>
       <span className={"nav-status-dot nav-status-dot--" + state} aria-hidden />
     </Tooltip>
   );
@@ -133,37 +118,9 @@ export function monthLabel(ym) {
 }
 
 export function DateTree(props) {
-  const { useState, useEffect, Fragment } = getReact();
+  const { useState, Fragment } = getReact();
   const { Typography, List, ListItemButton, ListItemText, Chip, Box, Tooltip } = getMaterialUI();
   const { Icon } = UI;
-  const mode = props.mode === "day" ? "day" : "items";
-  const storageKey = props.storageKey || "jagudeloe:nav-folders:default";
-  const [open, setOpen] = useState(() => loadNavFolderOpen(storageKey));
-
-  useEffect(() => {
-    setOpen(loadNavFolderOpen(storageKey));
-  }, [storageKey]);
-
-  useEffect(() => {
-    if (!props.selectedId) return;
-    const item = props.items.find((it) => it.id === props.selectedId);
-    if (!item?.date) return;
-    const keys = folderKeysForDate(item.date, mode);
-    setOpen((prev) => {
-      const next = mergeAncestryOpen(prev, keys);
-      saveNavFolderOpen(storageKey, next);
-      return next;
-    });
-  }, [props.selectedId, props.items, mode, storageKey]);
-
-  const toggle = (k) => {
-    setOpen((prev) => {
-      const next = { ...prev, [k]: !prev[k] };
-      saveNavFolderOpen(storageKey, next);
-      return next;
-    });
-  };
-
   const tree = {};
   props.items.forEach((it) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(it.date || "");
@@ -172,6 +129,17 @@ export function DateTree(props) {
     (mm[d] = mm[d] || []).push(it);
   });
   const years = Object.keys(tree).sort().reverse();
+  const RECENT_DAYS = 15;
+  const initial = {};
+  Array.from(new Set(props.items.map((it) => it.date).filter(Boolean))).sort().reverse().slice(0, RECENT_DAYS).forEach((dt) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dt);
+    if (!m) return;
+    initial[m[1]] = true;
+    initial[m[1] + "/" + m[2]] = true;
+    if (props.mode === "items") initial[m[1] + "/" + m[2] + "/" + m[3]] = true;
+  });
+  const [open, setOpen] = useState(initial);
+  const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   if (!years.length) return <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>{props.emptyLabel || "Sin elementos."}</Typography>;
 
   function folderRow(key, label, depth, count, isOpen) {
@@ -198,16 +166,8 @@ export function DateTree(props) {
     return (
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
         <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
-          <Box sx={{ mr: 0.5, display: "flex", alignItems: "center", flexShrink: 0, width: it.alert ? 16 : 10, justifyContent: "flex-start" }}>
-            {it.alert ? (
-              <Tooltip title="Tareas pendientes por realizar">
-                <span className="nav-alert-icon" aria-label="Tareas pendientes">
-                  <Icon icon="mdi:alert-circle" size={15} />
-                </span>
-              </Tooltip>
-            ) : (
-              <NavStatusDot state={it.dotState} />
-            )}
+          <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
+            <NavStatusDot state={it.dotState} />
           </Box>
           <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
           <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />

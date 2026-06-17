@@ -50,8 +50,8 @@ function LegacyNav(props) {
 
 export function App() {
   const { useState, useEffect, useRef } = getReact();
-  const { Box, Stack, Tooltip, IconButton } = getMaterialUI();
-  const { Icon, LoginButton } = UI;
+  const { Box } = getMaterialUI();
+  const { LoginButton } = UI;
   const { show: toastShow } = Toast;
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
   const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";
@@ -105,16 +105,7 @@ export function App() {
   const hasNavShell = !!window.ISAFront?.Layout?.NavTabRow;
 
   /** toolbarExtra existe en AppShell legacy; toolbarEnd/toolbarActions no. */
-  const toolbarTools = (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-      <Tooltip title="Recargar">
-        <IconButton size="small" color="inherit" onClick={() => setReload(reloadKey + 1)}>
-          <Icon icon="mdi:refresh" />
-        </IconButton>
-      </Tooltip>
-      <LoginButton />
-    </Stack>
-  );
+  const toolbarTools = <LoginButton />;
 
   const body = hasNavShell
     ? renderView()

@@ -5,18 +5,20 @@ function readStoredThemeMode(): "light" | "dark" {
   return mode === "light" || mode === "dark" ? mode : "dark";
 }
 
-function cmMode(lang: string): string | { name: string; json?: boolean } {
-  const l = lang.toLowerCase();
-  if (l === "json") return { name: "javascript", json: true };
-  if (l === "javascript" || l === "js") return "javascript";
-  return "text/x-sql";
+function isJsonLang(lang: string): boolean {
+  return lang.toLowerCase() === "json";
 }
 
-type CmGlobal = Window & { CodeMirror?: { (el: HTMLElement, opts: Record<string, unknown>): { setOption: (k: string, v: unknown) => void; refresh: () => void } } };
+type CmEditor = { setOption: (k: string, v: unknown) => void; refresh: () => void };
+type CmGlobal = Window & {
+  CodeMirror?: { (el: HTMLElement, opts: Record<string, unknown>): CmEditor };
+  ISAFront?: { mountCodeMirror?: (host: HTMLElement, opts: Record<string, unknown>) => CmEditor | null };
+};
 
 export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = readStoredThemeMode()): void {
+  const mount = (window as CmGlobal).ISAFront?.mountCodeMirror;
   const CM = (window as CmGlobal).CodeMirror;
-  if (!CM) return;
+  if (!mount && !CM) return;
   const theme = paletteMode === "dark" ? "dracula" : "default";
 
   root.querySelectorAll<HTMLElement>(".tk-code-wrap").forEach((wrap) => {
@@ -26,25 +28,38 @@ export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "d
     wrap.dataset.cmMounted = "1";
     const code = pre.textContent || "";
     const lang = wrap.getAttribute("data-lang") || "sql";
+    const json = isJsonLang(lang);
     wrap.innerHTML = "";
-    wrap.classList.add("tk-code-cm", "sql-cm");
-    const editor = CM(wrap, {
+    wrap.classList.add("tk-code-cm", "sql-cm", "isa-cm-host");
+
+    const opts = {
       value: code,
-      mode: cmMode(lang),
+      json,
+      mode: json ? undefined : "sql",
+      theme,
+      lineWrapping: true,
+      readOnly: true,
+      viewportMargin: Infinity,
+    };
+
+    const editor = mount ? mount(wrap, opts) : CM!(wrap, {
+      value: code,
+      mode: json ? { name: "javascript", json: true } : "text/x-sql",
       theme,
       lineNumbers: true,
       lineWrapping: true,
       readOnly: true,
       viewportMargin: Infinity,
     });
-    requestAnimationFrame(() => editor.refresh());
+
+    if (editor) requestAnimationFrame(() => editor.refresh());
   });
 }
 
 export function refreshTkCodeThemes(root: HTMLElement, paletteMode: "light" | "dark"): void {
   const theme = paletteMode === "dark" ? "dracula" : "default";
   root.querySelectorAll<HTMLElement>(".tk-code-wrap[data-cm-mounted='1'] .CodeMirror").forEach((el) => {
-    const cm = (el as HTMLElement & { CodeMirror?: { setOption: (k: string, v: unknown) => void } }).CodeMirror;
+    const cm = (el as HTMLElement & { CodeMirror?: CmEditor }).CodeMirror;
     if (cm) {
       cm.setOption("theme", theme);
       cm.setOption("lineWrapping", true);

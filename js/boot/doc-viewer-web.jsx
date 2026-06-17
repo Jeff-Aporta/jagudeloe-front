@@ -14,27 +14,13 @@ import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 
 import { tkDocPageSx } from "../ui/tkDocSurface.ts";
 
-
-
-function useAppThemeMode() {
-
-  const bag = window.ISAJ;
-
-  if (!bag?.Theme?.useThemeMode) {
-
-    throw new Error("ISAJ.Theme no registrado — ejecutar isa-setup.ts antes de doc-viewer-web");
-
-  }
-
-  return bag.Theme.useThemeMode();
-
-}
+import { parseDocReportView, writeDocReportView } from "../boot/url-s.mjs";
 
 
 
-function DocWebPage({ tk, space, iticket }) {
+function DocWebPage({ tk, space, iticket, initialReportView }) {
 
-  const { useState, useCallback } = getReact();
+  const { useState, useCallback, useEffect } = getReact();
 
   const { ThemeProvider, CssBaseline, Box } = getMaterialUI();
 
@@ -43,14 +29,20 @@ function DocWebPage({ tk, space, iticket }) {
 
   const tm = useAppThemeMode();
 
-  const [reportView, setReportView] = useState("diligencia");
+  const [reportView, setReportView] = useState(() => initialReportView || parseDocReportView());
 
-
+  useEffect(() => {
+    const onPop = () => setReportView(parseDocReportView());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const toggleReport = useCallback(() => {
-
-    setReportView((prev) => (prev === "metricas" ? "diligencia" : "metricas"));
-
+    setReportView((prev) => {
+      const next = prev === "metricas" ? "diligencia" : "metricas";
+      writeDocReportView(next);
+      return next;
+    });
   }, []);
 
 
@@ -145,11 +137,29 @@ export function mountDocWebView(tk, opts = {}) {
 
   const iticket = String(opts.iticket || tk.iticket || "");
 
+  const initialReportView = opts.reportView === "metricas" ? "metricas" : parseDocReportView();
+
   getReactDOM().createRoot(rootEl).render(
 
-    <DocWebPage tk={tk} space={space} iticket={iticket} />,
+    <DocWebPage tk={tk} space={space} iticket={iticket} initialReportView={initialReportView} />,
 
   );
+
+}
+
+
+
+function useAppThemeMode() {
+
+  const bag = window.ISAJ;
+
+  if (!bag?.Theme?.useThemeMode) {
+
+    throw new Error("ISAJ.Theme no registrado — ejecutar isa-setup.ts antes de doc-viewer-web");
+
+  }
+
+  return bag.Theme.useThemeMode();
 
 }
 

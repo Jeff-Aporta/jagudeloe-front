@@ -88,7 +88,7 @@ function appAssetUrl(path: string): string {
 
 async function runJsxDriver(
   tk: Record<string, unknown>,
-  opts: { space: string; iticket: string },
+  opts: { space: string; iticket: string; reportView?: string },
 ): Promise<void> {
   const BOOT_HELPER =
     "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/boot-helper.mjs?v=a87602c";
@@ -106,10 +106,11 @@ async function runJsxDriver(
   mod.mountDocWebView(tk, {
     space: opts.space,
     iticket: opts.iticket,
+    reportView: opts.reportView,
   });
 }
 
-export async function runDocViewer(boot: { space: string; sel: string; driver?: string }): Promise<void> {
+export async function runDocViewer(boot: { space: string; sel: string; driver?: string; reportView?: string }): Promise<void> {
   const root = document.getElementById("root");
   if (!root) throw new Error("#root no encontrado");
 
@@ -130,7 +131,7 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
   document.title = title;
 
   if (driver === "jsx") {
-    await runJsxDriver(tk, { space, iticket });
+    await runJsxDriver(tk, { space, iticket, reportView: boot.reportView });
     return;
   }
   runHtmlDriver(root, tk);

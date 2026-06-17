@@ -1,7 +1,22 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
 import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
 
-export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none";
+export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
+
+export const DOT_STATE_LABELS: Record<DotState, string> = {
+  complete: "Revisado / ejecutado",
+  partial: "Revisión parcial",
+  warn: "Más de 7 h hábiles sin cerrar",
+  overdue: "Más de 14 h hábiles sin cerrar",
+  idle: "Pendiente",
+  none: "Sin revisar",
+  info: "En progreso",
+};
+
+export function dotStateLabel(state: DotState | null | undefined): string {
+  if (!state) return DOT_STATE_LABELS.idle;
+  return DOT_STATE_LABELS[state] ?? DOT_STATE_LABELS.idle;
+}
 
 export function aggregateDotState(keys: string[], map: Record<string, boolean>): DotState | null {
   const list = keys.filter(Boolean);
