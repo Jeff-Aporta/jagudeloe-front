@@ -1,6 +1,6 @@
 /* views/BitacoraView — bitácora de un space (o General = PatyIA + Clientes consolidados). */
 import { getReact, getMaterialUI } from "../core/runtime.ts";
-import { UI } from "../core/platform.ts";
+import { UI, Assets } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { getBitacora, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState, collectSqlCheckKeys } from "../core/checks.ts";
@@ -155,6 +155,10 @@ export function BitacoraView(props) {
   const [selected, setSelected] = useState(null);
   const [revisadoMap, setRevisadoMap] = useState({});
   const [segmentPatches, setSegmentPatches] = useState({});
+
+  useEffect(() => {
+    Assets.ensureMarked().catch(() => { /* fallback plaintext en mdToHtml */ });
+  }, []);
 
   useEffect(() => {
     let alive = true;

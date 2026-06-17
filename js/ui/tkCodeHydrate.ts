@@ -15,22 +15,11 @@ type CmGlobal = Window & {
   ISAFront?: { mountCodeMirror?: (host: HTMLElement, opts: Record<string, unknown>) => CmEditor | null };
 };
 
-export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = readStoredThemeMode()): void {
+function mountBlocks(root: HTMLElement, paletteMode: "light" | "dark"): void {
   const mount = (window as CmGlobal).ISAFront?.mountCodeMirror;
   const CM = (window as CmGlobal).CodeMirror;
-  if (!mount && !CM) {
-    if (!(window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending) {
-      (window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending = true;
-      const retry = () => {
-        (window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending = false;
-        hydrateTkCodeBlocks(root, paletteMode);
-      };
-      document.querySelectorAll('script[src*="codemirror"]').forEach((s) => {
-        s.addEventListener("load", retry, { once: true });
-      });
-    }
-    return;
-  }
+  if (!mount && !CM) return;
+
   const theme = paletteMode === "dark" ? "dracula" : "default";
 
   root.querySelectorAll<HTMLElement>(".tk-code-wrap").forEach((wrap) => {
@@ -66,6 +55,15 @@ export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "d
 
     if (editor) requestAnimationFrame(() => editor.refresh());
   });
+}
+
+export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = readStoredThemeMode()): void {
+  const load = (window as CmGlobal).ISAFront?.ensureCodeMirrorLoaded;
+  if (typeof load !== "function") return;
+
+  load({ sql: true })
+    .then(() => mountBlocks(root, paletteMode))
+    .catch((err) => console.warn("CodeMirror lazy load:", err));
 }
 
 export function refreshTkCodeThemes(root: HTMLElement, paletteMode: "light" | "dark"): void {

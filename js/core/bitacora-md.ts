@@ -1,4 +1,5 @@
 /** Bitácora: nunca mostrar enlaces a YouTube (reuniones grabadas = solo texto). */
+import { mdToHtml } from "./platform.ts";
 
 const YT_URL = /https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s)\]<>]*/gi;
 const YT_MD_LINK = /\[([^\]]*)\]\(\s*https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^)\s]*\s*\)/gi;
@@ -38,8 +39,6 @@ export function stripTodoCheckboxesFromMarkdown(raw: string): string {
 
 export function renderBitacoraMarkdown(raw: string): string {
   const cleaned = stripYoutubeFromMarkdown(raw);
-  const html = typeof window !== "undefined" && window.marked
-    ? window.marked.parse(cleaned)
-    : cleaned;
+  const html = mdToHtml(cleaned);
   return stripYoutubeFromHtml(String(html));
 }

@@ -12,12 +12,19 @@
     "ogTitle": "JAGUDELOE — Jeff-Aporta",
     "imageAlt": "JAGUDELOE — bitácora y tickets"
   },
-  "frontSharedPin": "a87602c",
+  "frontSharedPin": "9b5af5c",
   "fonts": true,
   "importMap": true,
   "loader": "ts-babel",
   "themeInit": true,
   "appMeta": true,
+  "preconnect": [
+    "https://cdn.jsdelivr.net",
+    "https://cdnjs.cloudflare.com",
+    "https://esm.sh",
+    "https://unpkg.com",
+    "https://code.iconify.design"
+  ],
   "styles": [
     "shared-base",
     "shared-feedback",
@@ -28,21 +35,9 @@
     "local:css/tk-lightbox.css",
     "photoswipe",
     "photoswipe-caption",
-    "local:css/code.css",
-    "shared-code-mirror",
-    "cm-core",
-    "cm-dracula",
-    "cm-foldgutter"
+    "local:css/code.css"
   ],
-  "libs": [
-    "marked",
-    "codemirror-core",
-    "codemirror-sql",
-    "codemirror-javascript",
-    "codemirror-foldcode",
-    "codemirror-foldgutter",
-    "codemirror-brace-fold"
-  ],
+  "libs": [],
   "ui": {
     "lightbox": {
       "thumbSize": 100,

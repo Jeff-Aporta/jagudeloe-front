@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <script src="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/base-href.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/base-href.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>JAGUDELOE — Jeff-Aporta</title>
   <meta name="description" content="Bitácora de PatyIA y ClientesIS, tickets y revisión de contenido." />
@@ -42,10 +42,15 @@
       document.documentElement.style.colorScheme = m;
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/isa/js/core/app-meta.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/js/core/app-meta.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preconnect" href="https://esm.sh" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://code.iconify.design" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/isa/css/base.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/isa/css/feedback.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/css/base.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/css/feedback.css" />
   <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/markdown.css" />
   <link rel="stylesheet" href="css/app-shell.css" />
@@ -54,10 +59,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe-dynamic-caption-plugin@1.2.7/photoswipe-dynamic-caption-plugin.css" />
   <link rel="stylesheet" href="css/code.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/isa/css/code-mirror.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/dracula.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css" />
   <script type="importmap">
 {
   "imports": {
@@ -72,13 +73,7 @@
   }
 }
   </script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldcode.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/brace-fold.min.js"></script>
-  <script defer src="https://unpkg.com/@babel/standalone@7.26.9/babel.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.9/babel.min.js"></script>
   <script defer src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
   <script defer>
     try {
@@ -86,6 +81,19 @@
     } catch (e) { console.warn("AppMeta.initFromDocument:", e); }
     (async function () {
       try {
+        function waitBabel(maxMs) {
+          return new Promise(function (resolve, reject) {
+            var t0 = Date.now();
+            (function poll() {
+              if (window.Babel && typeof Babel.transform === "function") return resolve(Babel);
+              if (Date.now() - t0 > maxMs) {
+                return reject(new Error("Babel no cargó (red/CDN bloqueado o script defer falló)."));
+              }
+              setTimeout(poll, 40);
+            })();
+          });
+        }
+        await waitBabel(20000);
         var res = await fetch("js/boot/loader.ts", { cache: "no-store" });
         if (!res.ok) throw new Error("No se pudo cargar el loader (" + res.status + ")");
         var out = Babel.transform(await res.text(), { presets: ["typescript"], filename: "loader.ts" }).code;
@@ -96,7 +104,6 @@
       }
     })();
   </script>
-  <script async src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 </head>
 
 <body>
@@ -105,85 +112,116 @@
       html {
         color-scheme: dark;
         background: #060d18;
+
+        &[data-mui-color-scheme="light"] {
+          color-scheme: light;
+          background: #eef4ff;
+
+          .isa-app-boot {
+            background: #eef4ff;
+            color: #64748b;
+
+            &-shimmer {
+              iconify-icon {
+                color: #64748b;
+              }
+
+              > span {
+                background: linear-gradient(100deg, #64748b 0%, #64748b 38%, rgba(30, 144, 255, 0.55) 46%, #1e90ff 50%, #4aa3ff 53%, rgba(0, 180, 220, 0.65) 57%, #64748b 64%, #64748b 100%);
+                background-size: 240% 100%;
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                -webkit-text-fill-color: transparent;
+              }
+
+              &::after {
+                mix-blend-mode: soft-light;
+                opacity: 0.9;
+              }
+            }
+          }
+        }
       }
-      html[data-mui-color-scheme="light"] {
-        color-scheme: light;
-        background: #eef4ff;
-      }
+
       body {
         margin: 0;
         height: 100%;
         background: inherit;
       }
+
       #root {
         height: 100%;
         min-height: 100vh;
       }
+
       .isa-app-boot {
         height: 100%;
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
+        overflow: hidden;
         font-family: "IBM Plex Sans", system-ui, sans-serif;
         background: #060d18;
         color: #94a3b8;
         font-size: 0.95rem;
         letter-spacing: 0.01em;
+
+        &-shimmer {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          position: relative;
+          isolation: isolate;
+          z-index: 1;
+
+          iconify-icon {
+            color: #94a3b8;
+            flex-shrink: 0;
+          }
+
+          > span {
+            font-weight: 500;
+            background: linear-gradient(100deg, #94a3b8 0%, #94a3b8 38%, rgba(30, 144, 255, 0.45) 46%, #1e90ff 50%, #63b3ff 53%, rgba(0, 229, 255, 0.5) 57%, #94a3b8 64%, #94a3b8 100%);
+            background-size: 240% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+          }
+
+          &::after {
+            content: "";
+            position: absolute;
+            inset: -3px -6px;
+            z-index: 1;
+            pointer-events: none;
+            border-radius: 6px;
+            background: linear-gradient(100deg, transparent 0%, transparent 36%, rgba(30, 144, 255, 0.22) 44%, rgba(30, 144, 255, 0.62) 50%, rgba(99, 179, 255, 0.52) 54%, rgba(0, 229, 255, 0.38) 58%, transparent 66%, transparent 100%);
+            background-size: 240% 100%;
+            animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+            mix-blend-mode: screen;
+            opacity: 0.82;
+          }
+        }
+
+        &-watermark {
+          position: fixed;
+          right: 1.25rem;
+          bottom: 1.25rem;
+          width: 150px;
+          height: auto;
+          opacity: 0.5;
+          filter: invert(0.5);
+          pointer-events: none;
+          user-select: none;
+          z-index: 0;
+        }
       }
-      html[data-mui-color-scheme="light"] .isa-app-boot {
-        background: #eef4ff;
-        color: #64748b;
-      }
-      .isa-app-boot-shimmer {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.75rem;
-        position: relative;
-        isolation: isolate;
-      }
-      .isa-app-boot-shimmer iconify-icon {
-        color: #94a3b8;
-        flex-shrink: 0;
-      }
-      html[data-mui-color-scheme="light"] .isa-app-boot-shimmer iconify-icon {
-        color: #64748b;
-      }
-      .isa-app-boot-shimmer > span {
-        font-weight: 500;
-        background: linear-gradient(100deg, #94a3b8 0%, #94a3b8 38%, rgba(30, 144, 255, 0.45) 46%, #1e90ff 50%, #63b3ff 53%, rgba(0, 229, 255, 0.5) 57%, #94a3b8 64%, #94a3b8 100%);
-        background-size: 240% 100%;
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-        -webkit-text-fill-color: transparent;
-        animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
-      }
-      html[data-mui-color-scheme="light"] .isa-app-boot-shimmer > span {
-        background: linear-gradient(100deg, #64748b 0%, #64748b 38%, rgba(30, 144, 255, 0.55) 46%, #1e90ff 50%, #4aa3ff 53%, rgba(0, 180, 220, 0.65) 57%, #64748b 64%, #64748b 100%);
-        background-size: 240% 100%;
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-        -webkit-text-fill-color: transparent;
-      }
-      .isa-app-boot-shimmer::after {
-        content: "";
-        position: absolute;
-        inset: -3px -6px;
-        z-index: 1;
-        pointer-events: none;
-        border-radius: 6px;
-        background: linear-gradient(100deg, transparent 0%, transparent 36%, rgba(30, 144, 255, 0.22) 44%, rgba(30, 144, 255, 0.62) 50%, rgba(99, 179, 255, 0.52) 54%, rgba(0, 229, 255, 0.38) 58%, transparent 66%, transparent 100%);
-        background-size: 240% 100%;
-        animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
-        mix-blend-mode: screen;
-        opacity: 0.82;
-      }
-      html[data-mui-color-scheme="light"] .isa-app-boot-shimmer::after {
-        mix-blend-mode: soft-light;
-        opacity: 0.9;
-      }
+
       @keyframes isa-boot-text-shimmer {
         0% { background-position: 115% 50%; }
         100% { background-position: -15% 50%; }
@@ -194,6 +232,7 @@
         <iconify-icon icon="mdi:notebook-outline" width="1.5em" height="1.5em"></iconify-icon>
         <span>Cargando JAGUDELOE…</span>
       </div>
+      <img class="isa-app-boot-watermark" src="https://pub-1c290cc606c8478899f5764899278571.r2.dev/brand/logo-insoft.png" alt="" aria-hidden="true" decoding="async" />
     </div>
   </div>
 </body>

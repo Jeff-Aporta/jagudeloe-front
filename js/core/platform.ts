@@ -3,6 +3,14 @@
  */
 const bridge = () => window.ISAFront.createPlatformBridge("ISAJ", { sessionFromAuth: true });
 
+function frontShared() {
+  const api = window.ISAFront;
+  if (!api?.ensureCodeMirrorLoaded) {
+    throw new Error("ISAFront lazy-assets no cargado — recargue sin caché (Ctrl+Shift+R).");
+  }
+  return api;
+}
+
 export const UI = {
   get Icon() { return bridge().UI.Icon; },
   get TargetSwitch() { return bridge().UI.TargetSwitch; },
@@ -51,3 +59,14 @@ export const Config = {
   isLocal: () => bridge().Config.isLocal(),
   setLocal: (v: boolean) => bridge().Config.setLocal(v),
 };
+
+/** Carga lazy de scripts/CSS y markdown (front-shared). */
+export const Assets = {
+  ensureCodeMirrorLoaded: (opts?: { sql?: boolean }) => frontShared().ensureCodeMirrorLoaded!(opts),
+  ensureMarked: () => frontShared().ensureMarked!(),
+  ensureStylesheet: (href: string) => frontShared().ensureLazyStylesheet!(href),
+};
+
+export function mdToHtml(src: string): string {
+  return frontShared().mdToHtml!(src);
+}
