@@ -70,3 +70,30 @@ export const TK_COMMIT_DEL_CHIP_SX = {
     theme.palette.mode === "dark" ? theme.palette.error.main : "#c0392b",
   "& .MuiChip-label": { px: 0.75 },
 };
+
+/** Chips del catálogo footer — fondo suave, sin outline. */
+export const TK_CATALOG_CHIP_SX = {
+  height: 26,
+  minHeight: 26,
+  fontWeight: 600,
+  fontSize: "0.72rem",
+  fontFamily: "monospace",
+  border: "none",
+  boxShadow: "none",
+  bgcolor: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.06)" : "#f0f4f8",
+  color: "text.primary",
+  justifyContent: "flex-start",
+  "& .MuiChip-label": {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 0.5,
+    px: 1,
+    py: 0,
+    lineHeight: 1,
+  },
+  "&:hover": {
+    bgcolor: (theme: { palette: { mode: string } }) =>
+      theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.1)" : "#e8eef5",
+  },
+};
