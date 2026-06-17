@@ -92,7 +92,7 @@ function bootHelperUrl(): string {
   if (isLocalDev) {
     return appAssetUrl("../../front-shared/cdn/boot-helper.mjs");
   }
-  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/boot-helper.mjs?v=a87602c";
+  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@7921b9c/cdn/boot-helper.mjs?v=a87602c";
 }
 
 async function runJsxDriver(
