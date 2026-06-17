@@ -4,6 +4,7 @@
  */
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
 import { hydrateTkCodeBlocks } from "../ui/tkCodeHydrate.ts";
+import { bootShimmerHtml } from "../ui/bootShimmer.ts";
 
 const ORCH = {
   local: "http://localhost:8780",
@@ -86,14 +87,19 @@ function appAssetUrl(path: string): string {
   return new URL(p, base).href;
 }
 
+function bootHelperUrl(): string {
+  const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
+  if (isLocalDev) {
+    return appAssetUrl("../../front-shared/cdn/boot-helper.mjs");
+  }
+  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/boot-helper.mjs?v=a87602c";
+}
+
 async function runJsxDriver(
   tk: Record<string, unknown>,
   opts: { space: string; iticket: string; reportView?: string },
 ): Promise<void> {
-  const BOOT_HELPER =
-    "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a87602c/cdn/boot-helper.mjs?v=a87602c";
-
-  const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(BOOT_HELPER);
+  const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(bootHelperUrl());
   const { importAppEntry } = await import(appAssetUrl("js/boot/module-graph.mjs"));
 
   const stackMod = await importShared("stack.mjs");
@@ -110,6 +116,11 @@ async function runJsxDriver(
   });
 }
 
+function syncBootTheme(): void {
+  const t = (window as { ThemeInit?: { readMode?: () => string; applyThemeMode?: (m: string) => string } }).ThemeInit;
+  if (t?.readMode && t?.applyThemeMode) t.applyThemeMode(t.readMode());
+}
+
 export async function runDocViewer(boot: { space: string; sel: string; driver?: string; reportView?: string }): Promise<void> {
   const root = document.getElementById("root");
   if (!root) throw new Error("#root no encontrado");
@@ -118,8 +129,12 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
   const iticket = boot.sel.toUpperCase().startsWith("TK-") ? boot.sel.toUpperCase() : "TK-" + boot.sel;
   const driver = boot.driver === "html" ? "html" : "jsx";
 
+  syncBootTheme();
   applyDocPageLayout(driver);
-  root.innerHTML = '<p style="margin:0;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#6b7785">Cargando documentación…</p>';
+  root.innerHTML = bootShimmerHtml("Cargando documentación…", {
+    icon: "mdi:file-document-outline",
+    viewport: true,
+  });
 
   const tk = await fetchTicket(space, iticket);
   if (!tk) {
