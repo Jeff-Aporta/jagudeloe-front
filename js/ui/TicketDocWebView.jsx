@@ -10,13 +10,13 @@ import { getMaterialUI } from "../core/runtime.ts";
 
 import { UI } from "../core/platform.ts";
 
-import { inlineMdWeb, stripRedundantTicketHtml, isRedundantTicketBlock } from "../ui/tkHtml.ts";
+import { inlineMdWeb, stripRedundantTicketHtml, shouldSkipTicketContentBlock } from "../ui/tkHtml.ts";
 
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock, ticketEstadoCierre } from "../ui/tkHeroAuthors.ts";
 
 import { tkCommitGithubUrl } from "../ui/tkCommitGithub.ts";
 
-import { extractTicketEvidencias } from "../core/tk-evidencias.ts";
+import { extractTicketDocEvidencias, filterDocViewContentBlocks } from "../core/tk-evidencias.ts";
 
 import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
 
@@ -27,6 +27,7 @@ import { CodeBlock } from "./CodeBlock.jsx";
 import { normalizeTkContentBlock, tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage } from "../core/tk-code-policy.ts";
 import { tkLinkHref, tkLinkLabel, tkLinkShowsPath } from "../core/tk-link.ts";
 import { isTkDescColumn, TK_TABLE_DESC_CLAMP_SX, tkTablePlainText, TK_DOC_TABLE_PAPER_SX, TK_DOC_TABLE_HEAD_CELL_SX, TK_DOC_TABLE_ROW_SX, TK_DOC_TABLE_BODY_CELL_SX, TK_DOC_RADIUS, TK_COMMIT_INS_CHIP_SX, TK_COMMIT_DEL_CHIP_SX } from "../core/tk-table.ts";
+import { shouldShowTkResumenPaper, normalizeTkDocBlocks } from "../core/tk-doc-layout.ts";
 import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
 
 
@@ -83,13 +84,6 @@ function isImageBlock(b) {
 
 }
 
-function imageBlockUrl(b) {
-  const p = b?.payload || {};
-  const raw = String(p.url ?? p.src ?? "").trim();
-  if (!raw) return "";
-  return /^https?:\/\//i.test(raw) ? raw : `https://pub-1c290cc606c8478899f5764899278571.r2.dev/${raw.replace(/^\//, "")}`;
-}
-
 
 
 /** Agrupa imágenes consecutivas en un solo card de Evidencia. */
@@ -131,8 +125,8 @@ function groupImageBlocks(blocks) {
 
 
 
-function isInfoTiquete(b) {
-  return isRedundantTicketBlock(b);
+function isInfoTiquete(b, tk) {
+  return shouldSkipTicketContentBlock(b, tk);
 }
 
 
@@ -396,11 +390,6 @@ function BlockBody({ block }) {
           src={src}
           alt={p.alt ?? p.caption ?? ""}
           caption={p.caption}
-          sx={{
-            maxWidth: "100%",
-            borderRadius: TK_DOC_RADIUS,
-            boxShadow: (t) => (t.palette.mode === "dark" ? "0 8px 32px rgba(0,0,0,0.4)" : "0 12px 40px rgba(15,23,42,0.12)"),
-          }}
         />
 
         {p.caption && (
@@ -449,13 +438,11 @@ function BlockBody({ block }) {
 
             component="div"
 
-            color="text.secondary"
-
             sx={{ mt: 0.25, wordBreak: "break-all", fontFamily: "monospace", fontSize: "0.8rem", lineHeight: 1.45 }}
 
           >
 
-            <Link href={href} target="_blank" rel="noreferrer" sx={{ color: "inherit", fontWeight: 400, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+            <Link href={href} target="_blank" rel="noreferrer" sx={{ color: "primary.main", fontWeight: 400, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
 
               {href}
 
@@ -553,7 +540,7 @@ function BlockBody({ block }) {
 
     const cleaned = stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? ""));
 
-    return <Box dangerouslySetInnerHTML={{ __html: cleaned }} />;
+    return <Box className="tk-doc-markdown tk-doc-legacy-html" sx={{ "& p": { mb: 1.25, lineHeight: 1.65 }, "& ul, & ol": { pl: 2.5, mb: 1.25 }, "& h3": { fontSize: "0.95rem", fontWeight: 700, mt: 2, mb: 0.75 } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
 
   }
 
@@ -1266,13 +1253,23 @@ function sectionTitleForBlock(b, meta) {
   return meta.title;
 }
 
+function sectionMetaForBlock(b) {
+  const kind = String(b.kind || "text").toLowerCase();
+  const base = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" };
+  if (b.payload?.title) return base;
+  if (kind === "html" || kind === "body") {
+    return { ...base, title: sectionTitleForBlock(b, base) };
+  }
+  return base;
+}
+
 
 
 function renderBlockSection(b, key) {
 
   const kind = String(b.kind || "text").toLowerCase();
 
-  const meta = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" };
+  const meta = sectionMetaForBlock(b);
 
 
 
@@ -1332,35 +1329,31 @@ export function TicketDocWebView({ tk }) {
 
   const iticket = String(tk.iticket ?? "");
 
-  const content = sortBlocks(tk.content).filter((b) => !isInfoTiquete(b));
+  const tiempos = (tk.tiempos || [])
+
+    .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
+
+    .filter((t) => t.name && t.minutos > 0);
+
+
+
+  const content = sortBlocks(tk.content).filter((b) => !isInfoTiquete(b, tk));
 
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
 
-  const evidencias = extractTicketEvidencias(tk);
+  const docEvidencias = extractTicketDocEvidencias(tk);
 
-  const evidenciaUrls = new Set(evidencias.map((e) => e.url));
+  const blocks = filterDocViewContentBlocks(
+    normalizeTkDocBlocks(tk, content).filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase())),
+  );
 
-  const blocks = content
-
-    .filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()))
-
-    .filter((b) => !evidenciaUrls.has(imageBlockUrl(b)));
-
-
+  const showResumenPaper = shouldShowTkResumenPaper(tk, content);
 
   const contexts = tk.contexts || [];
 
   const allCommits = [...contexts.flatMap((c) => c.commits || []), ...(tk.rootCommits || [])];
 
   const estadoCierre = ticketEstadoCierre(tk);
-
-
-
-  const tiempos = (tk.tiempos || [])
-
-    .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
-
-    .filter((t) => t.name && t.minutos > 0);
 
 
 
@@ -1372,7 +1365,7 @@ export function TicketDocWebView({ tk }) {
 
 
 
-      {tk.resumen && (
+      {showResumenPaper && tk.resumen && (
 
         <Paper
 
@@ -1424,11 +1417,11 @@ export function TicketDocWebView({ tk }) {
 
 
 
-      {evidencias.length > 0 && (
+      {docEvidencias.length > 0 && (
 
         <Box sx={{ mb: 2.5 }}>
 
-          <TicketMetricsEvidencias items={evidencias} />
+          <TicketMetricsEvidencias items={docEvidencias} variant="doc" />
 
         </Box>
 
@@ -1440,7 +1433,9 @@ export function TicketDocWebView({ tk }) {
 
         groupImageBlocks(
 
-          sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b)),
+          filterDocViewContentBlocks(
+            sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b, tk)),
+          ),
 
         ).map((b, bi) => renderBlockSection(b, `ctx-${ci}-${bi}`)),
 
