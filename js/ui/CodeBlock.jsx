@@ -1,5 +1,5 @@
 /* Bloque de código de solo lectura — delega en ISAFront.CodeMirrorPanel. */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { TK_DOC_RADIUS } from "../core/tk-table.ts";
 
 function cmMode(lang) {

@@ -1,7 +1,7 @@
 /* Copiar enlace shareable del ticket (diligencia o métricas). */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
-import { buildDocEmailUrl, buildDocMetricasUrl, buildDocWebUrl } from "../core/doc-view-url.ts";
+import { buildDocEmailUrl, buildDocMetricasUrl, buildDocWebUrl } from "../core/tk-doc.ts";
 
 export function CopyReportLinkButton({ space, iticket, report = "diligencia", driver = "jsx" }) {
   const { useState } = getReact();

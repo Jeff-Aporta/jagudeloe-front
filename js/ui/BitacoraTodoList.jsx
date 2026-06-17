@@ -1,5 +1,5 @@
 /* ui/BitacoraTodoList — checklist interactivo sincronizado con BD. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { createBitacoraTodo, deleteBitacoraTodo, updateBitacoraTodo } from "../api/client.ts";

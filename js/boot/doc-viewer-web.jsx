@@ -4,7 +4,7 @@
 
  */
 
-import { getReact, getReactDOM, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getReactDOM, getMaterialUI } from "../core/platform.ts";
 
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 

@@ -1,5 +1,5 @@
 /* Diagrama Gantt: asignación temporal de todos los TK. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import {
   TIMELINE_CONCURRENCY_H,
   TIMELINE_HEADER_H,

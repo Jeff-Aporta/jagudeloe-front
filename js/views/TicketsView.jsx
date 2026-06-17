@@ -1,12 +1,12 @@
 /* views/TicketsView — tickets de un space. Navegador AÑO → MES → DÍA → ticket.
  * El HTML del ticket se genera en el front (ui/tkHtml.ts) a partir del JSON del backend. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
-import { resolveDocDriver } from "../core/doc-driver.ts";
+import { resolveDocDriver } from "../core/tk-doc.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
-import { getRealtimeConstants } from "../core/isa-front.ts";
+import { getRealtimeConstants } from "../core/platform.ts";
 import { DateTree, RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
 import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";

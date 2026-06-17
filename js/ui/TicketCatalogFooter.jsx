@@ -1,7 +1,7 @@
 /** Footer full-page: catálogo de tickets del space con tooltips informativos. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { getTickets } from "../api/client.ts";
-import { buildDocWebUrl } from "../core/doc-view-url.ts";
+import { buildDocWebUrl } from "../core/tk-doc.ts";
 import { tkCatalogTooltipLines } from "../core/tk-catalog.ts";
 import { projectLabel } from "../core/tk-spaces.ts";
 import { TK_CATALOG_CHIP_SX, TK_DOC_RADIUS } from "../core/tk-table.ts";

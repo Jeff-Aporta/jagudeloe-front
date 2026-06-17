@@ -10,6 +10,8 @@
   const ENTRY = "js/main.jsx";
 
   async function boot() {
+    if (new URLSearchParams(location.search).has("isa_boot_hold")) return;
+
     const { importAppEntry } = await import(MODULE_LOADER);
     const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
     manifestMod.installAppManifest(await manifestMod.fetchAppManifest());

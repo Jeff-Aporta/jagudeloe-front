@@ -1,7 +1,7 @@
 /* ui/realtime — escucha notificaciones WebSocket del orquestador. */
-import { getReact } from "../core/runtime.ts";
+import { getReact } from "../core/platform.ts";
 import { Realtime } from "../core/platform.ts";
-import { getRealtimeConstants } from "../core/isa-front.ts";
+import { getRealtimeConstants } from "../core/platform.ts";
 
 export function useRealtimeNotifications(opts: { project: string; onChecksUpdated?: (msg: ChecksUpdatedMessage) => void }) {
   const { useState, useEffect, useRef } = getReact();

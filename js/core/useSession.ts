@@ -1,5 +1,5 @@
 /** Re-render al iniciar/cerrar sesión (system-login:auth + storage). */
-import { getReact } from "./runtime.ts";
+import { getReact } from "./platform.ts";
 import { Session } from "./platform.ts";
 
 const SESSION_KEY_PREFIX = "system-login:session:jagudeloe-front";

@@ -1,5 +1,5 @@
 /* Galería de pantallazos InSoft (evidencias R2). */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { useGlassColors, glassCardSx } from "./glassSurface.ts";
 import { getLightboxUi } from "../core/app-manifest.ts";
 import { LightboxImage } from "./ImageLightbox.jsx";

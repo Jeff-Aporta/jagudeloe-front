@@ -1,5 +1,5 @@
 /* views/TicketMetricsView — documento de métricas por ticket (JSX inline). */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import {
   computeFromTicket,

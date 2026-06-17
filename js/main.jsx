@@ -1,5 +1,5 @@
 /** Punto de entrada — monta la app React (isa-setup ya ejecutado en loader). */
-import { getReact, getReactDOM } from "./core/runtime.ts";
+import { getReact, getReactDOM } from "./core/platform.ts";
 import { App } from "./app/App.jsx";
 
 const React = getReact();

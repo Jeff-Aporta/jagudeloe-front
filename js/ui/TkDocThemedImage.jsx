@@ -1,5 +1,5 @@
 /** Imagen TK con variantes light/dark + lightbox (PhotoSwipe). */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { TkLightboxImage } from "./TkLightbox.jsx";
 
 export function TkDocThemedImage({ payload }) {

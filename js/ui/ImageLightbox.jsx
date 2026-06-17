@@ -1,5 +1,5 @@
 /* Lightbox para pantallazos / evidencias del ticket. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { getLightboxUi } from "../core/app-manifest.ts";
 import { UI } from "../core/platform.ts";
 

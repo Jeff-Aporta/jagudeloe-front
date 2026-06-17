@@ -1,5 +1,5 @@
 /* Card de desfase: reporte empresa vs tiempo hábil real. */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import {
   formatDesfaseHoras,

@@ -1,10 +1,10 @@
 /* ui/parts — componentes compartidos para las vistas jagudeloe. */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI, Toast } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { dotStateLabel, ticketDotStateLabel } from "../core/checks.ts";
-import { getRealtimeConstants } from "../core/isa-front.ts";
+import { getRealtimeConstants } from "../core/platform.ts";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };

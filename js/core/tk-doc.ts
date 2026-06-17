@@ -1,4 +1,44 @@
-/** Enlaces en diligencias TK: label legible + path/URL completo. */
+/** Driver de documento TK, URLs de vista y enlaces en diligencias. */
+import { buildShareUrl } from "../boot/url-s.mjs";
+
+export type DocDriver = "html" | "jsx";
+
+export const DEFAULT_DOC_DRIVER: DocDriver = "jsx";
+
+export function resolveDocDriver(state: { driver?: unknown } | null | undefined): DocDriver {
+  return state?.driver === "html" ? "html" : DEFAULT_DOC_DRIVER;
+}
+
+/** URL para ver el ticket en modo documento (sin navegación de la app). */
+export function buildDocViewUrl(
+  space: string,
+  iticket: string,
+  driver: DocDriver = DEFAULT_DOC_DRIVER,
+): string {
+  const state: Record<string, string> = { view: "doc", space, sel: iticket, sub: "tickets", driver };
+  return buildShareUrl(state);
+}
+
+export function buildDocEmailUrl(space: string, iticket: string): string {
+  return buildDocViewUrl(space, iticket, "html");
+}
+
+export function buildDocWebUrl(space: string, iticket: string): string {
+  return buildDocViewUrl(space, iticket, "jsx");
+}
+
+/** URL full-page con reporte de métricas (tiempo hábil + desfase empresa). */
+export function buildDocMetricasUrl(space: string, iticket: string): string {
+  const state: Record<string, string> = {
+    view: "doc",
+    space,
+    sel: iticket,
+    sub: "tickets",
+    driver: "jsx",
+    report: "metricas",
+  };
+  return buildShareUrl(state);
+}
 
 export function tkLinkHref(payload: Record<string, unknown> | undefined): string {
   return String(payload?.href ?? payload?.url ?? "").trim() || "#";

@@ -1,4 +1,4 @@
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import {
   chartSpecFromPayload,
   computeChartLayout,

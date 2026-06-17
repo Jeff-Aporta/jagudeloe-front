@@ -6,7 +6,7 @@
 import { tkCommitGithubUrl } from "./tkCommitGithub.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
 import { normalizeTkContentBlock, tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage, stripDisallowedCodeFromHtml } from "../core/tk-code-policy.ts";
-import { tkLinkHtml } from "../core/tk-link.ts";
+import { tkLinkHtml } from "../core/tk-doc.ts";
 import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS } from "../core/tk-table.ts";
 import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
 import { filterDocViewContentBlocks } from "../core/tk-evidencias.ts";

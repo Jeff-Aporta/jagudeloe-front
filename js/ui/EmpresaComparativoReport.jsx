@@ -1,5 +1,5 @@
 /* Reporte general: empresa vs hábil (solo cerrados). */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import {
   buildComparativoReport,
   formatDesfaseHoras,

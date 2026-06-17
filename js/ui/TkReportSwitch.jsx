@@ -1,5 +1,5 @@
 /** Toggle diligencia ↔ métricas — mismo patrón visual que ThemeSwitch (ISA). */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 
 export function TkReportSwitch({ mode, onToggle }) {

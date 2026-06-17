@@ -1,5 +1,5 @@
 /** Superficie glass — cards transparentes con blur y degradados alfa internos. */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 
 type GlassTone = "default" | "hi" | "blue" | "warn" | "err" | "node" | "chip" | "excl" | "jornadaIn" | "jornadaOut";
 

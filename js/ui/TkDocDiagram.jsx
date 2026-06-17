@@ -1,6 +1,6 @@
 /** Diagrama TK — fuente en payload; mermaid.ink por defecto, fallback Kroki. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import {
   diagramEngine,
   fetchKrokiBlobUrl,

@@ -1,6 +1,6 @@
 /** Lightbox TK — PhotoSwipe 5 vía CDN (zoom, pan, galería, captions). */
 import { createContext, useContext, useEffect, useState } from "react";
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { openTkLightboxGallery, probeImageSize, watchTkLightboxTheme } from "../core/tk-lightbox.ts";
 
 const TkLightboxGalleryContext = createContext("tk-doc");

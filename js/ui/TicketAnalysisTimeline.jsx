@@ -1,5 +1,5 @@
 /* Timeline visual de hitos del ticket (sin Mermaid). */
-import { getMaterialUI } from "../core/runtime.ts";
+import { getMaterialUI } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import { formatMinutos } from "../core/tk-metrics.ts";
 import { useGlassColors, glassInnerSx, glassGradient } from "./glassSurface.ts";

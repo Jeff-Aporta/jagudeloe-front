@@ -1,10 +1,10 @@
 /* views/BitacoraView — bitácora de un space (o General = PatyIA + Clientes consolidados). */
-import { getReact, getMaterialUI } from "../core/runtime.ts";
+import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI, Assets } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { getBitacora, getRevisadoMap } from "../api/client.ts";
 import { aggregateDotState, collectSqlCheckKeys } from "../core/checks.ts";
-import { getRealtimeConstants } from "../core/isa-front.ts";
+import { getRealtimeConstants } from "../core/platform.ts";
 import {
   mergeBitacoraBundles,
   segmentProject,
