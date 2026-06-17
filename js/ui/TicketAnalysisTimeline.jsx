@@ -18,13 +18,13 @@ function useColors() {
     segHabil: "#1e90ff",
     segExcl: "#ed6c02",
     jornadaIn: "#00bcd4",
-    jornadaInBg: dark ? "rgba(0,188,212,0.12)" : "rgba(0,188,212,0.08)",
-    jornadaInBorder: dark ? "rgba(0,188,212,0.45)" : "rgba(0,188,212,0.35)",
+    jornadaInBg: dark ? "rgba(0,188,212,0.12)" : "rgba(255,255,255,0.82)",
+    jornadaInBorder: dark ? "rgba(0,188,212,0.45)" : "rgba(0,188,212,0.28)",
     jornadaOut: "#d500f9",
-    jornadaOutBg: dark ? "rgba(213,0,249,0.12)" : "rgba(213,0,249,0.08)",
-    jornadaOutBorder: dark ? "rgba(213,0,249,0.45)" : "rgba(213,0,249,0.35)",
-    segGap: dark ? "rgba(158,197,235,0.12)" : "rgba(10,37,64,0.06)",
-    chipBg: dark ? "rgba(26, 58, 92, 0.55)" : "rgba(240, 247, 255, 0.65)",
+    jornadaOutBg: dark ? "rgba(213,0,249,0.12)" : "rgba(255,255,255,0.82)",
+    jornadaOutBorder: dark ? "rgba(213,0,249,0.45)" : "rgba(213,0,249,0.26)",
+    segGap: dark ? "rgba(158,197,235,0.12)" : "rgba(10,37,64,0.04)",
+    chipBg: dark ? "rgba(26, 58, 92, 0.55)" : "rgba(255, 255, 255, 0.86)",
     fecha: dark ? "#9aa8b4" : "#808080",
   };
 }
@@ -179,7 +179,7 @@ function TimelineNode({ ms, isLast, colors: c }) {
           }}
         >
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.35 }}>
-            <Icon icon={ms.icon} size={16} />
+            <Icon icon={ms.icon} size={16} style={{ color: titleColor }} />
             <Typography
               component="span"
               sx={{ fontWeight: 600, color: titleColor, fontSize: "0.875rem", lineHeight: 1.25 }}
