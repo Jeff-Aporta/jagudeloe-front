@@ -9,6 +9,7 @@ import { normalizeTkContentBlock, tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE,
 import { tkLinkHtml } from "../core/tk-link.ts";
 import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS } from "../core/tk-table.ts";
 import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
+import { filterDocViewContentBlocks } from "../core/tk-evidencias.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -246,6 +247,31 @@ function isInfoTiquete(b: TkBlock): boolean {
   return title.includes("información del tiquete") || title.includes("informacion del tiquete");
 }
 
+/** Markdown/HTML legacy con tabla Concepto|Tiempo — duplica tk.tiempos estructurado. */
+export function isEmbeddedTiemposBlock(b: TkBlock): boolean {
+  const title = String((b.payload && (b.payload.title as string)) || "").toLowerCase();
+  if (title.includes("resumen de tiempos")) return true;
+  const kind = String(b.kind ?? "").toLowerCase();
+  if (kind === "html" || kind === "body") {
+    const raw = String((b.payload?.html ?? b.payload?.body ?? b.payload?.content) ?? "");
+    return /resumen de tiempos/i.test(raw);
+  }
+  if (!["markdown", "md", "text"].includes(kind)) return false;
+  const text = String((b.payload?.text ?? b.payload?.body) ?? "");
+  return /\|\s*concepto\s*\|/i.test(text) && /\|\s*---\s*\|/i.test(text) && /\|\s*tiempo/i.test(text);
+}
+
+export function hasStructuredTicketTiempos(tk: Record<string, unknown>): boolean {
+  return ((tk.tiempos as Record<string, unknown>[] | undefined) ?? []).some(
+    (t) => String(t.name ?? "").trim() && Math.round(Number(t.minutos ?? 0)) > 0,
+  );
+}
+
+export function shouldSkipTicketContentBlock(b: TkBlock, tk: Record<string, unknown>): boolean {
+  if (isRedundantTicketBlock(b)) return true;
+  return hasStructuredTicketTiempos(tk) && isEmbeddedTiemposBlock(b);
+}
+
 /** Texto visible aproximado (sin etiquetas HTML). */
 export function visibleHtmlText(html: string): string {
   return String(html ?? "")
@@ -389,9 +415,12 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     : "";
   const estado = String(tk.estado ?? "").toLowerCase();
 
-  const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !isRedundantTicketBlock(b));
+  const hasStructuredTiempos = hasStructuredTicketTiempos(tk);
+  const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !shouldSkipTicketContentBlock(b, tk));
   const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
-  const blocks = content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase()));
+  const blocks = filterDocViewContentBlocks(
+    content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase())),
+  );
 
   // Hero — badge TK (blanco/negro) primero; solicitante sin fecha
   const heroBadge = (b: TkBlock) =>
@@ -434,7 +463,9 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   const contexts = (tk.contexts as Record<string, unknown>[]) ?? [];
   const allCommits: Record<string, unknown>[] = [];
   for (const ctx of contexts) {
-    for (const b of sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !isRedundantTicketBlock(x))) {
+    for (const b of filterDocViewContentBlocks(
+      sortBlocks((ctx.content as TkBlock[]) ?? []).filter((x) => !shouldSkipTicketContentBlock(x, tk)),
+    )) {
       const kind = String(b.kind ?? "text").toLowerCase();
       const meta = SECTION_META[kind] || { icon: "mdi:file-document-outline", title: "Detalle" };
       const title = String((b.payload && (b.payload.title as string)) || meta.title);
@@ -447,12 +478,8 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
 
   // Resumen de tiempos — usa tk.tiempos (name + detail + minutos) si existe;
   // los ítems con minutos <= 0 no se muestran. Fallback: tiempos derivados del ticket.
-  // Si una diligencia antigua (bloque html) ya trae su propio "Resumen de tiempos", no se duplica.
-  const embeddedTiempos = blocks.some((b) => {
-    const kind = String(b.kind ?? "").toLowerCase();
-    if (kind !== "html" && kind !== "body") return false;
-    return /resumen de tiempos/i.test(String((b.payload && (b.payload.html ?? b.payload.body ?? b.payload.content)) ?? ""));
-  });
+  // Si no hay tk.tiempos estructurado pero el contenido ya trae resumen embebido, no duplicar sección auto.
+  const embeddedTiemposLegacy = !hasStructuredTiempos && blocks.some((b) => isEmbeddedTiemposBlock(b));
   const tiempos = ((tk.tiempos as Record<string, unknown>[]) ?? [])
     .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
     .filter((t) => t.name && t.minutos > 0);
@@ -471,7 +498,7 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
     timeRows = derived.map((t) => timeRow(t.name, t.detail, t.minutos)).join("");
     timeTotal = total + extra;
   }
-  if (timeRows && !embeddedTiempos) {
+  if (timeRows && !embeddedTiemposLegacy) {
     const body = `<p style="margin:0 0 8px;color:${C.muted};">Distribución del esfuerzo según la naturaleza del trabajo.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         ${timeRows}
