@@ -3,7 +3,7 @@ import { getReact, getMaterialUI } from "../core/runtime.ts";
 import { UI, Toast } from "../core/platform.ts";
 import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
-import { dotStateLabel } from "../core/checks.ts";
+import { dotStateLabel, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
 
@@ -28,8 +28,9 @@ export function CheckDot(props) {
   const { Tooltip } = getMaterialUI();
   const state = props.state;
   if (!state) return null;
+  const tip = props.title ?? dotStateLabel(state);
   return (
-    <Tooltip title={dotStateLabel(state)}>
+    <Tooltip title={tip}>
       <span className={"nav-status-dot nav-status-dot--" + state} aria-hidden />
     </Tooltip>
   );
@@ -37,7 +38,7 @@ export function CheckDot(props) {
 
 /** Dot de estado en navegación: color si hay checks; gris 60% si no, para alinear iconos. */
 export function NavStatusDot(props) {
-  if (props.state) return <CheckDot state={props.state} />;
+  if (props.state) return <CheckDot state={props.state} title={props.title} />;
   return <span className="nav-status-dot nav-status-dot--placeholder" aria-hidden />;
 }
 
@@ -167,7 +168,7 @@ export function DateTree(props) {
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
         <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
           <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
-            <NavStatusDot state={it.dotState} />
+            <NavStatusDot state={it.dotState} title={it.dotTitle} />
           </Box>
           <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
           <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />
