@@ -39,5 +39,11 @@
     "codemirror-foldcode",
     "codemirror-foldgutter",
     "codemirror-brace-fold"
-  ]
+  ],
+  "ui": {
+    "lightbox": {
+      "thumbSize": 100,
+      "evidenciasLabelMax": 160
+    }
+  }
 }
