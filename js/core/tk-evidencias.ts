@@ -6,6 +6,27 @@ export interface TicketEvidencia {
   label: string;
 }
 
+/** Claves R2 confirmadas en bucket (sync BD) o legacy con flag explícito. */
+function uploadedEvidenciaKeys(doc: Record<string, unknown>): string[] {
+  const subidas = doc.imagenesR2Subidas;
+  if (Array.isArray(subidas)) {
+    return subidas.filter((x): x is string => typeof x === "string" && !!x.trim());
+  }
+  if (doc.evidenciasSubidas === true) {
+    const raw = doc.imagenesR2 ?? doc.evidenciasR2 ?? doc.pantallazos ?? doc.imagenes;
+    if (Array.isArray(raw)) {
+      return raw.filter((x): x is string => typeof x === "string" && !!x.trim());
+    }
+  }
+  return [];
+}
+
+export function ticketEvidenciasSubidas(tk: Record<string, unknown>): boolean {
+  const doc = docBag(tk);
+  if (doc.evidenciasSubidas === false) return false;
+  return uploadedEvidenciaKeys(doc).length > 0;
+}
+
 function codigoTkOf(tk: Record<string, unknown>): number | null {
   for (const root of [tk.meta, tk]) {
     if (!root || typeof root !== "object") continue;
@@ -48,11 +69,102 @@ function labelFromKey(key: string): string {
     cierre: "Cierre / historial InSoft",
     entrega: "Entrega InSoft",
     metricas: "Métricas InSoft",
+    atencion: "Atención InSoft",
   };
   if (map[slug]) return map[slug];
   return slug
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Captura compartida desfase empresa — permanece en diligencia, no en métricas InSoft. */
+export function isReporteEmpresaDesfaseUrl(url: string): boolean {
+  const u = String(url || "").toLowerCase();
+  return u.includes("reporte-empresa-detalle-tiquetes-asignados");
+}
+
+function normalizeEvidenciaLabel(raw: string): string {
+  return String(raw || "").replace(/\s*\(TK-\d+\)\.?$/i, "").trim();
+}
+
+const INSOFT_METRICAS_URL_RE =
+  /tk\d+-(solicitud|cierre|entrega|metricas|atencion)-insoft\.(png|jpe?g|webp|gif)/i;
+
+const INSOFT_METRICAS_LABELS = new Set([
+  "Solicitud InSoft",
+  "Cierre / historial InSoft",
+  "Entrega InSoft",
+  "Métricas InSoft",
+  "Atención InSoft",
+]);
+
+const INSOFT_METRICAS_CAPTION_RE =
+  /^(Solicitud registrada|Cierre documentado|Entrega documentada|Métricas registradas)(\s+en\s+InSoft)?/i;
+
+const INSOFT_METRICAS_LABEL_PREFIX_RE = /^(Solicitud|Cierre|Entrega|Métricas|Atención)\s+InSoft\b/i;
+
+const INSOFT_METRICAS_PANTALLAZO_RE = /^Pantallazo\s+(solicitud|cierre|entrega|métricas|atención)\b/i;
+
+/** InSoft TK-… con solicitud, atención, cierre o entrega en el pie de foto. */
+const INSOFT_METRICAS_TK_CAPTION_RE =
+  /^InSoft\s+TK-\d+.*\b(solicitud|inicio de atención|atención|cierre|entrega|métricas)\b/i;
+
+/** Pantallazo InSoft de apertura/atención/cierre/entrega/métricas — solo vista métricas. */
+export function isMetricasInsoftEvidencia(ev: TicketEvidencia): boolean {
+  if (isReporteEmpresaDesfaseUrl(ev.url)) return false;
+
+  const label = normalizeEvidenciaLabel(ev.label);
+  if (INSOFT_METRICAS_LABELS.has(label)) return true;
+  if (INSOFT_METRICAS_CAPTION_RE.test(label)) return true;
+  if (INSOFT_METRICAS_LABEL_PREFIX_RE.test(label)) return true;
+  if (INSOFT_METRICAS_PANTALLAZO_RE.test(label)) return true;
+  if (INSOFT_METRICAS_TK_CAPTION_RE.test(label)) return true;
+
+  const u = ev.url.toLowerCase();
+  return INSOFT_METRICAS_URL_RE.test(u);
+}
+
+/** Bloque content.image de apertura/atención/cierre InSoft — excluir de vista diligencia. */
+export function isInsoftMetricasImageBlock(block: unknown): boolean {
+  if (!block || typeof block !== "object") return false;
+  const kind = String((block as Record<string, unknown>).kind || "").toLowerCase();
+  if (kind !== "image" && kind !== "img") return false;
+  const p = ((block as Record<string, unknown>).payload || {}) as Record<string, unknown>;
+  const url = String(p.url ?? p.src ?? "").trim();
+  if (url && isReporteEmpresaDesfaseUrl(url)) return false;
+  const caption = String(p.caption ?? "").trim();
+  const alt = String(p.alt ?? "").trim();
+  return isMetricasInsoftEvidencia({ url: url ? toUrl(url) : "", label: caption || alt });
+}
+
+/** Quita pantallazos InSoft del contenido mostrado en diligencia (raíz y contextos). */
+export function filterDocViewContentBlocks<T>(blocks: T[]): T[] {
+  return blocks.filter((b) => !isInsoftMetricasImageBlock(b));
+}
+
+function insoftEvidenciasFromContent(tk: Record<string, unknown>): TicketEvidencia[] {
+  const seen = new Set<string>();
+  const out: TicketEvidencia[] = [];
+
+  const scan = (raw: unknown) => {
+    if (!Array.isArray(raw)) return;
+    for (const block of raw) {
+      if (!isInsoftMetricasImageBlock(block)) continue;
+      const p = ((block as Record<string, unknown>).payload || {}) as Record<string, unknown>;
+      const url = String(p.url ?? p.src ?? "").trim();
+      if (!url) continue;
+      const caption = String(p.caption ?? "").trim();
+      const alt = String(p.alt ?? "").trim();
+      const label = normalizeEvidenciaLabel(caption || alt) || labelFromKey(url);
+      pushUnique(out, seen, url, label);
+    }
+  };
+
+  scan(tk.content);
+  for (const ctx of (tk.contexts as Record<string, unknown>[]) || []) {
+    scan(ctx.content);
+  }
+  return out;
 }
 
 function toUrl(entry: string): string {
@@ -87,23 +199,27 @@ function fromContentBlocks(tk: Record<string, unknown>): TicketEvidencia[] {
   return out;
 }
 
-/** Pantallazos InSoft u otras evidencias (R2 o URL absoluta). Unifica meta.metricas y content.image. */
-export function extractTicketEvidencias(tk: Record<string, unknown>): TicketEvidencia[] {
+/** Claves R2 candidatas para métricas (subidas o planeadas en meta). */
+function metricasEvidenciaKeys(doc: Record<string, unknown>): string[] {
+  const uploaded = uploadedEvidenciaKeys(doc);
+  if (uploaded.length) return uploaded;
+  const raw = doc.imagenesR2 ?? doc.imagenesR2Pendientes ?? doc.evidenciasR2 ?? doc.pantallazos;
+  if (Array.isArray(raw)) {
+    return raw.filter((x): x is string => typeof x === "string" && !!x.trim());
+  }
+  return [];
+}
+
+function extractMetricasFromMeta(tk: Record<string, unknown>): TicketEvidencia[] {
   const doc = docBag(tk);
   const codigo = codigoTkOf(tk);
   const seen = new Set<string>();
   const out: TicketEvidencia[] = [];
 
-  for (const k of ["imagenesR2", "evidenciasR2", "pantallazos", "imagenes"]) {
-    const v = doc[k];
-    if (!Array.isArray(v)) continue;
-    for (const item of v) {
-      if (typeof item !== "string" || !item.trim()) continue;
-      const key = normalizeR2Key(item, codigo);
-      const lower = key.toLowerCase();
-      if (lower.includes("mermaid")) continue;
-      pushUnique(out, seen, key, labelFromKey(key));
-    }
+  for (const item of metricasEvidenciaKeys(doc)) {
+    const key = normalizeR2Key(item, codigo);
+    if (key.toLowerCase().includes("mermaid")) continue;
+    pushUnique(out, seen, key, labelFromKey(key));
   }
 
   for (const k of ["solicitudImageUrl", "cierreImageUrl", "entregaImageUrl", "metricasImageUrl"]) {
@@ -111,9 +227,41 @@ export function extractTicketEvidencias(tk: Record<string, unknown>): TicketEvid
     if (typeof v === "string" && v.trim()) pushUnique(out, seen, v, labelFromKey(k));
   }
 
-  for (const ev of fromContentBlocks(tk)) {
+  return out;
+}
+
+/** Pantallazos InSoft (apertura, atención, cierre, entrega, métricas) — vista métricas únicamente. */
+export function extractTicketMetricasEvidencias(tk: Record<string, unknown>): TicketEvidencia[] {
+  const seen = new Set<string>();
+  const out: TicketEvidencia[] = [];
+  for (const ev of [...extractMetricasFromMeta(tk), ...insoftEvidenciasFromContent(tk)]) {
     pushUnique(out, seen, ev.url, ev.label);
   }
-
   return out;
+}
+
+/** Evidencias de diligencia (content.image, reuniones, hitos) — sin apertura/cierre InSoft. */
+export function extractTicketDocEvidencias(tk: Record<string, unknown>): TicketEvidencia[] {
+  const seen = new Set<string>();
+  const out: TicketEvidencia[] = [];
+  for (const ev of fromContentBlocks(tk)) {
+    if (isMetricasInsoftEvidencia(ev)) continue;
+    pushUnique(out, seen, ev.url, ev.label);
+  }
+  return out;
+}
+
+/** Todas las evidencias (métricas + diligencia). */
+export function extractTicketEvidencias(tk: Record<string, unknown>): TicketEvidencia[] {
+  const seen = new Set<string>();
+  const out: TicketEvidencia[] = [];
+  for (const ev of [...extractMetricasFromMeta(tk), ...extractTicketDocEvidencias(tk)]) {
+    pushUnique(out, seen, ev.url, ev.label);
+  }
+  return out;
+}
+
+/** Hay al menos un pantallazo subido y verificado en R2 (meta.metricas.documentacion). */
+export function ticketHasEvidencias(tk: Record<string, unknown>): boolean {
+  return ticketEvidenciasSubidas(tk);
 }
