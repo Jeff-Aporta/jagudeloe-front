@@ -1,17 +1,24 @@
 (function () {
   "use strict";
 
-  const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
-  const BOOT_HELPER = isLocalDev
-    ? "../../front-shared/cdn/boot-helper.mjs"
-    : "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/boot-helper.mjs?v=a87602c";
-
   const MODULE_LOADER = "./js/boot/module-graph.mjs";
   const ENTRY = "js/main.jsx";
+
+  /** boot-helper puede cargar index.js de un pin sin lazy-assets — reforzar con el pin de la app. */
+  async function loadIsaFrontPinned(h: { loadIsaFront: () => Promise<void> }, asset: (p: string) => string) {
+    await h.loadIsaFront();
+    if (!window.ISAFront?.ensureCodeMirrorLoaded) {
+      await import(asset("isa/js/index.js"));
+    }
+    if (!window.ISAFront?.ensureCodeMirrorLoaded) {
+      throw new Error("ISAFront incompleto — lazy-assets no disponibles en el pin CDN");
+    }
+  }
 
   async function boot() {
     if (new URLSearchParams(location.search).has("isa_boot_hold")) return;
 
+    const { bootHelperUrl, asset } = await import("./js/boot/cdn.mjs");
     const { importAppEntry } = await import(MODULE_LOADER);
     const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
     manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
@@ -25,19 +32,19 @@
       return;
     }
 
-    const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(BOOT_HELPER);
+    const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(bootHelperUrl);
 
     const stackMod = await importShared("stack.mjs");
     await stackMod.stackReady;
     assertStack();
 
-    await loadIsaFront();
+    await loadIsaFrontPinned({ loadIsaFront }, asset);
     await loadSharedUi(Babel);
     await importAppEntry("js/core/isa-setup.ts", Babel);
     await importAppEntry(ENTRY, Babel);
   }
 
-  function showErr(err) {
+  function showErr(err: unknown) {
     const root = document.getElementById("root");
     const msg = err instanceof Error ? err.stack || err.message : String(err);
     if (root) {

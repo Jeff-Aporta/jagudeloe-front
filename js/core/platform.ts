@@ -3,9 +3,14 @@
  */
 const bridge = () => window.ISAFront.createPlatformBridge("ISAJ", { sessionFromAuth: true });
 
-function frontShared() {
+function frontSharedLazy() {
   const api = window.ISAFront;
-  if (!api?.ensureCodeMirrorLoaded) {
+  return api?.ensureCodeMirrorLoaded ? api : null;
+}
+
+function frontShared() {
+  const api = frontSharedLazy();
+  if (!api) {
     throw new Error("ISAFront lazy-assets no cargado — recargue sin caché (Ctrl+Shift+R).");
   }
   return api;
@@ -62,13 +67,24 @@ export const Config = {
 
 /** Carga lazy de scripts/CSS y markdown (front-shared). */
 export const Assets = {
-  ensureCodeMirrorLoaded: (opts?: { sql?: boolean }) => frontShared().ensureCodeMirrorLoaded!(opts),
-  ensureMarked: () => frontShared().ensureMarked!(),
-  ensureStylesheet: (href: string) => frontShared().ensureLazyStylesheet!(href),
+  ensureCodeMirrorLoaded: (opts?: { sql?: boolean }) => {
+    const api = frontSharedLazy();
+    return api ? api.ensureCodeMirrorLoaded!(opts) : Promise.resolve();
+  },
+  ensureMarked: () => {
+    const api = frontSharedLazy();
+    return api ? api.ensureMarked!() : Promise.resolve();
+  },
+  ensureStylesheet: (href: string) => {
+    const api = frontSharedLazy();
+    return api ? api.ensureLazyStylesheet!(href) : Promise.resolve();
+  },
 };
 
 export function mdToHtml(src: string): string {
-  return frontShared().mdToHtml!(src);
+  const api = frontSharedLazy();
+  if (api?.mdToHtml) return api.mdToHtml(src);
+  return String(src ?? "");
 }
 
 /** Acceso al stack React/MUI (front-shared). */
