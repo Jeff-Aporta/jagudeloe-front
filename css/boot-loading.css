@@ -1,0 +1,118 @@
+/* Boot / loading shimmer — respeta data-mui-color-scheme (theme-init.mjs) */
+
+html[data-mui-color-scheme="light"] {
+  --isa-boot-fg: #64748b;
+  --isa-boot-shimmer-base: #64748b;
+  --isa-boot-shimmer-mid: #1e90ff;
+  --isa-boot-shimmer-hi: #4aa3ff;
+  --isa-boot-shimmer-accent: rgba(0, 180, 220, 0.65);
+  --isa-boot-glow-mid: rgba(30, 144, 255, 0.55);
+  --isa-boot-glow-hi: rgba(0, 180, 220, 0.65);
+  --isa-boot-after-blend: soft-light;
+  --isa-boot-after-opacity: 0.9;
+}
+
+html[data-mui-color-scheme="dark"],
+html:not([data-mui-color-scheme="light"]) {
+  --isa-boot-fg: #94a3b8;
+  --isa-boot-shimmer-base: #94a3b8;
+  --isa-boot-shimmer-mid: #1e90ff;
+  --isa-boot-shimmer-hi: #63b3ff;
+  --isa-boot-shimmer-accent: rgba(0, 229, 255, 0.5);
+  --isa-boot-glow-mid: rgba(30, 144, 255, 0.62);
+  --isa-boot-glow-hi: rgba(0, 229, 255, 0.38);
+  --isa-boot-after-blend: screen;
+  --isa-boot-after-opacity: 0.82;
+}
+
+.isa-app-boot {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  color: var(--isa-boot-fg);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.isa-app-boot--viewport {
+  min-height: 100vh;
+  flex: none;
+}
+
+.isa-app-boot-shimmer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  isolation: isolate;
+}
+
+.isa-app-boot-shimmer iconify-icon {
+  color: var(--isa-boot-fg);
+  flex-shrink: 0;
+}
+
+.isa-app-boot-shimmer > span {
+  font-weight: 500;
+  background: linear-gradient(
+    100deg,
+    var(--isa-boot-shimmer-base) 0%,
+    var(--isa-boot-shimmer-base) 38%,
+    var(--isa-boot-glow-mid) 46%,
+    var(--isa-boot-shimmer-mid) 50%,
+    var(--isa-boot-shimmer-hi) 53%,
+    var(--isa-boot-shimmer-accent) 57%,
+    var(--isa-boot-shimmer-base) 64%,
+    var(--isa-boot-shimmer-base) 100%
+  );
+  background-size: 240% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+}
+
+.isa-app-boot-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: -3px -6px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 6px;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 36%,
+    rgba(30, 144, 255, 0.22) 44%,
+    var(--isa-boot-glow-mid) 50%,
+    rgba(99, 179, 255, 0.52) 54%,
+    var(--isa-boot-glow-hi) 58%,
+    transparent 66%,
+    transparent 100%
+  );
+  background-size: 240% 100%;
+  animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+  mix-blend-mode: var(--isa-boot-after-blend);
+  opacity: var(--isa-boot-after-opacity);
+}
+
+@keyframes isa-boot-text-shimmer {
+  0% { background-position: 115% 50%; }
+  100% { background-position: -15% 50%; }
+}
+
+/* Centrado vertical en el área de contenido del shell */
+.isa-layout-body > .isa-app-boot,
+.isa-layout-scroll > .isa-app-boot,
+.isa-scroll-panel > .isa-app-boot {
+  min-height: 100%;
+}
+
+/* Carga doc full-page — sobre el fondo tk-doc-web */
+#root.tk-doc-view > .isa-app-boot {
+  position: relative;
+  z-index: 1;
+}
