@@ -10,7 +10,10 @@ import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 
 import { TicketMetricsDocument } from "../views/TicketMetricsView.jsx";
 
+import { TicketCatalogFooter } from "../ui/TicketCatalogFooter.jsx";
+
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
+import { CopyReportLinkButton } from "../ui/CopyReportLinkButton.jsx";
 
 import { tkDocPageSx } from "../ui/tkDocSurface.ts";
 
@@ -95,6 +98,13 @@ function DocWebPage({ tk, space, iticket, initialReportView }) {
 
         <TkReportSwitch mode={reportView} onToggle={toggleReport} />
 
+        <CopyReportLinkButton
+          space={project}
+          iticket={ticketId}
+          report={reportView === "metricas" ? "metricas" : "diligencia"}
+          driver="jsx"
+        />
+
         {ThemeSwitch ? <ThemeSwitch mode={tm.mode} onToggle={tm.toggle} /> : null}
 
       </Box>
@@ -114,6 +124,8 @@ function DocWebPage({ tk, space, iticket, initialReportView }) {
           <TicketDocWebView tk={tk} />
 
         )}
+
+        <TicketCatalogFooter space={project} currentIticket={ticketId} />
 
       </Box>
 
