@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "JAGUDELOE — Jeff-Aporta",
+    "applicationName": "JAGUDELOE",
+    "description": "Bitácora de PatyIA y ClientesIS, tickets y revisión de contenido.",
+    "keywords": "jagudeloe, bitácora, tickets, PatyIA, ClientesIS, Jeff-Aporta",
+    "themeColor": "#1e90ff",
+    "themeLsKey": "jagudeloe:theme",
+    "icon": "mdi:notebook-outline",
+    "canonical": "https://jeff-aporta.github.io/jagudeloe-front/",
+    "ogSiteName": "Jeff-Aporta — JAGUDELOE",
+    "ogTitle": "JAGUDELOE — Jeff-Aporta",
+    "imageAlt": "JAGUDELOE — bitácora y tickets"
+  },
+  "frontSharedPin": "a87602c",
+  "themeInit": true,
+  "appMeta": true,
+  "styles": [
+    "shared-base",
+    "shared-feedback",
+    "local:css/theme.css",
+    "local:css/markdown.css",
+    "local:css/app-shell.css",
+    "local:css/doc-view.css",
+    "local:css/tk-lightbox.css",
+    "photoswipe",
+    "photoswipe-caption",
+    "local:css/code.css",
+    "shared-code-mirror",
+    "cm-core",
+    "cm-dracula",
+    "cm-foldgutter"
+  ],
+  "libs": [
+    "marked",
+    "codemirror-core",
+    "codemirror-sql",
+    "codemirror-javascript",
+    "codemirror-foldcode",
+    "codemirror-foldgutter",
+    "codemirror-brace-fold"
+  ]
+}
