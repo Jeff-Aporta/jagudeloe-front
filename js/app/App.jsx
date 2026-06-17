@@ -92,6 +92,16 @@ export function App() {
     });
   }, [space, sub]);
 
+  useEffect(() => {
+    function onBrandHome() {
+      setSpace("patyia");
+      setSub("bitacora");
+      setReload((k) => k + 1);
+    }
+    window.addEventListener("isa:brand-home", onBrandHome);
+    return () => window.removeEventListener("isa:brand-home", onBrandHome);
+  }, []);
+
   function renderView() {
     const props = { project: space, reloadKey };
     if (sub === "bitacora") return <BitacoraView {...props} />;
@@ -119,8 +129,6 @@ export function App() {
   return (
     <Shell
       ns="ISAJ"
-      icon="mdi:view-dashboard-variant-outline"
-      showTitle={false}
       navRows={hasNavShell ? [
         { id: "space", value: space, onChange: setSpace, tabs: SPACES, minHeight: 48 },
         { id: "sub", value: sub, onChange: setSub, tabs: SUBSPACES, minHeight: 44 },

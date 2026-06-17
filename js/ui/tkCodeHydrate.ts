@@ -18,7 +18,19 @@ type CmGlobal = Window & {
 export function hydrateTkCodeBlocks(root: HTMLElement, paletteMode: "light" | "dark" = readStoredThemeMode()): void {
   const mount = (window as CmGlobal).ISAFront?.mountCodeMirror;
   const CM = (window as CmGlobal).CodeMirror;
-  if (!mount && !CM) return;
+  if (!mount && !CM) {
+    if (!(window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending) {
+      (window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending = true;
+      const retry = () => {
+        (window as CmGlobal & { __tkCmHydratePending?: boolean }).__tkCmHydratePending = false;
+        hydrateTkCodeBlocks(root, paletteMode);
+      };
+      document.querySelectorAll('script[src*="codemirror"]').forEach((s) => {
+        s.addEventListener("load", retry, { once: true });
+      });
+    }
+    return;
+  }
   const theme = paletteMode === "dark" ? "dracula" : "default";
 
   root.querySelectorAll<HTMLElement>(".tk-code-wrap").forEach((wrap) => {
