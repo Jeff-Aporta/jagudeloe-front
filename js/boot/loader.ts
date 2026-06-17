@@ -10,10 +10,13 @@
   const ENTRY = "js/main.jsx";
 
   async function boot() {
+    const { importAppEntry } = await import(MODULE_LOADER);
+    const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
+    manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
+
     const { docBootFromSearch } = await import("./js/boot/url-s.mjs");
     const docBoot = docBootFromSearch();
     if (docBoot) {
-      const { importAppEntry } = await import(MODULE_LOADER);
       const mod = await importAppEntry("js/boot/doc-viewer.ts", Babel);
       if (mod.applyDocPageLayout) mod.applyDocPageLayout(docBoot.driver === "html" ? "html" : "jsx");
       await mod.runDocViewer(docBoot);
@@ -21,7 +24,6 @@
     }
 
     const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(BOOT_HELPER);
-    const { importAppEntry } = await import(MODULE_LOADER);
 
     const stackMod = await importShared("stack.mjs");
     await stackMod.stackReady;
