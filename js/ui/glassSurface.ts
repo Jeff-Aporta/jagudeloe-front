@@ -28,25 +28,25 @@ const GRADIENTS: Record<"dark" | "light", Record<GlassTone, string>> = {
   },
   light: {
     default:
-      "linear-gradient(165deg, rgba(30,144,255,0.10) 0%, rgba(99,102,241,0.06) 38%, rgba(255,255,255,0.38) 100%)",
+      "linear-gradient(165deg, rgba(30,144,255,0.04) 0%, rgba(99,102,241,0.025) 38%, rgba(255,255,255,0.84) 100%)",
     hi:
-      "linear-gradient(145deg, rgba(30,144,255,0.16) 0%, rgba(240,247,255,0.55) 55%, rgba(255,255,255,0.42) 100%)",
+      "linear-gradient(145deg, rgba(30,144,255,0.05) 0%, rgba(248,252,255,0.88) 55%, rgba(255,255,255,0.92) 100%)",
     blue:
-      "linear-gradient(160deg, rgba(30,144,255,0.12) 0%, rgba(255,255,255,0.45) 100%)",
+      "linear-gradient(160deg, rgba(30,144,255,0.04) 0%, rgba(255,255,255,0.86) 100%)",
     warn:
-      "linear-gradient(155deg, rgba(237,108,2,0.12) 0%, rgba(255,255,255,0.42) 100%)",
+      "linear-gradient(155deg, rgba(237,108,2,0.04) 0%, rgba(255,255,255,0.84) 100%)",
     err:
-      "linear-gradient(155deg, rgba(244,67,54,0.10) 0%, rgba(255,255,255,0.42) 100%)",
+      "linear-gradient(155deg, rgba(244,67,54,0.035) 0%, rgba(255,255,255,0.84) 100%)",
     node:
-      "linear-gradient(160deg, rgba(30,144,255,0.08) 0%, rgba(255,255,255,0.40) 100%)",
+      "linear-gradient(160deg, rgba(30,144,255,0.03) 0%, rgba(255,255,255,0.86) 100%)",
     chip:
-      "linear-gradient(145deg, rgba(30,144,255,0.10) 0%, rgba(240,247,255,0.55) 100%)",
+      "linear-gradient(145deg, rgba(30,144,255,0.04) 0%, rgba(255,255,255,0.88) 100%)",
     excl:
-      "linear-gradient(160deg, rgba(237,108,2,0.10) 0%, rgba(255,255,255,0.38) 100%)",
+      "linear-gradient(160deg, rgba(237,108,2,0.035) 0%, rgba(255,255,255,0.84) 100%)",
     jornadaIn:
-      "linear-gradient(160deg, rgba(0,188,212,0.12) 0%, rgba(255,255,255,0.38) 100%)",
+      "linear-gradient(160deg, rgba(0,188,212,0.04) 0%, rgba(255,255,255,0.84) 100%)",
     jornadaOut:
-      "linear-gradient(160deg, rgba(213,0,249,0.10) 0%, rgba(255,255,255,0.38) 100%)",
+      "linear-gradient(160deg, rgba(213,0,249,0.035) 0%, rgba(255,255,255,0.84) 100%)",
   },
 };
 
@@ -63,8 +63,8 @@ export function useGlassColors() {
   const dark = useTheme().palette.mode === "dark";
   return {
     pageBg: "transparent",
-    cardBg: dark ? "rgba(15, 34, 54, 0.28)" : "rgba(255, 255, 255, 0.38)",
-    cardHi: dark ? "rgba(26, 58, 92, 0.38)" : "rgba(240, 247, 255, 0.52)",
+    cardBg: dark ? "rgba(15, 34, 54, 0.28)" : "rgba(255, 255, 255, 0.82)",
+    cardHi: dark ? "rgba(26, 58, 92, 0.38)" : "rgba(255, 255, 255, 0.90)",
     border: dark ? "rgba(30,144,255,0.28)" : "rgba(30,144,255,0.18)",
     text: dark ? "#e8f4ff" : "#0a2540",
     muted: dark ? "#9ec5eb" : "#4a6278",
@@ -77,7 +77,7 @@ export function useGlassColors() {
 function glassShadow(dark: boolean) {
   return dark
     ? "0 8px 32px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.06)"
-    : "0 8px 28px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.55)";
+    : "0 4px 20px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.92)";
 }
 
 /** Card plana glass (compat). */
@@ -94,7 +94,7 @@ export function glassCardGradientSx(
   const { tone = "default", borderColor, borderWidth, ...extra } = opts;
   return {
     background: glassGradient(c, tone),
-    backgroundColor: "transparent",
+    backgroundColor: dark ? "transparent" : "rgba(255, 255, 255, 0.78)",
     borderColor: borderColor ?? c.border,
     ...(borderWidth != null ? { borderWidth } : {}),
     color: c.text,
@@ -111,9 +111,10 @@ export function glassInnerSx(
   tone: GlassTone = "node",
   extra: Record<string, unknown> = {},
 ) {
+  const dark = isDarkGlass(c);
   return {
     background: glassGradient(c, tone),
-    backgroundColor: "transparent",
+    backgroundColor: dark ? "transparent" : "rgba(255, 255, 255, 0.72)",
     backdropFilter: "blur(10px)",
     WebkitBackdropFilter: "blur(10px)",
     ...extra,
