@@ -8,14 +8,14 @@ import {
   formatHorasDecimal,
 } from "../core/tk-metrics.ts";
 import { extractTipoSolicitudApertura } from "../core/tk-normativa.ts";
-import { extractTicketEvidencias } from "../core/tk-evidencias.ts";
+import { extractTicketMetricasEvidencias } from "../core/tk-evidencias.ts";
 import { buildTicketTimeline, buildTicketMilestones } from "../core/tk-timeline.ts";
 import { extractEmpresaReport, computeEmpresaDesfase } from "../core/tk-empresa-report.ts";
 import { extractTicketPendingTasks } from "../core/checks.ts";
 import { TicketAnalysisTimeline } from "../ui/TicketAnalysisTimeline.jsx";
 import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
 import { EmpresaDesfaseCard } from "../ui/EmpresaDesfaseCard.jsx";
-import { useGlassColors, glassCardGradientSx, glassInnerSx } from "../ui/glassSurface.ts";
+import { useGlassColors, glassCardGradientSx, glassInnerSx, glassGradient } from "../ui/glassSurface.ts";
 
 function useDocColors() {
   return useGlassColors();
@@ -38,41 +38,73 @@ function DocText({ variant, muted, bold, children, sx }) {
   );
 }
 
-function MetricCard({ label, minutos, sub, highlight, warn, icon }) {
+function metricKpiStripShadow(c) {
+  const dark = String(c.cardBg).includes("15, 34, 54");
+  return dark
+    ? "0 8px 32px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.06)"
+    : "0 4px 20px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.92)";
+}
+
+/** Tres KPI en una sola franja: mismo degradado, sin líneas verticales; el del centro sin redondeo. */
+function MetricKpiStrip({ items }) {
   const c = useDocColors();
-  const { Paper, Typography, Stack } = getMaterialUI();
+  const { Box, Typography, Stack } = getMaterialUI();
   const { Icon } = UI;
-  const decimal = formatHorasDecimal(minutos);
+
   return (
-    <Paper
-      variant="outlined"
+    <Box
       sx={{
-        p: 2,
-        flex: "1 1 140px",
-        minWidth: 140,
-        ...cardSx(c, {
-          tone: highlight ? "hi" : warn ? "warn" : "default",
-          borderColor: highlight ? "rgba(30,144,255,0.45)" : warn ? "rgba(237,108,2,0.45)" : c.border,
-        }),
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        mb: 3,
+        borderRadius: 2,
+        overflow: "hidden",
+        border: 1,
+        borderColor: c.border,
+        background: glassGradient(c, "hi"),
+        backgroundColor: "transparent",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        boxShadow: metricKpiStripShadow(c),
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-        {icon && <Icon icon={icon} size={18} />}
-        <Typography variant="body2" sx={{ color: c.muted, fontWeight: 500 }}>{label}</Typography>
-      </Stack>
-      <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2, color: c.text }}>
-        {formatMinutos(minutos)}
-        {decimal != null && (
-          <Typography
-            component="span"
-            sx={{ ml: 0.75, fontWeight: 500, fontSize: "0.82em", color: c.muted, opacity: 0.72 }}
+      {items.map((item) => {
+        const decimal = formatHorasDecimal(item.minutos);
+        return (
+          <Box
+            key={item.label}
+            sx={{
+              flex: "1 1 0",
+              minWidth: { sm: 0 },
+              p: 2,
+              borderRadius: 0,
+              background: "transparent",
+              boxShadow: "none",
+              border: "none",
+            }}
           >
-            ({decimal})
-          </Typography>
-        )}
-      </Typography>
-      {sub && <Typography variant="body2" sx={{ color: c.muted, mt: 0.5, lineHeight: 1.45 }}>{sub}</Typography>}
-    </Paper>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+              {item.icon && <Icon icon={item.icon} size={18} />}
+              <Typography variant="body2" sx={{ color: c.muted, fontWeight: 500 }}>{item.label}</Typography>
+            </Stack>
+            <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2, color: c.text }}>
+              {formatMinutos(item.minutos)}
+              {decimal != null && (
+                <Typography
+                  component="span"
+                  sx={{ ml: 0.75, fontWeight: 500, fontSize: "0.82em", color: c.muted, opacity: 0.72 }}
+                >
+                  ({decimal})
+                </Typography>
+              )}
+            </Typography>
+            {item.sub && (
+              <Typography variant="body2" sx={{ color: c.muted, mt: 0.5, lineHeight: 1.45 }}>{item.sub}</Typography>
+            )}
+          </Box>
+        );
+      })}
+    </Box>
   );
 }
 
@@ -100,7 +132,7 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
   const desfase = computeEmpresaDesfase(m, reporteEmpresa);
   const timeline = buildTicketTimeline(iticket, tk.titulo || tk.title || "", m, input);
   const milestones = buildTicketMilestones(m, input);
-  const evidencias = extractTicketEvidencias(tk);
+  const evidencias = extractTicketMetricasEvidencias(tk);
   const tareasPendientes = extractTicketPendingTasks(tk).filter((t) => !t.done);
   const tipoApertura = extractTipoSolicitudApertura(tk);
 
@@ -141,12 +173,28 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
         </Alert>
       )}
 
-      {/* KPI cards inline */}
-      <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mb: 3 }}>
-        <MetricCard icon="mdi:clock-start" label="Hasta atención" minutos={m.minutosHastaAtencion} sub="Creación → inicio atención" />
-        <MetricCard icon="mdi:head-cog-outline" label="Atención activa" minutos={m.minutosAtencionActiva} sub="Inicio atención → cierre" />
-        <MetricCard icon="mdi:check-decagram" label="Total solución hábil" minutos={m.minutosTotalSolucion} sub="Tiempo real laborado" highlight />
-      </Stack>
+      <MetricKpiStrip
+        items={[
+          {
+            icon: "mdi:clock-start",
+            label: "Hasta atención",
+            minutos: m.minutosHastaAtencion,
+            sub: "Creación → inicio atención",
+          },
+          {
+            icon: "mdi:head-cog-outline",
+            label: "Atención activa",
+            minutos: m.minutosAtencionActiva,
+            sub: "Inicio atención → cierre",
+          },
+          {
+            icon: "mdi:check-decagram",
+            label: "Total solución hábil",
+            minutos: m.minutosTotalSolucion,
+            sub: "Tiempo real laborado",
+          },
+        ]}
+      />
 
       {desfase && <EmpresaDesfaseCard desfase={desfase} />}
 
@@ -163,7 +211,7 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
         </SectionCard>
       )}
 
-      <TicketMetricsEvidencias items={evidencias} galleryId={`tk-${iticket}`} />
+      <TicketMetricsEvidencias items={evidencias} galleryId={`tk-${iticket}`} variant="metricas" />
     </Box>
   );
 }
