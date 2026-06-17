@@ -20,3 +20,16 @@ export function buildDocEmailUrl(space: string, iticket: string): string {
 export function buildDocWebUrl(space: string, iticket: string): string {
   return buildDocViewUrl(space, iticket, "jsx");
 }
+
+/** URL full-page con reporte de métricas (tiempo hábil + desfase empresa). */
+export function buildDocMetricasUrl(space: string, iticket: string): string {
+  const state: Record<string, string> = {
+    view: "doc",
+    space,
+    sel: iticket,
+    sub: "tickets",
+    driver: "jsx",
+    report: "metricas",
+  };
+  return buildShareUrl(state);
+}
