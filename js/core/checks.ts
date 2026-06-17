@@ -1,5 +1,6 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
 import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
+import { ticketHasEvidencias } from "./tk-evidencias.ts";
 
 export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
 
@@ -16,6 +17,20 @@ export const DOT_STATE_LABELS: Record<DotState, string> = {
 export function dotStateLabel(state: DotState | null | undefined): string {
   if (!state) return DOT_STATE_LABELS.idle;
   return DOT_STATE_LABELS[state] ?? DOT_STATE_LABELS.idle;
+}
+
+/** Tooltips del dot en listado / chip de ticket (evidencias + aging). */
+export const TICKET_DOT_STATE_LABELS: Partial<Record<DotState, string>> = {
+  complete: "Evidencias subidas",
+  idle: "Sin evidencias",
+  none: "Sin evidencias",
+  warn: "Diligencia demorada (>7 h hábiles)",
+  overdue: "Diligencia muy demorada (>14 h hábiles)",
+};
+
+export function ticketDotStateLabel(state: DotState | null | undefined): string {
+  if (!state) return TICKET_DOT_STATE_LABELS.idle ?? DOT_STATE_LABELS.idle;
+  return TICKET_DOT_STATE_LABELS[state] ?? DOT_STATE_LABELS[state] ?? DOT_STATE_LABELS.idle;
 }
 
 export function aggregateDotState(keys: string[], map: Record<string, boolean>): DotState | null {
@@ -147,30 +162,32 @@ export function ticketEstadoDotState(tk: Record<string, unknown>): DotState {
   return "idle";
 }
 
-/** Dot en listado TK: revisado → verde; si no, mismo estado que el detalle; aging hábil como refuerzo. */
+/** Dot en listado TK: verde con evidencias; gris sin ellas; rojo/naranja si la diligencia abierta se demora. */
 export function ticketListDotState(
   tk: Record<string, unknown>,
-  revisadoMap: Record<string, boolean>,
-  revisadoKey: string,
+  _revisadoMap?: Record<string, boolean>,
+  _revisadoKey?: string,
 ): DotState | null {
-  const rev = aggregateDotState([revisadoKey], revisadoMap);
-  if (rev === "complete") return "complete";
-
-  const estadoDot = ticketEstadoDotState(tk);
-  if (estadoDot !== "idle") return estadoDot;
+  if (ticketHasEvidencias(tk)) return "complete";
 
   const input = extractMetricInput(tk);
-  if (input.fechaCierre) return "complete";
+  const closed =
+    resolveTicketEstado(tk) === "cerrado" ||
+    !!input.fechaCierre ||
+    !!(tk.fechaEntrega || tk.FECHAENTREGA);
 
-  const cre = input.fechaCreacion;
-  if (!cre) return "idle";
+  if (!closed) {
+    const cre = input.fechaCreacion;
+    if (cre) {
+      const mins = businessMinutesBetween(cre, new Date().toISOString(), input, DEFAULT_SCHEDULE);
+      if (mins != null) {
+        const hours = mins / 60;
+        if (hours > TK_OVERDUE_HOURS) return "overdue";
+        if (hours > TK_WARN_HOURS) return "warn";
+      }
+    }
+  }
 
-  const mins = businessMinutesBetween(cre, new Date().toISOString(), input, DEFAULT_SCHEDULE);
-  if (mins == null) return "idle";
-
-  const hours = mins / 60;
-  if (hours > TK_OVERDUE_HOURS) return "overdue";
-  if (hours > TK_WARN_HOURS) return "warn";
   return "idle";
 }
 
