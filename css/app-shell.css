@@ -1,5 +1,56 @@
 /* AppShell jagudeloe — tabs y nav con glow neon. */
 
+/* AppBar — sesión, chips y acciones centrados en el toolbar */
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root {
+  align-items: center;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root > .MuiStack-root {
+  align-self: center;
+}
+
+.header-session-wrap,
+.header-session-btn {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root .MuiChip-sizeSmall {
+  height: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root .MuiChip-sizeSmall .MuiChip-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root .MuiChip-sizeSmall .MuiChip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 4px 0 8px;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root .MuiChip-sizeSmall .MuiChip-label .MuiStack-root {
+  align-items: center;
+  line-height: 1;
+}
+
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root .MuiIconButton-sizeSmall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 html[data-mui-color-scheme="dark"] .isa-layout-root > header.MuiAppBar-root .MuiTab-root.Mui-selected {
   color: #63b3ff;
 }
