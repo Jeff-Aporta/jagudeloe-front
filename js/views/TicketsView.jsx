@@ -5,16 +5,16 @@ import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
 import { resolveDocDriver } from "../core/doc-driver.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
-import { ticketListDotState } from "../core/checks.ts";
+import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/isa-front.ts";
 import { DateTree, RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
-import { buildDocEmailUrl, buildDocWebUrl } from "../core/doc-view-url.ts";
 import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
+import { CopyReportLinkButton } from "../ui/CopyReportLinkButton.jsx";
 
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
@@ -39,25 +39,7 @@ function revisadoKeyOf(tk, iticket) {
 }
 
 function CopyDocLinkButton({ space, iticket, driver }) {
-  const { useState } = getReact();
-  const { Tooltip, IconButton } = getMaterialUI();
-  const { Icon } = UI;
-  const [done, setDone] = useState(false);
-  if (!space || !iticket) return null;
-  const url = driver === "jsx" ? buildDocWebUrl(space, iticket) : buildDocEmailUrl(space, iticket);
-  const tip = driver === "jsx" ? "Copiar enlace web (JSX)" : "Copiar enlace HTML (correo)";
-  function copy() {
-    navigator.clipboard.writeText(url);
-    setDone(true);
-    setTimeout(() => setDone(false), 1500);
-  }
-  return (
-    <Tooltip title={done ? "Enlace copiado" : tip}>
-      <IconButton size="small" onClick={copy} aria-label={tip}>
-        <Icon icon={done ? "mdi:check" : "mdi:link-variant"} size={20} />
-      </IconButton>
-    </Tooltip>
-  );
+  return <CopyReportLinkButton space={space} iticket={iticket} report="diligencia" driver={driver} />;
 }
 
 function CopyHtmlButton({ tk }) {
@@ -158,7 +140,7 @@ function TicketDetail(props) {
           size="small"
           label={
             <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
-              <NavStatusDot state={dotState} />
+              <NavStatusDot state={dotState} title={ticketDotStateLabel(dotState)} />
               {props.iticket}
             </Box>
           }
@@ -174,6 +156,9 @@ function TicketDetail(props) {
             <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} />
             {driver === "html" && <CopyHtmlButton tk={tk} />}
           </>
+        )}
+        {reportView === "metricas" && (
+          <CopyReportLinkButton space={tkSpace} iticket={props.iticket} report="metricas" />
         )}
       </Stack>
       {reportView === "metricas" ? (
@@ -270,7 +255,15 @@ export function TicketsDiligenciaView(props) {
   const treeItems = rows.map((t) => {
     const id = ticketId(t);
     const rKey = revisadoKeyOf(t, id);
-    return { id, date: dateOf(t), label: id, secondary: String(t.titulo || t.title || ""), dotState: ticketListDotState(t, revisadoMap, rKey) };
+    const dotState = ticketListDotState(t, revisadoMap, rKey);
+    return {
+      id,
+      date: dateOf(t),
+      label: id,
+      secondary: String(t.titulo || t.title || ""),
+      dotState,
+      dotTitle: ticketDotStateLabel(dotState),
+    };
   });
   void ageTick;
 
