@@ -13,6 +13,9 @@
     "imageAlt": "JAGUDELOE — bitácora y tickets"
   },
   "frontSharedPin": "a87602c",
+  "fonts": true,
+  "importMap": true,
+  "loader": "ts-babel",
   "themeInit": true,
   "appMeta": true,
   "styles": [
