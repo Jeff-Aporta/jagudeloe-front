@@ -69,7 +69,89 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/brace-fold.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+    <!-- Pantalla de carga: React reemplaza todo el contenido de #root al montar. -->
+    <style>
+      .isa-app-boot {
+        height: 100%;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        letter-spacing: 0.01em;
+
+        &-shimmer {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          position: relative;
+          isolation: isolate;
+
+          & iconify-icon { color: #94a3b8; flex-shrink: 0; }
+
+          & > span {
+            font-weight: 500;
+            background: linear-gradient(100deg, #94a3b8 0%, #94a3b8 38%, rgba(30, 144, 255, 0.45) 46%, #1e90ff 50%, #63b3ff 53%, rgba(0, 229, 255, 0.5) 57%, #94a3b8 64%, #94a3b8 100%);
+            background-size: 240% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+          }
+
+          &::after {
+            content: "";
+            position: absolute;
+            inset: -3px -6px;
+            z-index: 1;
+            pointer-events: none;
+            border-radius: 6px;
+            background: linear-gradient(100deg, transparent 0%, transparent 36%, rgba(30, 144, 255, 0.22) 44%, rgba(30, 144, 255, 0.62) 50%, rgba(99, 179, 255, 0.52) 54%, rgba(0, 229, 255, 0.38) 58%, transparent 66%, transparent 100%);
+            background-size: 240% 100%;
+            animation: isa-boot-text-shimmer 2.6s ease-in-out infinite;
+            mix-blend-mode: screen;
+            opacity: 0.82;
+          }
+        }
+      }
+
+      html[data-mui-color-scheme="light"] {
+        & .isa-app-boot {
+          color: #64748b;
+
+          &-shimmer {
+            & iconify-icon { color: #64748b; }
+
+            & > span {
+              background: linear-gradient(100deg, #64748b 0%, #64748b 38%, rgba(30, 144, 255, 0.55) 46%, #1e90ff 50%, #4aa3ff 53%, rgba(0, 180, 220, 0.65) 57%, #64748b 64%, #64748b 100%);
+              background-size: 240% 100%;
+              background-clip: text;
+              -webkit-background-clip: text;
+              color: transparent;
+              -webkit-text-fill-color: transparent;
+            }
+
+            &::after { mix-blend-mode: soft-light; opacity: 0.9; }
+          }
+        }
+      }
+
+      @keyframes isa-boot-text-shimmer {
+        0% { background-position: 115% 50%; }
+        100% { background-position: -15% 50%; }
+      }
+    </style>
+    <div class="isa-app-boot">
+      <div class="isa-app-boot-shimmer">
+        <iconify-icon icon="mdi:notebook-outline" width="1.5em" height="1.5em"></iconify-icon>
+        <span>Cargando JAGUDELOE…</span>
+      </div>
+    </div>
+  </div>
 <script>
 (async function () {
   try {
