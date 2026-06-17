@@ -1,4 +1,6 @@
 /** Registra widgets compartidos en window.ISAJ vía ISAFront. */
+import { registerBootShimmer } from "../ui/bootShimmer.ts";
+
 const ORCH = {
   local: "http://localhost:8780",
   online: "https://main-orchestrator.jeffaporta.workers.dev",
@@ -7,7 +9,7 @@ const ORCH = {
 window.ISAFront.registerApp({
   ns: "ISAJ",
   app: "jagudeloe-front",
-  theme: true,
+  theme: { lsKey: "jagudeloe:theme" },
   widgets: { targetStyle: "chip" },
   api: ORCH,
   session: true,
@@ -19,6 +21,28 @@ window.ISAFront.registerApp({
     showIntroText: true,
   },
 });
+
+registerBootShimmer("ISAJ");
+
+/** Mantiene body[data-mui-color-scheme] alineado con <html> (shimmer + doc-view). */
+(function syncThemeSchemeOnBody() {
+  const bag = window.ISAJ;
+  if (!bag?.Theme || bag.Theme.__bodySyncPatched) return;
+  function sync() {
+    const m = document.documentElement.getAttribute("data-mui-color-scheme");
+    if (m === "light" || m === "dark") {
+      document.body.setAttribute("data-mui-color-scheme", m);
+    }
+  }
+  sync();
+  try {
+    new MutationObserver(sync).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-mui-color-scheme"],
+    });
+  } catch { /* ignore */ }
+  bag.Theme.__bodySyncPatched = true;
+})();
 
 if (!window.ISAJ?.Session) {
   throw new Error(
