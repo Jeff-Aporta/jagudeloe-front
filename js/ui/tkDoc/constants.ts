@@ -12,6 +12,15 @@ export const SECTION_META = {
   accordion: { icon: "mdi:unfold-more-horizontal", title: "Detalle", accent: "#64748b" },
   "cambio-bd": { icon: "mdi:database-cog-outline", title: "Cambios en base de datos", accent: "#f59e0b" },
   cambios_bd: { icon: "mdi:database-cog-outline", title: "Cambios en base de datos", accent: "#f59e0b" },
+  "file-tree": { icon: "mdi:file-tree-outline", title: "Archivos modificados", accent: "#10b981" },
+  filetree: { icon: "mdi:file-tree-outline", title: "Archivos modificados", accent: "#10b981" },
   html: { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" },
   body: { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" },
 };
+
+export {
+  TK_DOC_SECTION_GRAY,
+  TK_DOC_STANDARD,
+  TK_DOC_SECTION_ORDER,
+  type TkDocSectionKey,
+} from "../../core/tk-doc-constants.ts";

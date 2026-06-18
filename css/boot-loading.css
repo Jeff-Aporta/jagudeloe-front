@@ -1,4 +1,4 @@
-/* Boot / loading shimmer — respeta data-mui-color-scheme (theme-init.mjs) */
+/* Boot / loading shimmer — app inicial, doc-viewer y UI.Loading (ISAJ) */
 
 html[data-mui-color-scheme="light"] {
   --isa-boot-fg: #64748b;
@@ -10,6 +10,7 @@ html[data-mui-color-scheme="light"] {
   --isa-boot-glow-hi: rgba(0, 180, 220, 0.65);
   --isa-boot-after-blend: soft-light;
   --isa-boot-after-opacity: 0.9;
+  --isa-boot-bg: #eef4ff;
 }
 
 html[data-mui-color-scheme="dark"],
@@ -23,6 +24,7 @@ html:not([data-mui-color-scheme="light"]) {
   --isa-boot-glow-hi: rgba(0, 229, 255, 0.38);
   --isa-boot-after-blend: screen;
   --isa-boot-after-opacity: 0.82;
+  --isa-boot-bg: #060d18;
 }
 
 .isa-app-boot {
@@ -30,13 +32,20 @@ html:not([data-mui-color-scheme="light"]) {
   min-height: 0;
   flex: 1;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
   font-family: "IBM Plex Sans", system-ui, sans-serif;
   color: var(--isa-boot-fg);
   font-size: 0.95rem;
   letter-spacing: 0.01em;
+  background: var(--isa-boot-bg);
 }
 
-.isa-app-boot--viewport {
+.isa-app-boot--viewport,
+#root > .isa-app-boot:only-child {
   min-height: 100vh;
   flex: none;
 }
@@ -47,6 +56,7 @@ html:not([data-mui-color-scheme="light"]) {
   gap: 0.75rem;
   position: relative;
   isolation: isolate;
+  z-index: 1;
 }
 
 .isa-app-boot-shimmer iconify-icon {
@@ -99,12 +109,25 @@ html:not([data-mui-color-scheme="light"]) {
   opacity: var(--isa-boot-after-opacity);
 }
 
+.isa-app-boot-watermark {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: min(150px, 20%);
+  height: auto;
+  opacity: 0.2;
+  filter: invert(0.5);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
 @keyframes isa-boot-text-shimmer {
   0% { background-position: 115% 50%; }
   100% { background-position: -15% 50%; }
 }
 
-/* Centrado vertical en el área de contenido del shell */
+/* Centrado en panel del shell ISA */
 .isa-layout-body > .isa-app-boot,
 .isa-layout-scroll > .isa-app-boot,
 .isa-scroll-panel > .isa-app-boot {
@@ -115,4 +138,5 @@ html:not([data-mui-color-scheme="light"]) {
 #root.tk-doc-view > .isa-app-boot {
   position: relative;
   z-index: 1;
+  min-height: 100vh;
 }

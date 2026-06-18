@@ -142,3 +142,93 @@ export function normalizeTkDocBlocks(tk: Record<string, unknown>, content: TkDoc
 
   return expanded;
 }
+
+const MD_DOC_KIND = new Set(["markdown", "md", "text"]);
+
+function isSolicitudTitle(title: string): boolean {
+  return /^(solicitud|objetivo|requerimiento)\b/i.test(title.trim());
+}
+
+function isEvidenciaTitle(title: string): boolean {
+  return /evidencia/i.test(title.trim());
+}
+
+function isTiempoSectionTitle(title: string): boolean {
+  return /^resumen de tiempos\b/i.test(title.trim());
+}
+
+function pushSolicitudPart(parts: string[], text: string) {
+  const t = String(text ?? "").trim();
+  if (!t) return;
+  if (parts.some((p) => tkTextsOverlap(p, t))) return;
+  parts.push(t);
+}
+
+export type TkDocStandardPartition = {
+  solicitudParts: string[];
+  evidenciaIntro: string | null;
+  bodyBlocks: TkDocBlock[];
+};
+
+/**
+ * Orden estándar del doc web:
+ * 1. Solicitud y objetivo (resumen BD + intro content)
+ * 2. Evidencias del problema (texto + galería)
+ * 3. Resto del contenido
+ * (Resumen de tiempos y commits se renderizan al final en TicketDocWebView.)
+ */
+export function partitionTkDocStandard(
+  tk: Record<string, unknown>,
+  content: TkDocBlock[],
+): TkDocStandardPartition {
+  const expanded = normalizeTkDocBlocks(tk, content);
+  const solicitudParts: string[] = [];
+  const bodyBlocks: TkDocBlock[] = [];
+  let evidenciaIntro: string | null = null;
+  let mdIndex = 0;
+  let consumedUntitledIntro = false;
+
+  const resumen = String(tk.resumen ?? "").trim();
+  if (resumen) solicitudParts.push(resumen);
+
+  for (const b of expanded) {
+    const kind = String(b.kind ?? "").toLowerCase();
+    const title = String(b.payload?.title ?? "").trim();
+    const text = blockText(b);
+
+    if (MD_DOC_KIND.has(kind)) {
+      const isEarly = mdIndex < 2 || (b.sortKey ?? 0) < 3;
+      mdIndex += 1;
+
+      if (isTiempoSectionTitle(title)) continue;
+
+      if (!consumedUntitledIntro && !title && isEarly) {
+        pushSolicitudPart(solicitudParts, text);
+        consumedUntitledIntro = true;
+        continue;
+      }
+
+      if (!evidenciaIntro && isEvidenciaTitle(title)) {
+        evidenciaIntro = text;
+        continue;
+      }
+
+      if (isEarly && isSolicitudTitle(title)) {
+        pushSolicitudPart(solicitudParts, text);
+        continue;
+      }
+    }
+
+    bodyBlocks.push(b);
+  }
+
+  if (!solicitudParts.length) {
+    const idx = bodyBlocks.findIndex((b) => MD_DOC_KIND.has(String(b.kind ?? "").toLowerCase()));
+    if (idx >= 0) {
+      pushSolicitudPart(solicitudParts, blockText(bodyBlocks[idx]));
+      bodyBlocks.splice(idx, 1);
+    }
+  }
+
+  return { solicitudParts, evidenciaIntro, bodyBlocks };
+}

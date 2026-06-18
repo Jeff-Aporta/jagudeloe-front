@@ -3,8 +3,7 @@ import { getReact, getMaterialUI } from "../core/platform.ts";
 import { getTickets } from "../api/client.ts";
 import { buildDocWebUrl } from "../core/tk-doc.ts";
 import { tkCatalogTooltipLines } from "../core/tk-catalog.ts";
-import { projectLabel } from "../core/tk-spaces.ts";
-import { TK_CATALOG_CHIP_SX, TK_DOC_RADIUS } from "../core/tk-table.ts";
+import { TK_CATALOG_CHIP_SX, TK_DOC_RADIUS, tkCatalogCurrentChipBg } from "../core/tk-table.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { NavStatusDot } from "./parts.jsx";
 
@@ -53,7 +52,7 @@ export function TicketCatalogFooter({ space, currentIticket }) {
         if (!alive) return;
         setRows(
           list
-            .filter((t) => ticketId(t) && ticketId(t) !== current)
+            .filter((t) => ticketId(t))
             .sort((a, b) => String(b.fechaSolicitud ?? "").localeCompare(String(a.fechaSolicitud ?? ""))),
         );
       })
@@ -77,7 +76,7 @@ export function TicketCatalogFooter({ space, currentIticket }) {
         }}
       />
       <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 1.5, letterSpacing: 0.3 }}>
-        {"Tiquetes de " + projectLabel(project) + " por Jeffrey Agudelo (JAGUDELOE)"}
+        Tiquetes (JAGUDELOE)
       </Typography>
       <Box
         sx={{
@@ -92,6 +91,37 @@ export function TicketCatalogFooter({ space, currentIticket }) {
           const href = buildDocWebUrl(sp, id);
           const tip = tkCatalogTooltipLines(row);
           const dotState = ticketListDotState(row, {}, `tickets.${id}`);
+          const isCurrent = !!current && id === current;
+          const chipLabel = (
+            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+              <NavStatusDot state={dotState} title={ticketDotStateLabel(dotState)} />
+              {id}
+            </Box>
+          );
+          const chipSx = {
+            ...TK_CATALOG_CHIP_SX,
+            borderRadius: TK_DOC_RADIUS,
+            ...(isCurrent
+              ? {
+                  bgcolor: tkCatalogCurrentChipBg,
+                  color: "primary.contrastText",
+                  cursor: "default",
+                  "&:hover": { bgcolor: tkCatalogCurrentChipBg },
+                  "& .nav-status-dot": { boxShadow: "0 0 0 1px rgba(255,255,255,0.35)" },
+                }
+              : {}),
+          };
+          const chip = (
+            <Chip
+              component={isCurrent ? "span" : "a"}
+              href={isCurrent ? undefined : href}
+              clickable={!isCurrent}
+              size="small"
+              label={chipLabel}
+              aria-current={isCurrent ? "page" : undefined}
+              sx={chipSx}
+            />
+          );
           return (
             <Tooltip
               key={id}
@@ -99,22 +129,7 @@ export function TicketCatalogFooter({ space, currentIticket }) {
               placement="top"
               title={<CatalogTooltip lines={tip} />}
             >
-              <Chip
-                component="a"
-                href={href}
-                clickable
-                size="small"
-                label={
-                  <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-                    <NavStatusDot state={dotState} title={ticketDotStateLabel(dotState)} />
-                    {id}
-                  </Box>
-                }
-                sx={{
-                  ...TK_CATALOG_CHIP_SX,
-                  borderRadius: TK_DOC_RADIUS,
-                }}
-              />
+              {chip}
             </Tooltip>
           );
         })}

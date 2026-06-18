@@ -1,19 +1,46 @@
 import { getMaterialUI } from "../../core/platform.ts";
-import { inlineMdWeb } from "../tkHtml.ts";
 import { tkCommitGithubUrl } from "../tkCommitGithub.ts";
-import { TK_TABLE_DESC_CLAMP_SX, tkTablePlainText, TK_DOC_TABLE_PAPER_SX, TK_DOC_TABLE_HEAD_CELL_SX, TK_DOC_TABLE_ROW_SX, TK_DOC_TABLE_BODY_CELL_SX, TK_COMMIT_INS_CHIP_SX, TK_COMMIT_DEL_CHIP_SX } from "../../core/tk-table.ts";
+import {
+  TK_TABLE_DESC_CLAMP_SX,
+  tkTablePlainText,
+  formatTkCommitFecha,
+  TK_DOC_TABLE_PAPER_SX,
+  TK_DOC_TABLE_HEAD_CELL_SX,
+  TK_DOC_TABLE_ROW_SX,
+  TK_DOC_TABLE_BODY_CELL_SX,
+  TK_DOC_TABLE_TOTAL_ROW_SX,
+  TK_COMMIT_INS_CHIP_SX,
+  TK_COMMIT_DEL_CHIP_SX,
+  computeCommitTotals,
+} from "../../core/tk-table.ts";
+import { useGlassColors, glassInnerSx } from "../glassSurface.ts";
+
+function commitFecha(c) {
+  const meta = c.meta ?? {};
+  return formatTkCommitFecha(c.fecha ?? meta.fecha);
+}
+
+function commitProyecto(c) {
+  const meta = c.meta ?? {};
+  return String(meta.repo ?? c.proyecto ?? "PatyIA");
+}
 
 export function CommitsTable({ commits }) {
-  const { Table, TableHead, TableBody, TableRow, TableCell, Paper, Chip, Typography, Box, Tooltip } = getMaterialUI();
+  const { Table, TableHead, TableBody, TableRow, TableCell, Paper, Chip, Typography } = getMaterialUI();
+  const c = useGlassColors();
 
   if (!commits?.length) return null;
 
+  const headers = ["Commit", "Fecha", "Descripción", "Ins", "Del", "Tiempo"];
+  const totals = computeCommitTotals(commits);
+  const totalLabel = totals.count === 1 ? "1 commit" : `${totals.count} commits`;
+
   return (
-    <Paper variant="outlined" sx={TK_DOC_TABLE_PAPER_SX}>
+    <Paper variant="outlined" sx={{ ...TK_DOC_TABLE_PAPER_SX, borderColor: c.border, ...glassInnerSx(c, "node") }}>
       <Table size="small">
         <TableHead>
           <TableRow>
-            {["Commit", "Proyecto", "Descripción", "Ins", "Del", "Tiempo"].map((h) => (
+            {headers.map((h) => (
               <TableCell
                 key={h}
                 align={h === "Ins" || h === "Del" || h === "Tiempo" ? "right" : "left"}
@@ -25,9 +52,10 @@ export function CommitsTable({ commits }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {commits.map((c, i) => {
-            const hash = String(c.hash ?? "");
-            const url = tkCommitGithubUrl(String(c.proyecto ?? ""), hash);
+          {commits.map((commit, i) => {
+            const hash = String(commit.hash ?? "");
+            const url = tkCommitGithubUrl(commitProyecto(commit), hash);
+            const descripcion = String(commit.descripcion ?? "");
             return (
               <TableRow key={i} sx={TK_DOC_TABLE_ROW_SX}>
                 <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX}>
@@ -46,26 +74,44 @@ export function CommitsTable({ commits }) {
                     <Typography component="code" variant="caption">{hash.slice(0, 9)}</Typography>
                   )}
                 </TableCell>
-                <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX}>{c.proyecto}</TableCell>
-                <TableCell sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, maxWidth: 420 }}>
-                  <Tooltip title={tkTablePlainText(c.descripcion ?? "")} arrow placement="top">
-                    <Box
-                      component="span"
-                      sx={TK_TABLE_DESC_CLAMP_SX}
-                      dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(c.descripcion ?? "")) }}
-                    />
-                  </Tooltip>
+                <TableCell sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, color: "text.secondary", whiteSpace: "nowrap" }}>
+                  {commitFecha(commit)}
+                </TableCell>
+                <TableCell sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, maxWidth: 420 }} title={tkTablePlainText(descripcion)}>
+                  <Typography variant="body2" sx={TK_TABLE_DESC_CLAMP_SX}>
+                    {descripcion}
+                  </Typography>
                 </TableCell>
                 <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
-                  <Chip size="small" label={"+" + Number(c.insCount ?? 0)} sx={TK_COMMIT_INS_CHIP_SX} />
+                  <Chip size="small" label={"+" + Number(commit.insCount ?? 0)} sx={TK_COMMIT_INS_CHIP_SX} />
                 </TableCell>
                 <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
-                  <Chip size="small" label={"−" + Number(c.delCount ?? 0)} sx={TK_COMMIT_DEL_CHIP_SX} />
+                  <Chip size="small" label={"−" + Number(commit.delCount ?? 0)} sx={TK_COMMIT_DEL_CHIP_SX} />
                 </TableCell>
-                <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>{Number(c.minutos ?? 0)} min</TableCell>
+                <TableCell align="right" sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, color: "text.secondary" }}>
+                  {Number(commit.minutos ?? 0)} min
+                </TableCell>
               </TableRow>
             );
           })}
+          <TableRow sx={TK_DOC_TABLE_TOTAL_ROW_SX}>
+            <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX} />
+            <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX} />
+            <TableCell sx={TK_DOC_TABLE_BODY_CELL_SX}>
+              <Typography variant="body2" fontWeight={700}>
+                Total · {totalLabel}
+              </Typography>
+            </TableCell>
+            <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
+              <Chip size="small" label={"+" + totals.ins} sx={TK_COMMIT_INS_CHIP_SX} />
+            </TableCell>
+            <TableCell align="right" sx={TK_DOC_TABLE_BODY_CELL_SX}>
+              <Chip size="small" label={"−" + totals.del} sx={TK_COMMIT_DEL_CHIP_SX} />
+            </TableCell>
+            <TableCell align="right" sx={{ ...TK_DOC_TABLE_BODY_CELL_SX, fontWeight: 700 }}>
+              {totals.minutos} min
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </Paper>

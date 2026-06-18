@@ -1,128 +1,290 @@
 /**
+
  * Driver JSX — presentación web del ticket (MUI, tema de la app).
- * Diseño libre: gradientes, glass, responsive. Paralelo a tkHtml.ts (correo).
+
+ * Layout estándar: solicitud → evidencias → causa → verificación → solución → otros → commits → tiempos.
+
  */
+
 import { getMaterialUI } from "../../core/platform.ts";
-import { inlineMdWeb } from "../tkHtml.ts";
+
 import { ticketEstadoCierre } from "../tkHeroAuthors.ts";
-import { extractTicketDocEvidencias, filterDocViewContentBlocks } from "../../core/tk-evidencias.ts";
-import { shouldShowTkResumenPaper, normalizeTkDocBlocks } from "../../core/tk-doc-layout.ts";
-import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
+
+import { buildTkDocViewModel } from "../../core/tk-doc-view-model.ts";
+
+import { isStandardMappedTitle, blockPayloadTitle } from "../../core/tk-doc-sections.ts";
+
 import { TicketMetricsEvidencias } from "../TicketMetricsEvidencias.jsx";
-import { SECTION_META } from "./constants.ts";
+
+import { SECTION_META, TK_DOC_STANDARD } from "./constants.ts";
+
 import { sortBlocks, groupImageBlocks, isInfoTiquete, sectionMetaForBlock, sectionTitleForBlock } from "./blockUtils.ts";
+
 import { HeroHeader } from "./HeroHeader.jsx";
+
 import { SectionCard } from "./SectionCard.jsx";
+
 import { BlockBody } from "./BlockBody.jsx";
+
+import { MdBody } from "./MdBody.jsx";
+
 import { CommitsTable } from "./CommitsTable.jsx";
+
 import { TimeSummary } from "./TimeSummary.jsx";
 
-function renderBlockSection(b, key) {
-  const kind = String(b.kind || "text").toLowerCase();
-  const meta = sectionMetaForBlock(b);
 
-  if (kind === "image-group") {
-    const imgMeta = SECTION_META.image;
-    const { Stack } = getMaterialUI();
-    return (
-      <SectionCard key={key} icon={imgMeta.icon} title={imgMeta.title} accent={imgMeta.accent}>
-        <Stack spacing={2.5}>
-          {(b.blocks || []).map((img, idx) => (
-            <BlockBody key={idx} block={img} />
-          ))}
-        </Stack>
-      </SectionCard>
-    );
-  }
 
-  const title = sectionTitleForBlock(b, meta);
+function renderLaneBlocks(blocks, commits) {
+
+  const { Stack } = getMaterialUI();
+
   return (
-    <SectionCard key={key} icon={meta.icon} title={title} accent={meta.accent}>
-      <BlockBody block={b} />
-    </SectionCard>
+
+    <Stack spacing={2.5}>
+
+      {groupImageBlocks(blocks).map((b, i) => {
+
+        const kind = String(b.kind || "").toLowerCase();
+
+        if (kind === "image-group") {
+
+          return (
+
+            <Stack key={i} spacing={2}>
+
+              {(b.blocks || []).map((img, idx) => (
+
+                <BlockBody key={idx} block={img} commits={commits} />
+
+              ))}
+
+            </Stack>
+
+          );
+
+        }
+
+        return <BlockBody key={i} block={b} commits={commits} />;
+
+      })}
+
+    </Stack>
+
   );
+
 }
 
+
+
+function renderStandardLane(blocks, meta, sectionKey, commits) {
+
+  if (!blocks?.length) return null;
+
+  return (
+
+    <SectionCard sectionKey={sectionKey} icon={meta.icon} title={meta.title} accent={meta.accent}>
+
+      {renderLaneBlocks(blocks, commits)}
+
+    </SectionCard>
+
+  );
+
+}
+
+
+
+function renderBlockSection(b, key, commits) {
+
+  const payloadTitle = blockPayloadTitle(b);
+
+  if (payloadTitle && isStandardMappedTitle(payloadTitle)) return null;
+
+
+
+  const kind = String(b.kind || "text").toLowerCase();
+
+  const meta = sectionMetaForBlock(b);
+
+
+
+  if (kind === "image-group") {
+
+    const imgMeta = SECTION_META.image;
+
+    const { Stack } = getMaterialUI();
+
+    return (
+
+      <SectionCard key={key} icon={imgMeta.icon} title={imgMeta.title} accent={imgMeta.accent}>
+
+        <Stack spacing={2.5}>
+
+          {(b.blocks || []).map((img, idx) => (
+
+            <BlockBody key={idx} block={img} commits={commits} />
+
+          ))}
+
+        </Stack>
+
+      </SectionCard>
+
+    );
+
+  }
+
+
+
+  const title = sectionTitleForBlock(b, meta);
+
+  return (
+
+    <SectionCard key={key} icon={meta.icon} title={title} accent={meta.accent}>
+
+      <BlockBody block={b} commits={commits} />
+
+    </SectionCard>
+
+  );
+
+}
+
+
+
 export function TicketDocWebView({ tk }) {
-  const { Box, Paper, Typography } = getMaterialUI();
+
+  const { Box, Stack, Typography } = getMaterialUI();
+
+
 
   if (!tk) return null;
 
-  const space = String(tk.space ?? "").toUpperCase() || "PATYIA";
-  const iticket = String(tk.iticket ?? "");
-  const tiempos = (tk.tiempos || [])
-    .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
-    .filter((t) => t.name && t.minutos > 0);
 
-  const content = sortBlocks(tk.content).filter((b) => !isInfoTiquete(b, tk));
-  const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
-  const docEvidencias = extractTicketDocEvidencias(tk);
-  const blocks = filterDocViewContentBlocks(
-    normalizeTkDocBlocks(tk, content).filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase())),
-  );
-  const showResumenPaper = shouldShowTkResumenPaper(tk, content);
-  const contexts = tk.contexts || [];
-  const allCommits = [...contexts.flatMap((c) => c.commits || []), ...(tk.rootCommits || [])];
-  const estadoCierre = ticketEstadoCierre(tk);
+
+  const space = String(tk.space ?? "").toUpperCase() || "PATYIA";
+
+  const iticket = String(tk.iticket ?? "");
+
+  const vm = buildTkDocViewModel(tk, {
+
+    sortBlocks,
+
+    isInfoTiquete,
+
+    ticketEstadoCierre,
+
+  });
+
+  const std = TK_DOC_STANDARD;
+
+  const p = vm.sectionPresence;
+
+
 
   return (
+
     <Box className="tk-doc-markdown" sx={{ maxWidth: 920, mx: "auto", width: "100%" }}>
-      <HeroHeader tk={tk} space={space} iticket={iticket} badges={badges} />
 
-      {showResumenPaper && tk.resumen && (
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2.5,
-            p: { xs: 2, sm: 2.5 },
-            borderRadius: TK_DOC_RADIUS,
-            border: 1,
-            borderColor: "divider",
-            background: (t) =>
-              t.palette.mode === "dark"
-                ? "linear-gradient(145deg, rgba(30,41,59,0.6), rgba(15,23,42,0.8))"
-                : "linear-gradient(145deg, #ffffff, #f0f7ff)",
-            boxShadow: (t) => (t.palette.mode === "dark" ? "none" : "0 8px 32px rgba(30,144,255,0.08)"),
-          }}
-        >
-          <Typography
-            variant="body1"
-            sx={{ lineHeight: 1.65 }}
-            dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(tk.resumen)) }}
-          />
-        </Paper>
+      <HeroHeader
+
+        tk={tk}
+
+        space={space}
+
+        iticket={iticket}
+
+        badges={vm.badges}
+
+        sectionDots={vm.sectionDots}
+
+      />
+
+
+
+      {p.solicitud && (
+
+        <SectionCard sectionKey="solicitud" icon={std.solicitud.icon} title={std.solicitud.title} accent={std.solicitud.accent}>
+
+          <Stack spacing={2}>
+
+            {vm.solicitudParts.map((text, i) => (
+
+              <MdBody key={i} text={text} />
+
+            ))}
+
+          </Stack>
+
+        </SectionCard>
+
       )}
 
-      {groupImageBlocks(blocks).map((b, i) => renderBlockSection(b, i))}
 
-      {docEvidencias.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
-          <TicketMetricsEvidencias items={docEvidencias} variant="doc" />
-        </Box>
+
+      {p.evidencias && (
+
+        <SectionCard sectionKey="evidencias" icon={std.evidencias.icon} title={std.evidencias.title} accent={std.evidencias.accent}>
+
+          {vm.evidenciaIntro && (
+
+            <Box sx={{ mb: vm.docEvidencias.length ? 2 : 0 }}>
+
+              <MdBody text={vm.evidenciaIntro} />
+
+            </Box>
+
+          )}
+
+          {vm.docEvidencias.length > 0 && (
+
+            <TicketMetricsEvidencias items={vm.docEvidencias} variant="doc" embedded />
+
+          )}
+
+        </SectionCard>
+
       )}
 
-      {contexts.map((ctx, ci) =>
-        groupImageBlocks(
-          filterDocViewContentBlocks(
-            sortBlocks(ctx.content).filter((b) => !isInfoTiquete(b, tk)),
-          ),
-        ).map((b, bi) => renderBlockSection(b, `ctx-${ci}-${bi}`)),
+
+
+      {p.causa && renderStandardLane(vm.lanes.causa, std.causa, "causa", vm.allCommits)}
+
+      {p.verificacion && renderStandardLane(vm.lanes.verificacion, std.verificacion, "verificacion", vm.allCommits)}
+
+      {p.solucion && renderStandardLane(vm.lanes.solucion, std.solucion, "solucion", vm.allCommits)}
+
+
+
+      {groupImageBlocks(vm.otrosBlocks)
+
+        .map((b, i) => renderBlockSection(b, `otros-${i}`, vm.allCommits))
+
+        .filter(Boolean)}
+
+
+
+      {p.commits && (
+
+        <SectionCard sectionKey="commits" icon={std.commits.icon} title={vm.commitsTitle} accent={std.commits.accent}>
+
+          <CommitsTable commits={vm.allCommits} />
+
+        </SectionCard>
+
       )}
 
-      {allCommits.length > 0 && (
-        <SectionCard icon="mdi:source-commit" title={estadoCierre === "cerrado" ? "Commits que entregan la solución" : "Commits relacionados"} accent="#10b981">
-          <CommitsTable commits={allCommits} />
+
+
+      {p.tiempos && (
+        <SectionCard sectionKey="tiempos" icon={std.tiempos.icon} title={std.tiempos.title} accent={std.tiempos.accent}>
+          <TimeSummary tiempos={vm.tiempos} />
         </SectionCard>
       )}
 
-      {tiempos.length > 0 && (
-        <SectionCard icon="mdi:clock-outline" title="Resumen de tiempos" accent="#f59e0b">
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Distribución del esfuerzo según la naturaleza del trabajo.
-          </Typography>
-          <TimeSummary tiempos={tiempos} />
-        </SectionCard>
-      )}
     </Box>
+
   );
+
 }
+

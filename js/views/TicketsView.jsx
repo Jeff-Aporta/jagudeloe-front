@@ -5,6 +5,7 @@ import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
 import { resolveDocDriver } from "../core/tk-doc.ts";
 import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
+import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/platform.ts";
 import { DateTree, RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
@@ -112,7 +113,11 @@ function TicketDetail(props) {
     let alive = true;
     setState({ loading: true, error: null, tk: null });
     getTicket(props.project, props.iticket)
-      .then((d) => { if (alive) setState({ loading: false, error: null, tk: d.ticket || d }); })
+      .then((d) => {
+        if (!alive) return;
+        const raw = d.ticket || d;
+        setState({ loading: false, error: null, tk: patchTkDocSeed(raw) });
+      })
       .catch((e) => { if (alive) setState({ loading: false, error: e instanceof Error ? e.message : String(e), tk: null }); });
     return () => { alive = false; };
   }, [props.project, props.iticket, props.reloadKey]);
@@ -123,7 +128,7 @@ function TicketDetail(props) {
     refreshTkCodeThemes(htmlRef.current, theme.palette.mode);
   }, [driver, state.loading, state.tk, theme.palette.mode]);
 
-  if (state.loading) return Loading ? <Loading label="Cargando ticket…" /> : <CircularProgress />;
+  if (state.loading) return Loading ? <Loading label="Cargando ticket…" viewport={false} /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
 
   const tk = state.tk || {};
@@ -248,7 +253,7 @@ export function TicketsDiligenciaView(props) {
   const rows = state.rows.slice().sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
   useEffect(() => { if (rows.length && !selected) setSelected(ticketId(rows[0])); }, [state.rows]);
 
-  if (state.loading) return Loading ? <Loading label="Cargando tickets…" /> : <CircularProgress />;
+  if (state.loading) return Loading ? <Loading label="Cargando tickets…" viewport={false} /> : <CircularProgress />;
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
   if (!rows.length) return <Alert severity="info">{"Sin tickets en " + props.project + "."}</Alert>;
 

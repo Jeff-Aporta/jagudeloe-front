@@ -23,7 +23,11 @@ export const UI = {
   get Loading() { return bridge().UI.Loading; },
   get ErrorBox() { return bridge().UI.ErrorBox; },
   get LoginButton() { return bridge().UI.LoginButton; },
-  get SqlBlock() { return bridge().UI.SqlBlock; },
+  get SqlBlock() {
+    const fromBridge = bridge().UI.SqlBlock;
+    if (typeof fromBridge === "function") return fromBridge;
+    return window.ISAJ?.UI?.SqlBlock;
+  },
 };
 
 export const Session = {

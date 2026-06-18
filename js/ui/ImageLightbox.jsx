@@ -33,6 +33,23 @@ function buildThumbSx() {
   };
 }
 
+function buildGridThumbSx() {
+  return {
+    width: "100%",
+    height: "100%",
+    minWidth: 0,
+    minHeight: 0,
+    maxWidth: "none",
+    maxHeight: "none",
+    objectFit: "cover",
+    display: "block",
+    borderRadius: 1,
+    border: 0,
+    boxSizing: "border-box",
+    transition: "transform 0.22s ease, filter 0.22s ease",
+  };
+}
+
 function buildThumbTriggerSx() {
   const { thumbSize } = getLightboxUi();
   return {
@@ -63,6 +80,40 @@ function buildThumbTriggerSx() {
       "& img": {
         transform: "scale(1.08)",
         borderColor: "primary.main",
+        filter: "brightness(1.04)",
+      },
+    },
+    "&:active": { transform: "translateY(0)" },
+    "&:focus-visible": {
+      outline: "2px solid",
+      outlineColor: "primary.main",
+      outlineOffset: 2,
+    },
+  };
+}
+
+function buildGridTriggerSx() {
+  return {
+    position: "relative",
+    display: "block",
+    width: "100%",
+    height: "100%",
+    minWidth: 0,
+    minHeight: 0,
+    borderRadius: 1,
+    overflow: "hidden",
+    cursor: "zoom-in",
+    outline: "none",
+    p: 0,
+    m: 0,
+    boxSizing: "border-box",
+    boxShadow: (t) => (t.palette.mode === "dark" ? "0 2px 10px rgba(0,0,0,0.28)" : "0 4px 14px rgba(15,23,42,0.1)"),
+    transition: "box-shadow 0.22s ease, transform 0.22s ease",
+    "&:hover": {
+      boxShadow: (t) => (t.palette.mode === "dark" ? "0 10px 28px rgba(0,0,0,0.45)" : "0 12px 32px rgba(15,23,42,0.18)"),
+      transform: "translateY(-2px)",
+      "& img": {
+        transform: "scale(1.06)",
         filter: "brightness(1.04)",
       },
     },
@@ -478,14 +529,15 @@ function useZoomPan(open, slideKey) {
 }
 
 /**
- * @param {{ src: string, alt?: string, caption?: string, sx?: object, gallery?: { src: string, alt?: string, caption?: string }[], startIndex?: number }} props
+ * @param {{ src: string, alt?: string, caption?: string, sx?: object, gallery?: { src: string, alt?: string, caption?: string }[], startIndex?: number, variant?: 'thumb' | 'grid' }} props
  */
-export function LightboxImage({ src, alt = "", caption, sx, gallery, startIndex = 0 }) {
+export function LightboxImage({ src, alt = "", caption, sx, gallery, startIndex = 0, variant = "thumb" }) {
   const { useState, useEffect, useCallback, useMemo } = getReact();
   const { Box, Dialog, IconButton, Typography, Stack, Tooltip } = getMaterialUI();
   const { Icon } = UI;
-  const thumbSx = useMemo(() => buildThumbSx(), []);
-  const thumbTriggerSx = useMemo(() => buildThumbTriggerSx(), []);
+  const isGrid = variant === "grid";
+  const thumbSx = useMemo(() => (isGrid ? buildGridThumbSx() : buildThumbSx()), [isGrid]);
+  const thumbTriggerSx = useMemo(() => (isGrid ? buildGridTriggerSx() : buildThumbTriggerSx()), [isGrid]);
 
   const slides = useMemo(() => {
     if (Array.isArray(gallery) && gallery.length) return gallery;

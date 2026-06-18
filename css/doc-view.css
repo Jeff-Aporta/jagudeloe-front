@@ -389,3 +389,46 @@ html[data-mui-color-scheme="dark"] .tk-doc-sequence-neon.is-hover-msg .tk-doc-se
   position: relative;
   z-index: 1;
 }
+
+/* CodeMirror — botón copiar con fondo soft (tk-doc web + html) */
+#root.tk-doc-web .isa-cm-panel__copy,
+#root.tk-doc-html .isa-cm-panel__copy,
+.tk-doc-web-surface .isa-cm-panel__copy {
+  background: rgba(30, 144, 255, 0.1) !important;
+  border: 1px solid rgba(30, 144, 255, 0.26) !important;
+  color: #1e5a9e !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: none !important;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+#root.tk-doc-web .isa-cm-panel__copy:hover,
+#root.tk-doc-html .isa-cm-panel__copy:hover,
+.tk-doc-web-surface .isa-cm-panel__copy:hover {
+  background: rgba(30, 144, 255, 0.16) !important;
+  border-color: rgba(30, 144, 255, 0.38) !important;
+  color: #0b4a82 !important;
+}
+
+html[data-mui-color-scheme="dark"] #root.tk-doc-web .isa-cm-panel__copy,
+html[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy,
+html:not([data-mui-color-scheme="light"]) #root.tk-doc-web .isa-cm-panel__copy,
+html:not([data-mui-color-scheme="light"]) #root.tk-doc-html .isa-cm-panel__copy,
+body[data-mui-color-scheme="dark"] #root.tk-doc-web .isa-cm-panel__copy,
+body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy {
+  background: rgba(30, 144, 255, 0.2) !important;
+  border: 1px solid rgba(30, 144, 255, 0.42) !important;
+  color: #bfdbfe !important;
+}
+
+html[data-mui-color-scheme="dark"] #root.tk-doc-web .isa-cm-panel__copy:hover,
+html[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover,
+html:not([data-mui-color-scheme="light"]) #root.tk-doc-web .isa-cm-panel__copy:hover,
+html:not([data-mui-color-scheme="light"]) #root.tk-doc-html .isa-cm-panel__copy:hover,
+body[data-mui-color-scheme="dark"] #root.tk-doc-web .isa-cm-panel__copy:hover,
+body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
+  background: rgba(30, 144, 255, 0.3) !important;
+  border-color: rgba(125, 211, 252, 0.55) !important;
+  color: #e0f2fe !important;
+}

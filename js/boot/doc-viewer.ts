@@ -5,19 +5,14 @@
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
 import { hydrateTkCodeBlocks } from "../ui/tkCodeHydrate.ts";
 import { bootShimmerHtml } from "../ui/bootShimmer.ts";
+import { isDocLoadHold } from "./url-s.mjs";
+import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 
 const ORCH = {
   local: "http://localhost:8780",
   online: "https://main-orchestrator.jeffaporta.workers.dev",
   lsKey: "gateway:local",
 };
-
-function apiBase(): string {
-  try {
-    if (localStorage.getItem(ORCH.lsKey) === "1") return ORCH.local;
-  } catch { /* ignore */ }
-  return ORCH.online;
-}
 
 function showError(root: HTMLElement, message: string) {
   root.innerHTML = `<p style="margin:0;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#c62828">${message}</p>`;
@@ -38,8 +33,8 @@ export function applyDocPageLayout(driver: "html" | "jsx" = "jsx"): void {
   }
 }
 
-async function fetchTicket(space: string, iticket: string): Promise<Record<string, unknown> | null> {
-  const url = apiBase().replace(/\/$/, "") + "/api/tk/" + encodeURIComponent(space) + "/tickets/" + encodeURIComponent(iticket);
+async function fetchTicketFrom(base: string, space: string, iticket: string): Promise<Record<string, unknown> | null> {
+  const url = base.replace(/\/$/, "") + "/api/tk/" + encodeURIComponent(space) + "/tickets/" + encodeURIComponent(iticket);
   try {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     const data = await res.json().catch(() => ({}));
@@ -48,6 +43,24 @@ async function fetchTicket(space: string, iticket: string): Promise<Record<strin
   } catch {
     return null;
   }
+}
+
+function ticketApiBases(): string[] {
+  const bases: string[] = [];
+  try {
+    if (localStorage.getItem(ORCH.lsKey) === "1") bases.push(ORCH.local);
+  } catch { /* ignore */ }
+  if (!bases.includes(ORCH.online)) bases.push(ORCH.online);
+  return bases;
+}
+
+async function fetchTicket(space: string, iticket: string): Promise<Record<string, unknown> | null> {
+  const bases = ticketApiBases();
+  for (const base of bases) {
+    const ticket = await fetchTicketFrom(base, space, iticket);
+    if (ticket) return ticket;
+  }
+  return null;
 }
 
 function mountHtmlToolbar(tk: Record<string, unknown>) {
@@ -121,7 +134,7 @@ function syncBootTheme(): void {
   if (t?.readMode && t?.applyThemeMode) t.applyThemeMode(t.readMode());
 }
 
-export async function runDocViewer(boot: { space: string; sel: string; driver?: string; reportView?: string }): Promise<void> {
+export async function runDocViewer(boot: { space: string; sel: string; driver?: string; reportView?: string; bootHold?: boolean }): Promise<void> {
   const root = document.getElementById("root");
   if (!root) throw new Error("#root no encontrado");
 
@@ -131,16 +144,17 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
 
   syncBootTheme();
   applyDocPageLayout(driver);
-  root.innerHTML = bootShimmerHtml("Cargando documentación…", {
-    icon: "mdi:file-document-outline",
-    viewport: true,
-  });
+  root.innerHTML = bootShimmerHtml("Cargando documentación…", { viewport: true });
 
-  const tk = await fetchTicket(space, iticket);
-  if (!tk) {
-    showError(root, "No se pudo cargar el ticket.");
+  if (boot.bootHold || isDocLoadHold()) return;
+
+  const raw = await fetchTicket(space, iticket);
+  if (!raw) {
+    const tried = ticketApiBases().join(" → ");
+    showError(root, `No se pudo cargar el ticket. API probada: ${tried}`);
     return;
   }
+  const tk = patchTkDocSeed(raw);
 
   const title = String(tk.iticket || iticket) + " · " + String(tk.titulo || tk.title || "Ticket");
   document.title = title;

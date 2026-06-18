@@ -1,6 +1,6 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
 import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
-import { ticketHasEvidencias } from "./tk-evidencias.ts";
+import { ticketHasCierreEvidencia } from "./tk-evidencias.ts";
 
 export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
 
@@ -21,9 +21,9 @@ export function dotStateLabel(state: DotState | null | undefined): string {
 
 /** Tooltips del dot en listado / chip de ticket (evidencias + aging). */
 export const TICKET_DOT_STATE_LABELS: Partial<Record<DotState, string>> = {
-  complete: "Evidencias subidas",
-  idle: "Sin evidencias",
-  none: "Sin evidencias",
+  complete: "Evidencia de cierre subida",
+  idle: "Sin evidencia de cierre",
+  none: "Sin evidencia de cierre",
   warn: "Diligencia demorada (>7 h hábiles)",
   overdue: "Diligencia muy demorada (>14 h hábiles)",
 };
@@ -162,13 +162,13 @@ export function ticketEstadoDotState(tk: Record<string, unknown>): DotState {
   return "idle";
 }
 
-/** Dot en listado TK: verde con evidencias; gris sin ellas; rojo/naranja si la diligencia abierta se demora. */
+/** Dot en listado TK: verde solo con pantallazo de cierre; gris sin él; rojo/naranja si la diligencia abierta se demora. */
 export function ticketListDotState(
   tk: Record<string, unknown>,
   _revisadoMap?: Record<string, boolean>,
   _revisadoKey?: string,
 ): DotState | null {
-  if (ticketHasEvidencias(tk)) return "complete";
+  if (ticketHasCierreEvidencia(tk)) return "complete";
 
   const input = extractMetricInput(tk);
   const closed =

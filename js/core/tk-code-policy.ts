@@ -14,6 +14,38 @@ export const TK_CODE_OMITTED_NOTE =
   "Fragmento de implementación omitido en la diligencia (solo se documentan **SQL** y **JSON**). " +
   "Ver commits del ticket en el repositorio.";
 
+function collapseBlankLines(code: string): string {
+  return code.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function stripSqlComments(code: string): string {
+  let out = String(code ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const lines = out.split(/\r?\n/).map((line) => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith("--")) return "";
+    return line;
+  });
+  return collapseBlankLines(lines.join("\n"));
+}
+
+function stripJsonComments(code: string): string {
+  let out = String(code ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const lines = out.split(/\r?\n/).map((line) => (/^\s*\/\//.test(line) ? "" : line));
+  return collapseBlankLines(lines.join("\n"));
+}
+
+/** Quita comentarios de bloques SQL/JSON en diligencias (sin guiones dobles, barras ni bloques de comentario). */
+export function stripTkCodeComments(code: unknown, lang: unknown): string {
+  const raw = String(code ?? "");
+  if (!raw.trim()) return raw;
+  return tkCodeLanguageForRender(lang) === "json" ? stripJsonComments(raw) : stripSqlComments(raw);
+}
+
+/** Código listo para CodeMirror / HTML (sin comentarios). */
+export function tkCodeForRender(code: unknown, lang: unknown): string {
+  return stripTkCodeComments(code, lang);
+}
+
 export function isAllowedTkCodeLanguage(lang: unknown): boolean {
   return ALLOWED.has(String(lang ?? "sql").toLowerCase());
 }
@@ -53,6 +85,42 @@ export function stripDisallowedCodeFromHtml(html: unknown): string {
   return out;
 }
 
+function normalizeStepsItems(items: unknown): unknown {
+  if (!Array.isArray(items)) return items;
+  return items.map((raw) => {
+    if (typeof raw === "string") return raw;
+    if (!raw || typeof raw !== "object") return raw;
+    const item = raw as Record<string, unknown>;
+    const kind = String(item.kind ?? "").toLowerCase();
+    if (kind !== "sql" && kind !== "code") return item;
+    const lang = kind === "sql" ? "sql" : item.language;
+    const codeKey = item.code != null ? "code" : item.sql != null ? "sql" : "code";
+    const codeRaw = String(item[codeKey] ?? "");
+    const cleaned = stripTkCodeComments(codeRaw, lang);
+    if (cleaned === codeRaw) return item;
+    return { ...item, [codeKey]: cleaned };
+  });
+}
+
+function normalizeStepsPhases(phases: unknown): unknown {
+  if (!Array.isArray(phases)) return phases;
+  return phases.map((raw) => {
+    if (!raw || typeof raw !== "object") return raw;
+    const phase = raw as Record<string, unknown>;
+    const items = normalizeStepsItems(phase.items);
+    if (items === phase.items) return phase;
+    return { ...phase, items };
+  });
+}
+
+function normalizeCodePayload(p: Record<string, unknown>, lang: string): Record<string, unknown> {
+  const codeKey = p.code != null ? "code" : p.sql != null ? "sql" : p.text != null ? "text" : "";
+  if (!codeKey) return p;
+  const cleaned = stripTkCodeComments(p[codeKey], lang);
+  if (cleaned === String(p[codeKey] ?? "")) return p;
+  return { ...p, [codeKey]: cleaned };
+}
+
 function markdownPayloadFromOmitted(title: string, note = TK_CODE_OMITTED_NOTE): Record<string, unknown> {
   return title ? { title, text: `**${title}**\n\n${note}` } : { text: note };
 }
@@ -85,15 +153,28 @@ export function normalizeTkContentBlock(block: TkContentBlock): TkContentBlock {
       const title = String(p.title ?? "").trim();
       return { ...block, kind: "markdown", payload: markdownPayloadFromOmitted(title) };
     }
-    return p === p0 ? block : { ...block, payload: p };
+    const next = isAllowedTkCodeLanguage(lang) && p.code
+      ? normalizeCodePayload(p, lang)
+      : p;
+    return next === p0 ? block : { ...block, payload: next };
+  }
+
+  if (kind === "steps" || kind === "stepper") {
+    const phases = normalizeStepsPhases(p.phases ?? p.steps);
+    if (phases === (p.phases ?? p.steps)) {
+      return p === p0 ? block : { ...block, payload: p };
+    }
+    const payload = { ...p, ...(Array.isArray(p.phases) ? { phases } : { steps: phases }) };
+    return { ...block, payload };
   }
 
   if (kind !== "code" && kind !== "sql") return block;
 
   const lang = String(p.language ?? (kind === "sql" ? "sql" : "text")).toLowerCase();
   if (isAllowedTkCodeLanguage(lang)) {
-    if (kind === "sql") return { ...block, kind: "code", payload: { ...p, language: "sql" } };
-    return p === p0 ? block : { ...block, payload: p };
+    const cleaned = normalizeCodePayload(p, lang);
+    if (kind === "sql") return { ...block, kind: "code", payload: { ...cleaned, language: "sql" } };
+    return cleaned === p ? block : { ...block, payload: cleaned };
   }
 
   const title = String(p.title ?? "").trim();
@@ -106,6 +187,12 @@ export function normalizeTkContentBlock(block: TkContentBlock): TkContentBlock {
 
 export function normalizeTkContentBlocks(blocks: TkContentBlock[] | undefined): TkContentBlock[] {
   return (blocks ?? []).map(normalizeTkContentBlock);
+}
+
+/** Texto contextual opcional antes de un bloque code/sql (intro, context, lead). */
+export function tkCodeBlockIntro(payload: Record<string, unknown> | undefined): string {
+  const p = payload ?? {};
+  return String(p.intro ?? p.context ?? p.lead ?? "").trim();
 }
 
 /** Lenguaje seguro para CodeBlock / codeBlock HTML (solo sql | json). */

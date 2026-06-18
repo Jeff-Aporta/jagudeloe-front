@@ -1,9 +1,11 @@
-/* Galería de pantallazos InSoft (evidencias R2). */
+/* Galería de pantallazos / evidencias (MUI ImageList + lightbox). */
 import { getReact, getMaterialUI } from "../core/platform.ts";
 import { useGlassColors, glassCardSx } from "./glassSurface.ts";
-import { getLightboxUi } from "../core/app-manifest.ts";
 import { LightboxImage } from "./ImageLightbox.jsx";
 import { TK_DOC_RADIUS } from "../core/tk-table.ts";
+
+const ROW_HEIGHT = 164;
+const GRID_GAP = 8;
 
 function probeImage(url) {
   return new Promise((resolve) => {
@@ -39,67 +41,83 @@ function useLoadedEvidencias(items) {
 
 const EVIDENCIAS_COPY = {
   metricas: {
-    title: "Evidencias InSoft",
-    subtitle: "Pantallazos de apertura, atención, cierre, entrega y métricas del ticket en InSoft.",
+    title: "Evidencias de tiempo",
+    subtitle: "Pantallazos InSoft de apertura, atención, cierre, entrega y métricas del ticket.",
   },
-  doc: {
-    title: "Evidencias",
-    subtitle: "Pantallazos, videos e hitos de la diligencia (reuniones, pruebas, entregables).",
-  },
+  doc: {},
 };
 
-export function TicketMetricsEvidencias({ items, variant = "metricas" }) {
-  const { evidenciasLabelMax } = getLightboxUi();
+export function TicketMetricsEvidencias({ items, variant = "metricas", embedded = false }) {
+  const { useMemo } = getReact();
   const c = useGlassColors();
-  const { Box, Paper, Typography, Stack } = getMaterialUI();
+  const mui = getMaterialUI();
+  const { Box, Paper, Typography, ImageList, ImageListItem } = mui;
   const visible = useLoadedEvidencias(items);
   const copy = EVIDENCIAS_COPY[variant] || EVIDENCIAS_COPY.metricas;
 
+  const gallery = useMemo(
+    () => visible.map((ev) => ({ src: ev.url, alt: ev.label, caption: ev.label })),
+    [visible],
+  );
+
   if (!visible.length) return null;
 
-  const gallery = visible.map((ev) => ({ src: ev.url, alt: ev.label, caption: ev.label }));
+  if (!ImageList || !ImageListItem) return null;
+
+  const galleryEl = (
+    <Box className="tk-evidencias-image-list">
+      <ImageList
+        sx={{
+          width: "100%",
+          m: 0,
+          gridTemplateColumns: {
+            xs: "repeat(2, 1fr) !important",
+            sm: "repeat(3, 1fr) !important",
+            md: "repeat(4, 1fr) !important",
+          },
+        }}
+        cols={3}
+        rowHeight={ROW_HEIGHT}
+        gap={GRID_GAP}
+      >
+        {visible.map((ev, index) => (
+          <ImageListItem
+            key={ev.url}
+            sx={{
+              borderRadius: 1,
+              overflow: "hidden",
+              bgcolor: "action.hover",
+            }}
+          >
+            <LightboxImage
+              variant="grid"
+              src={ev.url}
+              alt={ev.label}
+              caption={ev.label}
+              gallery={gallery}
+              startIndex={index}
+            />
+          </ImageListItem>
+        ))}
+      </ImageList>
+    </Box>
+  );
+
+  if (embedded) return galleryEl;
 
   return (
     <Paper variant="outlined" sx={glassCardSx(c, { p: 2.5, mb: 2, borderRadius: TK_DOC_RADIUS })}>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: c.text, mb: 0.5 }}>
-        {copy.title}
-      </Typography>
-      <Typography variant="body2" sx={{ color: c.muted, mb: 2, fontSize: "0.9rem" }}>
-        {copy.subtitle}
-      </Typography>
-      <Stack direction="row" flexWrap="wrap" useFlexGap spacing={2} sx={{ justifyContent: "flex-start" }}>
-        {visible.map((ev) => (
-          <Box
-            key={ev.url}
-            component="figure"
-            sx={{
-              m: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 0.5,
-              width: evidenciasLabelMax,
-            }}
-          >
-            <LightboxImage src={ev.url} alt={ev.label} caption={ev.label} gallery={gallery} />
-            <Typography
-              component="figcaption"
-              variant="caption"
-              sx={{
-                color: c.muted,
-                fontSize: "0.68rem",
-                fontWeight: 400,
-                lineHeight: 1.25,
-                textAlign: "center",
-                opacity: 0.78,
-                width: "100%",
-              }}
-            >
-              {ev.label}
-            </Typography>
-          </Box>
-        ))}
-      </Stack>
+      {copy.title && (
+        <Typography variant="h6" sx={{ fontWeight: 600, color: c.text, mb: copy.subtitle ? 0.5 : 2 }}>
+          {copy.title}
+        </Typography>
+      )}
+      {copy.subtitle && (
+        <Typography variant="body2" sx={{ color: c.muted, mb: 2, fontSize: "0.9rem" }}>
+          {copy.subtitle}
+        </Typography>
+      )}
+      {galleryEl}
     </Paper>
   );
 }

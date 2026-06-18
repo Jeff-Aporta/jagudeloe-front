@@ -26,6 +26,17 @@ export function tkTablePlainText(raw: unknown): string {
     .trim();
 }
 
+const TK_COMMIT_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/** Fecha de commit para tabla doc — solo día y mes (ej. «17 jun»). */
+export function formatTkCommitFecha(raw: unknown): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "—";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.getDate()} ${TK_COMMIT_MONTHS[d.getMonth()]}`;
+}
+
 /** Estilo web unificado — tablas de diligencia (contenido + commits). */
 export const TK_DOC_TABLE_PAPER_SX = { overflow: "auto", borderRadius: TK_DOC_RADIUS };
 
@@ -45,6 +56,46 @@ export const TK_DOC_TABLE_BODY_CELL_SX = {
   borderColor: "divider",
   verticalAlign: "top",
 };
+
+/** Fila de resumen al pie de tablas de commits. */
+export const TK_DOC_TABLE_TOTAL_ROW_SX = {
+  bgcolor: "action.selected",
+  "& td": {
+    fontWeight: 700,
+    borderTop: 2,
+    borderColor: "divider",
+    borderBottom: 0,
+  },
+  "&:hover": { bgcolor: "action.selected" },
+};
+
+/** Minutos de diligencia — siempre múltiplos de 5 (redondeo al más cercano). */
+export function roundTkMinutosTo5(raw: unknown): number {
+  const v = Math.round(Number(raw ?? 0));
+  if (v <= 0) return 0;
+  return Math.round(v / 5) * 5;
+}
+
+export function computeCommitTotals(commits: unknown[]): {
+  count: number;
+  ins: number;
+  del: number;
+  minutos: number;
+} {
+  const list = Array.isArray(commits) ? commits : [];
+  return list.reduce(
+    (acc, raw) => {
+      const c = (raw ?? {}) as Record<string, unknown>;
+      return {
+        count: acc.count + 1,
+        ins: acc.ins + Number(c.insCount ?? 0),
+        del: acc.del + Number(c.delCount ?? 0),
+        minutos: acc.minutos + Number(c.minutos ?? 0),
+      };
+    },
+    { count: 0, ins: 0, del: 0, minutos: 0 },
+  );
+}
 
 /** Ins/Del en tabla de commits — fondo suave (alineado con pill del correo HTML). */
 export const TK_COMMIT_INS_CHIP_SX = {
@@ -72,6 +123,15 @@ export const TK_COMMIT_DEL_CHIP_SX = {
 };
 
 /** Chips del catálogo footer — fondo suave, sin outline. */
+export function tkCatalogCurrentChipBg(theme: {
+  palette: { mode: string; primary: { main: string } };
+}): string {
+  const main = theme.palette.primary.main;
+  return theme.palette.mode === "dark"
+    ? `color-mix(in srgb, ${main} 75%, black)`
+    : `color-mix(in srgb, ${main} 85%, white)`;
+}
+
 export const TK_CATALOG_CHIP_SX = {
   height: 26,
   minHeight: 26,

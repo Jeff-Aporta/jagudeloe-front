@@ -58,6 +58,12 @@ export function writeDocReportView(reportView, search = location.search) {
   history.replaceState(null, "", url);
 }
 
+/** ?isa_doc_load_hold o s.bootHold — mantiene el shimmer del doc-viewer (QA visual). */
+export function isDocLoadHold(search = location.search) {
+  if (new URLSearchParams(search).has("isa_doc_load_hold")) return true;
+  return decodeS(search).bootHold === true;
+}
+
 /** Vista documento: solo ticket, sin shell. driver: html (correo) | jsx (web). */
 export function docBootFromSearch(search = location.search) {
   const s = decodeS(search);
@@ -67,5 +73,6 @@ export function docBootFromSearch(search = location.search) {
   if (!space || !sel) return null;
   const driver = s.driver === "html" ? "html" : "jsx";
   const reportView = parseDocReportView(search);
-  return { space, sel, driver, reportView };
+  const bootHold = s.bootHold === true || new URLSearchParams(search).has("isa_doc_load_hold");
+  return { space, sel, driver, reportView, bootHold };
 }

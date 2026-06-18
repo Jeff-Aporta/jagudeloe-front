@@ -6,6 +6,7 @@ export type MdBlock =
   | { type: "paragraph"; text: string }
   | { type: "heading"; text: string }
   | { type: "bullet"; text: string }
+  | { type: "ordered-list"; items: string[] }
   | { type: "table"; table: MdTable };
 
 const MD_TABLE_ROW = /^\|.+\|$/;
@@ -116,6 +117,22 @@ function recoverBlocks(blocks: MdBlock[]): MdBlock[] {
   return out;
 }
 
+const ORDERED_ITEM_RX = /^\d+\.\s+(.*)$/;
+
+function parseOrderedListLines(lines: string[], start: number): { items: string[]; next: number } {
+  const items: string[] = [];
+  let j = start;
+  while (j < lines.length) {
+    const raw = lines[j].trim();
+    if (!raw) break;
+    const m = raw.match(ORDERED_ITEM_RX);
+    if (!m) break;
+    items.push(m[1].trim());
+    j += 1;
+  }
+  return { items, next: j };
+}
+
 /** Parte texto markdown en bloques estructurados. */
 export function splitMarkdownBlocks(text: unknown): MdBlock[] {
   const out: MdBlock[] = [];
@@ -145,6 +162,16 @@ export function splitMarkdownBlocks(text: unknown): MdBlock[] {
       flushPara();
       out.push({ type: "bullet", text: line.replace(/^[-*]\s+/, "") });
       continue;
+    }
+
+    if (ORDERED_ITEM_RX.test(line)) {
+      flushPara();
+      const { items, next } = parseOrderedListLines(lines, li);
+      if (items.length) {
+        out.push({ type: "ordered-list", items });
+        li = next - 1;
+        continue;
+      }
     }
 
     if (isMdTableLine(line)) {

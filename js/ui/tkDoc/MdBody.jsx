@@ -2,6 +2,7 @@ import { getMaterialUI } from "../../core/platform.ts";
 import { inlineMdWeb } from "../tkHtml.ts";
 import { splitMarkdownBlocks } from "../../core/tk-markdown.ts";
 import { DataTable } from "./DataTable.jsx";
+import { MdList } from "./MdList.jsx";
 
 export function MdBody({ text }) {
   const { Box, Typography } = getMaterialUI();
@@ -35,6 +36,11 @@ export function MdBody({ text }) {
           </Typography>
         </Box>,
       );
+      continue;
+    }
+
+    if (block.type === "ordered-list") {
+      out.push(<MdList key={out.length} ordered items={block.items} />);
       continue;
     }
 

@@ -1,6 +1,7 @@
 /* Bloque de código de solo lectura — delega en ISAFront.CodeMirrorPanel. */
 import { getMaterialUI } from "../core/platform.ts";
 import { TK_DOC_RADIUS } from "../core/tk-table.ts";
+import { tkCodeLanguageForRender, tkCodeForRender } from "../core/tk-code-policy.ts";
 
 function cmMode(lang) {
   const l = String(lang || "sql").toLowerCase();
@@ -15,7 +16,7 @@ export function CodeBlock(props) {
     const l = String(props.language || "sql").toLowerCase();
     return l === "json" ? "json" : "sql";
   })();
-  const code = String(props.code ?? "");
+  const code = tkCodeForRender(props.code ?? "", lang);
   const modeOpts = cmMode(lang);
 
   if (!Panel) {
