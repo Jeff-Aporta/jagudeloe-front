@@ -1,5 +1,6 @@
 /** Etiquetas del hero del ticket (creador del tiquete vs quien documenta la solución). */
 import { extractMetricInput } from "../core/tk-metrics.ts";
+import { ticketTiempoEvidenciasCompletas } from "../core/tk-evidencias.ts";
 
 const HONORIFIC_RE = /^(Asesora|Asesor|Ingeniero|Ingeniera|Ing\.?)\s+/i;
 
@@ -59,17 +60,15 @@ export function ticketReasignadoA(tk: Record<string, unknown>): string {
 }
 
 export function ticketEstadoCierre(tk: Record<string, unknown>): string {
-  const input = extractMetricInput(tk);
-  if (input.fechaCierre || tk.fechaEntrega || tk.FECHAENTREGA) return "cerrado";
+  if (ticketTiempoEvidenciasCompletas(tk)) return "cerrado";
 
   const estado = String(tk.estado ?? "").toLowerCase();
   if (estado) return estado;
 
   const doc = ticketDocBag(tk);
   const cierre = String(doc.cierreEmpresa ?? "").toLowerCase();
-  if (cierre.includes("solucionado") || cierre.includes("cerrado")) return "cerrado";
   if (cierre.includes("abierto")) return "abierto";
-  return estado;
+  return estado || "abierto";
 }
 
 /** Etiqueta del hero según cierre real del ticket (no siempre “solucionado”). */
@@ -95,7 +94,17 @@ export function resolveDocumentadorBlock(tk: Record<string, unknown>): {
   if (reasignado && estado !== "cerrado") {
     nota = `Desarrollo reasignado a ${reasignado} · ticket abierto en InSoft`;
   } else if (estado === "abierto") {
-    nota = "Ticket abierto en InSoft";
+    const input = extractMetricInput(tk);
+    const doc = ticketDocBag(tk);
+    const cierreMeta = String(doc.cierreEmpresa ?? "").toLowerCase();
+    const fechasSinEvidencia =
+      !!input.fechaCierre ||
+      !!input.horaInicioAtencion ||
+      cierreMeta.includes("cerrado") ||
+      cierreMeta.includes("solucionado");
+    nota = fechasSinEvidencia
+      ? "Faltan pantallazos InSoft de apertura, atención o cierre en R2"
+      : "Ticket abierto en InSoft";
   }
   return {
     label: resolveDocumentadorLabel(tk),

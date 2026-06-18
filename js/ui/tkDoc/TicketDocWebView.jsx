@@ -18,7 +18,7 @@ import { TicketMetricsEvidencias } from "../TicketMetricsEvidencias.jsx";
 
 import { SECTION_META, TK_DOC_STANDARD } from "./constants.ts";
 
-import { sortBlocks, groupImageBlocks, isInfoTiquete, sectionMetaForBlock, sectionTitleForBlock } from "./blockUtils.ts";
+import { sortBlocks, groupImageBlocks, imageBlocksToGalleryItems, isImageBlock, isInfoTiquete, sectionMetaForBlock, sectionTitleForBlock } from "./blockUtils.ts";
 
 import { HeroHeader } from "./HeroHeader.jsx";
 
@@ -34,44 +34,32 @@ import { TimeSummary } from "./TimeSummary.jsx";
 
 
 
-function renderLaneBlocks(blocks, commits) {
+function renderImageGallery(blocks, key) {
+  const items = imageBlocksToGalleryItems(blocks);
+  if (!items.length) return null;
+  return <TicketMetricsEvidencias key={key} items={items} embedded />;
+}
 
+function renderLaneBlocks(blocks, commits) {
   const { Stack } = getMaterialUI();
 
   return (
-
     <Stack spacing={2.5}>
-
       {groupImageBlocks(blocks).map((b, i) => {
-
         const kind = String(b.kind || "").toLowerCase();
 
         if (kind === "image-group") {
+          return renderImageGallery(b.blocks, i);
+        }
 
-          return (
-
-            <Stack key={i} spacing={2}>
-
-              {(b.blocks || []).map((img, idx) => (
-
-                <BlockBody key={idx} block={img} commits={commits} />
-
-              ))}
-
-            </Stack>
-
-          );
-
+        if (isImageBlock(b)) {
+          return renderImageGallery([b], i);
         }
 
         return <BlockBody key={i} block={b} commits={commits} />;
-
       })}
-
     </Stack>
-
   );
-
 }
 
 
@@ -109,29 +97,21 @@ function renderBlockSection(b, key, commits) {
 
 
   if (kind === "image-group") {
-
     const imgMeta = SECTION_META.image;
-
-    const { Stack } = getMaterialUI();
-
     return (
-
       <SectionCard key={key} icon={imgMeta.icon} title={imgMeta.title} accent={imgMeta.accent}>
-
-        <Stack spacing={2.5}>
-
-          {(b.blocks || []).map((img, idx) => (
-
-            <BlockBody key={idx} block={img} commits={commits} />
-
-          ))}
-
-        </Stack>
-
+        {renderImageGallery(b.blocks, key)}
       </SectionCard>
-
     );
+  }
 
+  if (isImageBlock(b)) {
+    const imgMeta = SECTION_META.image;
+    return (
+      <SectionCard key={key} icon={imgMeta.icon} title={imgMeta.title} accent={imgMeta.accent}>
+        {renderImageGallery([b], key)}
+      </SectionCard>
+    );
   }
 
 

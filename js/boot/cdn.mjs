@@ -1,5 +1,5 @@
 /** Pin jsDelivr front-shared — alinear con front-shared/cdn/versions.json (origin/main). */
-export const PIN = "bcc5453";
+export const PIN = "a5a6597";
 
 const isDevHost =
   typeof location !== "undefined" && /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);

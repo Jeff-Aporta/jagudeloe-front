@@ -6,7 +6,7 @@ import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 import { TicketMetricsDocument } from "../views/TicketMetricsView.jsx";
 import { TicketCatalogFooter } from "../ui/TicketCatalogFooter.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
-import { CopyReportLinkButton } from "../ui/CopyReportLinkButton.jsx";
+import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReportLinkButton.jsx";
 import { tkDocPageSx } from "../ui/tkDocSurface.ts";
 import { getTicket } from "../api/client.ts";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
@@ -110,6 +110,13 @@ function DocWebPage({ tk: initialTk, space, iticket: initialIticket, initialRepo
           iticket={ticketId}
           report={reportView === "metricas" ? "metricas" : "diligencia"}
           driver="jsx"
+        />
+        <CopyReportLinkHtmlButton
+          space={project}
+          iticket={ticketId}
+          report={reportView === "metricas" ? "metricas" : "diligencia"}
+          driver="jsx"
+          titulo={tk?.titulo || tk?.title}
         />
         {ThemeSwitch ? <ThemeSwitch mode={tm.mode} onToggle={tm.toggle} /> : null}
       </Box>

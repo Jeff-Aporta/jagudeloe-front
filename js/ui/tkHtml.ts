@@ -11,6 +11,7 @@ import { tkLinkHtml } from "../core/tk-doc.ts";
 import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS, computeCommitTotals } from "../core/tk-table.ts";
 import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
 import { filterDocViewContentBlocks } from "../core/tk-evidencias.ts";
+import { extractTipoSolicitudApertura, tipoSolicitudDisplayLabel } from "../core/tk-normativa.ts";
 import { parsePhaseItems, phaseListFromPayload } from "../core/tk-doc-steps.ts";
 
 const C = {
@@ -516,15 +517,13 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
 
   const hasStructuredTiempos = hasStructuredTicketTiempos(tk);
   const content = sortBlocks((tk.content as TkBlock[]) ?? []).filter((b) => !shouldSkipTicketContentBlock(b, tk));
-  const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
+  const tipoLabel = tipoSolicitudDisplayLabel(extractTipoSolicitudApertura(tk));
+  const badgesHtml = tipoLabel
+    ? `<div style="margin-top:10px;"><span style="${FONT}display:inline-block;font-size:11px;font-weight:bold;color:#cfe4fa;border:1px solid #3d6c9c;border-radius:12px;padding:2px 10px;margin:0 6px 6px 0;background:rgba(255,255,255,0.06);">${esc(tipoLabel)}</span></div>`
+    : "";
   const blocks = filterDocViewContentBlocks(
     content.filter((b) => !["badge", "chip"].includes(String(b.kind).toLowerCase())),
   );
-
-  // Hero — badge TK (blanco/negro) primero; solicitante sin fecha
-  const heroBadge = (b: TkBlock) =>
-    `<span style="${FONT}display:inline-block;font-size:11px;font-weight:bold;color:#cfe4fa;border:1px solid #3d6c9c;border-radius:12px;padding:2px 10px;margin:0 6px 6px 0;background:rgba(255,255,255,0.06);">${esc((b.payload && (b.payload.label ?? b.payload.text)) ?? "")}</span>`;
-  const badgesHtml = badges.length ? `<div style="margin-top:10px;">${badges.map(heroBadge).join("")}</div>` : "";
   const tkBadge = iticket
     ? `<span style="${FONT}display:inline-block;font-size:11px;font-weight:700;color:#111111;background:#ffffff;border-radius:4px;padding:3px 10px;margin:0 0 8px 0;letter-spacing:0.3px;">${iticket}</span>`
     : "";

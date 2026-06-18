@@ -144,6 +144,37 @@ export const TK1439155_CONTENT_TAIL: Record<string, unknown>[] = [
     },
   },
   {
+    kind: "markdown",
+    sortKey: 20.5,
+    payload: {
+      title: "Evidencia de pruebas post-fix",
+      text:
+        "Tras republicar en staging se repitió la conversación de prueba (reset de clave **jperez**). Las capturas confirman el modelo **`gpt-4o-mini-2024-07-18`** en la respuesta de Paty y **`gpt-4o-mini`** en el catálogo de instrucciones por tipo (**SOLICITUD_NO_PERMITIDA**), alineado con la configuración del área funcional.",
+    },
+  },
+  {
+    kind: "image",
+    sortKey: 20.6,
+    payload: {
+      docLane: "solucion",
+      url: "https://pub-1c290cc606c8478899f5764899278571.r2.dev/patyia/diligencias/tk1439155-chatFix-insoft.png",
+      alt: "Chat PatyIA post-fix — modelo gpt-4o-mini",
+      caption:
+        "Prueba staging — chat PatyIA: **gpt-4o-mini-2024-07-18** en respuesta (clasificación SOLICITUD_NO_PERMITIDA + turno conversacional).",
+    },
+  },
+  {
+    kind: "image",
+    sortKey: 20.7,
+    payload: {
+      docLane: "solucion",
+      url: "https://pub-1c290cc606c8478899f5764899278571.r2.dev/patyia/diligencias/tk1439155-promptsFix-insoft.png",
+      alt: "Prompts PatyIA — catálogo gpt-4o-mini por tipo",
+      caption:
+        "ISA PatyIA Prompts — instrucciones por tipo (p. ej. **SOLICITUD_NO_PERMITIDA**) en **gpt-4o-mini**.",
+    },
+  },
+  {
     kind: "file-tree",
     sortKey: 21,
     payload: {

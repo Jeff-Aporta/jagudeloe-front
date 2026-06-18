@@ -66,13 +66,14 @@ const TIPOS_SIN_EVIDENCIA_PROBLEMA = [
 
 export function isTicketSinEvidenciaProblema(tk: Record<string, unknown>): boolean {
   const tipo = normalizeTipoSolicitudApertura(extractTipoSolicitudApertura(tk));
-  if (tipo && TIPOS_SIN_EVIDENCIA_PROBLEMA.some((t) => tipo.startsWith(t))) return true;
+  if (!tipo) return false;
+  return TIPOS_SIN_EVIDENCIA_PROBLEMA.some((t) => tipo.startsWith(t));
+}
 
-  const norm = (tk.normativa || {}) as Record<string, unknown>;
-  const tipoSol = String(norm.tipoSolucion ?? "").trim().toLowerCase();
-  if (tipoSol === "no aplica" || tipoSol.includes("no aplica")) return true;
-
-  return false;
+/** Etiqueta legible para hero / detalle (sin prefijo «1 - » ni paréntesis InSoft). */
+export function tipoSolicitudDisplayLabel(full: string | null | undefined): string {
+  if (!full) return "";
+  return stripTipoSolicitudDisplay(String(full));
 }
 
 /** Abreviaturas conocidas para chips en sidebar (texto completo queda en tooltip / detalle). */

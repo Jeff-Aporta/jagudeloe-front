@@ -173,7 +173,22 @@ const TK1439155_R2_SUBIDAS = [
   "patyia/diligencias/tk1439155-prompts-insoft.png",
   "patyia/diligencias/tk1439155-chat-insoft.png",
   "patyia/diligencias/tk1439155-trazabilidad-insoft.png",
+  "patyia/diligencias/tk1439155-chatFix-insoft.png",
+  "patyia/diligencias/tk1439155-promptsFix-insoft.png",
 ];
+
+const TK1439155_EVIDENCIAS_TIEMPO = [
+  {
+    key: "patyia/diligencias/tk1439155-solicitud-insoft.png",
+    rol: "solicitud",
+    hitos: ["apertura"],
+  },
+  {
+    key: "patyia/diligencias/tk1439155-metricas-insoft.png",
+    rol: "metricas",
+    hitos: ["apertura", "atencion", "cierre"],
+  },
+] as const;
 
 const TK1439155_METRICAS_PATCH = {
   horaInicioAtencion: "17/jun./2026 09:38:47 pm",
@@ -182,6 +197,7 @@ const TK1439155_METRICAS_PATCH = {
   documentacion: {
     cierreEmpresa: "Solucionado",
     imagenesR2Subidas: TK1439155_R2_SUBIDAS,
+    evidenciasTiempo: [...TK1439155_EVIDENCIAS_TIEMPO],
     evidenciasSubidas: true,
   },
 };

@@ -3,6 +3,8 @@
  * Zona: America/Bogota (UTC-5, sin DST).
  */
 
+import { tiempoEvidenciaCoverage } from "./tk-evidencias.ts";
+
 export interface WorkSchedule {
   dayStart: { h: number; m: number };
   dayEnd: { h: number; m: number };
@@ -524,6 +526,16 @@ export function computeTicketMetrics(input: TicketMetricInput, schedule = DEFAUL
   };
 }
 
+function gateMetricsByTiempoEvidencias(result: TicketMetricResult, tk: Record<string, unknown>): TicketMetricResult {
+  const c = tiempoEvidenciaCoverage(tk);
+  return {
+    ...result,
+    minutosHastaAtencion: c.apertura && c.atencion ? result.minutosHastaAtencion : null,
+    minutosAtencionActiva: c.atencion && c.cierre ? result.minutosAtencionActiva : null,
+    minutosTotalSolucion: c.apertura && c.atencion && c.cierre ? result.minutosTotalSolucion : null,
+  };
+}
+
 export function computeFromTicket(tk: Record<string, unknown>): TicketMetricResult {
-  return computeTicketMetrics(extractMetricInput(tk));
+  return gateMetricsByTiempoEvidencias(computeTicketMetrics(extractMetricInput(tk)), tk);
 }

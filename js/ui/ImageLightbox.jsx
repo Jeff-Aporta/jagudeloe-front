@@ -12,6 +12,39 @@ const NAV_FADE = "0.75s ease-out";
 const PAN_EDGE_BLEED = 30;
 const PAN_STEP = 40;
 const PAN_DRAG_SENSITIVITY = 1;
+/** Sensibilidad pinch trackpad (Ctrl+rueda) y gestos. */
+const PINCH_WHEEL_SCALE = 0.004;
+const PINCH_WHEEL_SCALE_LINE = 0.06;
+
+function normalizeWheelDelta(e) {
+  let dy = e.deltaY;
+  if (e.deltaMode === 1) dy *= 16;
+  else if (e.deltaMode === 2) dy *= window.innerHeight || 800;
+  return dy;
+}
+
+/** Pinch trackpad (Chrome/Edge/Firefox): rueda + Ctrl/Meta. */
+function isPinchWheel(e) {
+  return e.ctrlKey || e.metaKey;
+}
+
+function wheelZoomDelta(e) {
+  const dy = normalizeWheelDelta(e);
+  if (isPinchWheel(e)) {
+    const scale = e.deltaMode === 1 ? PINCH_WHEEL_SCALE_LINE : PINCH_WHEEL_SCALE;
+    return -dy * scale;
+  }
+  if (Math.abs(dy) < 4) return -dy * 0.0025;
+  return dy > 0 ? -ZOOM_STEP : ZOOM_STEP;
+}
+
+function pointerDistance(a, b) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+function pointerCenter(a, b) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
 
 function buildThumbSx() {
   const { thumbSize } = getLightboxUi();
@@ -191,48 +224,58 @@ function overlayBtnSx(visible) {
 const toolbarBtnSx = {
   width: 32,
   height: 32,
-  color: "rgba(255,255,255,0.92)",
-  bgcolor: "rgba(255,255,255,0.08)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  transition: "background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease",
-  "&:hover": { bgcolor: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.22)" },
-  "&.Mui-disabled": { color: "rgba(255,255,255,0.28)", bgcolor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.06)" },
+  p: 0,
+  color: "rgba(255,255,255,0.9)",
+  bgcolor: "rgba(255,255,255,0.1)",
+  border: "none",
+  borderRadius: 1,
+  boxShadow: "none",
+  transition: "background-color 0.2s ease, opacity 0.2s ease",
+  "&:hover": { bgcolor: "rgba(255,255,255,0.16)", boxShadow: "none" },
+  "&.Mui-focusVisible": { outline: "2px solid rgba(255,255,255,0.35)", outlineOffset: 1 },
+  "&.Mui-disabled": { color: "rgba(255,255,255,0.3)", bgcolor: "rgba(255,255,255,0.05)" },
 };
 
 const toolbarShellSx = {
-  alignSelf: "center",
+  alignSelf: "flex-end",
   display: "inline-flex",
   alignItems: "center",
   gap: 1,
-  px: 1.25,
-  py: 0.5,
-  borderRadius: 999,
-  bgcolor: "rgba(8,12,20,0.72)",
-  backdropFilter: "blur(14px)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  boxShadow: "0 10px 36px rgba(0,0,0,0.38)",
+  px: 1,
+  py: 0.75,
+  borderRadius: 1.5,
+  bgcolor: "rgba(255,255,255,0.06)",
+  backdropFilter: "blur(10px)",
+  border: "none",
+  boxShadow: "none",
   flexShrink: 0,
   zIndex: 3,
 };
 
 const toolbarDividerSx = {
   width: "1px",
-  height: 22,
-  bgcolor: "rgba(255,255,255,0.14)",
+  alignSelf: "stretch",
+  minHeight: 24,
+  my: 0.25,
+  bgcolor: "rgba(255,255,255,0.1)",
   flexShrink: 0,
 };
 
 const zoomBadgeSx = {
-  minWidth: 46,
-  px: 0.75,
-  py: 0.25,
-  borderRadius: 999,
-  bgcolor: "rgba(255,255,255,0.1)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  color: "rgba(255,255,255,0.92)",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 44,
+  height: 32,
+  px: 1,
+  borderRadius: 1,
+  bgcolor: "rgba(255,255,255,0.08)",
+  border: "none",
+  color: "rgba(255,255,255,0.9)",
   fontSize: 12,
-  fontWeight: 700,
-  lineHeight: 1.4,
+  fontWeight: 600,
+  lineHeight: 1,
+  letterSpacing: 0.2,
   textAlign: "center",
   userSelect: "none",
   fontVariantNumeric: "tabular-nums",
@@ -247,6 +290,7 @@ function PanPad({ canPan, panBy }) {
     width: 26,
     height: 26,
     p: 0,
+    borderRadius: 0.75,
   };
 
   const padBtn = (label, icon, onClick, sx) => (
@@ -383,6 +427,27 @@ function useZoomPan(open, slideKey) {
     [syncPan],
   );
 
+  const applyZoomLevel = useCallback(
+    (nextZoom, clientX, clientY) => {
+      const z1 = zoomRef.current;
+      const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +nextZoom.toFixed(2)));
+      if (next === z1) return;
+      const viewport = viewportRef.current;
+      let mx = 0;
+      let my = 0;
+      if (viewport) {
+        const rect = viewport.getBoundingClientRect();
+        mx = clientX - rect.left - rect.width / 2;
+        my = clientY - rect.top - rect.height / 2;
+      }
+      const p2 = panForZoomAtPoint(panRef.current, mx, my, z1, next);
+      zoomRef.current = next;
+      setZoom(next);
+      syncPan(p2);
+    },
+    [syncPan],
+  );
+
   const zoomIn = useCallback(() => {
     const anchor = viewportAnchor(viewportRef.current);
     applyZoomDelta(ZOOM_STEP, anchor.x, anchor.y);
@@ -395,29 +460,98 @@ function useZoomPan(open, slideKey) {
 
   const applyZoomDeltaRef = useRef(applyZoomDelta);
   applyZoomDeltaRef.current = applyZoomDelta;
+  const applyZoomLevelRef = useRef(applyZoomLevel);
+  applyZoomLevelRef.current = applyZoomLevel;
+  const pointersRef = useRef(new Map());
+  const pinchRef = useRef(null);
+  const gestureZoomRef = useRef(1);
+
+  const isEventInViewport = useCallback((target) => {
+    const vp = viewportRef.current;
+    return Boolean(vp && target && vp.contains(target));
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
 
-    const blockPageScroll = (e) => {
-      e.preventDefault();
+    const blockBrowserPinchZoom = (e) => {
+      if (isPinchWheel(e)) e.preventDefault();
     };
-    window.addEventListener("wheel", blockPageScroll, { passive: false, capture: true });
+    window.addEventListener("wheel", blockBrowserPinchZoom, { passive: false, capture: true });
 
-    const el = viewportRef.current;
-    const onViewportWheel = (e) => {
+    const onWheelZoom = (e) => {
+      const inViewport = isEventInViewport(e.target);
+      if (!inViewport && !isPinchWheel(e)) return;
+
+      if (isPinchWheel(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = wheelZoomDelta(e);
+        if (delta) applyZoomDeltaRef.current(delta, e.clientX, e.clientY);
+        return;
+      }
+
+      if (!inViewport) return;
       e.preventDefault();
       e.stopPropagation();
-      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      applyZoomDeltaRef.current(delta, e.clientX, e.clientY);
+
+      if (zoomRef.current > 1) {
+        syncPan({
+          x: panRef.current.x - e.deltaX * 0.85,
+          y: panRef.current.y - e.deltaY * 0.85,
+        });
+        return;
+      }
+
+      const delta = wheelZoomDelta(e);
+      if (delta) applyZoomDeltaRef.current(delta, e.clientX, e.clientY);
     };
-    if (el) el.addEventListener("wheel", onViewportWheel, { passive: false });
+    document.addEventListener("wheel", onWheelZoom, { passive: false, capture: true });
+
+    let gestureEl = viewportRef.current;
+    const gestureCleanups = [];
+
+    const onGestureStart = (e) => {
+      e.preventDefault();
+      gestureZoomRef.current = zoomRef.current;
+    };
+    const onGestureChange = (e) => {
+      e.preventDefault();
+      const next = gestureZoomRef.current * (e.scale || 1);
+      applyZoomLevelRef.current(next, e.clientX, e.clientY);
+    };
+    const onGestureEnd = (e) => {
+      e.preventDefault();
+      gestureZoomRef.current = zoomRef.current;
+    };
+
+    const attachGestures = (node) => {
+      if (!node) return;
+      node.addEventListener("gesturestart", onGestureStart, { passive: false });
+      node.addEventListener("gesturechange", onGestureChange, { passive: false });
+      node.addEventListener("gestureend", onGestureEnd, { passive: false });
+      gestureCleanups.push(() => {
+        node.removeEventListener("gesturestart", onGestureStart);
+        node.removeEventListener("gesturechange", onGestureChange);
+        node.removeEventListener("gestureend", onGestureEnd);
+      });
+    };
+
+    if (gestureEl) attachGestures(gestureEl);
+    else {
+      const raf = requestAnimationFrame(() => {
+        gestureEl = viewportRef.current;
+        if (gestureEl) attachGestures(gestureEl);
+      });
+      gestureCleanups.push(() => cancelAnimationFrame(raf));
+    }
 
     return () => {
-      window.removeEventListener("wheel", blockPageScroll, { capture: true });
-      if (el) el.removeEventListener("wheel", onViewportWheel);
+      window.removeEventListener("wheel", blockBrowserPinchZoom, { capture: true });
+      document.removeEventListener("wheel", onWheelZoom, { capture: true });
+      gestureCleanups.forEach((fn) => fn());
     };
-  }, [open, slideKey]);
+  }, [open, slideKey, isEventInViewport, syncPan]);
 
   const applyDragPan = useCallback(
     (commit = false) => {
@@ -440,6 +574,25 @@ function useZoomPan(open, slideKey) {
 
   const onPanStart = useCallback(
     (e) => {
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointersRef.current.size >= 2) {
+        dragging.current = false;
+        pointerRef.current = null;
+        const pts = [...pointersRef.current.values()];
+        const a = pts[pts.length - 2];
+        const b = pts[pts.length - 1];
+        const center = pointerCenter(a, b);
+        pinchRef.current = {
+          dist0: Math.max(pointerDistance(a, b), 24),
+          zoom0: zoomRef.current,
+          cx: center.x,
+          cy: center.y,
+        };
+        e.preventDefault();
+        return;
+      }
+
       if (zoomRef.current <= 1 || e.button !== 0) return;
       dragging.current = true;
       pointerRef.current = e.pointerId;
@@ -453,6 +606,24 @@ function useZoomPan(open, slideKey) {
 
   const onPanMove = useCallback(
     (e) => {
+      if (pointersRef.current.has(e.pointerId)) {
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      if (pointersRef.current.size >= 2 && pinchRef.current) {
+        const pts = [...pointersRef.current.values()];
+        if (pts.length >= 2) {
+          const a = pts[pts.length - 2];
+          const b = pts[pts.length - 1];
+          const dist = Math.max(pointerDistance(a, b), 8);
+          const { dist0, zoom0, cx, cy } = pinchRef.current;
+          const next = zoom0 * (dist / dist0);
+          applyZoomLevelRef.current(next, cx, cy);
+        }
+        e.preventDefault();
+        return;
+      }
+
       if (!dragging.current || pointerRef.current !== e.pointerId) return;
       const dx = e.clientX - dragRef.current.lastX;
       const dy = e.clientY - dragRef.current.lastY;
@@ -470,6 +641,9 @@ function useZoomPan(open, slideKey) {
 
   const onPanEnd = useCallback(
     (e) => {
+      pointersRef.current.delete(e.pointerId);
+      if (pointersRef.current.size < 2) pinchRef.current = null;
+
       if (!dragging.current) return;
       if (e.pointerId !== pointerRef.current) return;
       if (rafRef.current) {
@@ -507,6 +681,8 @@ function useZoomPan(open, slideKey) {
       dragging.current = false;
       pointerRef.current = null;
       rafRef.current = 0;
+      pointersRef.current.clear();
+      pinchRef.current = null;
     };
   }, [open]);
 
@@ -682,7 +858,7 @@ export function LightboxImage({ src, alt = "", caption, sx, gallery, startIndex 
           onMouseEnter={pokeControls}
         >
           <Box sx={{ ...toolbarShellSx, mb: 1.25 }}>
-            <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ height: 32 }}>
               <Tooltip title="Alejar (Ctrl −)">
                 <span>
                   <IconButton aria-label="Alejar" onClick={zoomOut} disabled={zoom <= ZOOM_MIN} sx={toolbarBtnSx} size="small">
@@ -693,7 +869,7 @@ export function LightboxImage({ src, alt = "", caption, sx, gallery, startIndex 
               <Box component="span" sx={zoomBadgeSx}>
                 {Math.round(zoom * 100)}%
               </Box>
-              <Tooltip title="Acercar (Ctrl +)">
+              <Tooltip title="Acercar (Ctrl + rueda o pinch)">
                 <span>
                   <IconButton aria-label="Acercar" onClick={zoomIn} disabled={zoom >= ZOOM_MAX} sx={toolbarBtnSx} size="small">
                     <Icon icon="mdi:magnify-plus-outline" size={18} />
@@ -758,6 +934,7 @@ export function LightboxImage({ src, alt = "", caption, sx, gallery, startIndex 
               cursor: canPan ? "grab" : "default",
               userSelect: "none",
               touchAction: "none",
+              overscrollBehavior: "contain",
               "&:active": { cursor: canPan ? "grabbing" : "default" },
             }}
           >

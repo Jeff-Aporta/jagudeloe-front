@@ -40,7 +40,7 @@ export function classifyBlockLane(title: string): TkDocLane | null {
   }
 
   if (
-    /solucion aplicada|solucion entregada|^solucion\b|cambios en base de datos|resultado\b|instrucciones actualizadas|mejora posterior|conclusion|puntos clave|estrategia acordada|endpoints usados|referencias de configuracion|system-prompts|openai-infomap|alcance esperado|alcance del analisis|alcance tecnico|alcance numerico|^entrega\b|catalogo por tipo/i.test(
+    /solucion aplicada|solucion entregada|^solucion\b|evidencia de pruebas|cambios en base de datos|resultado\b|instrucciones actualizadas|mejora posterior|conclusion|puntos clave|estrategia acordada|endpoints usados|referencias de configuracion|system-prompts|openai-infomap|alcance esperado|alcance del analisis|alcance tecnico|alcance numerico|^entrega\b|catalogo por tipo/i.test(
       t,
     )
   ) {

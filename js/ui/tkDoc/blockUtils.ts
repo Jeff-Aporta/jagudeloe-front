@@ -12,6 +12,19 @@ export function isImageBlock(b) {
   return kind === "image" || kind === "img";
 }
 
+/** Bloques `image` → ítems de galería MUI (sin texto visible). */
+export function imageBlocksToGalleryItems(blocks) {
+  return (blocks || [])
+    .map((b) => {
+      const p = b?.payload || {};
+      const url = String(p.url ?? p.src ?? "").trim();
+      if (!url) return null;
+      const alt = String(p.alt ?? p.caption ?? "Evidencia").trim();
+      return { url, label: alt };
+    })
+    .filter(Boolean);
+}
+
 /** Agrupa imágenes consecutivas en un solo card de Evidencia. */
 export function groupImageBlocks(blocks) {
   const out = [];

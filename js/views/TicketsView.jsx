@@ -15,7 +15,7 @@ import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
 import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
-import { CopyReportLinkButton } from "../ui/CopyReportLinkButton.jsx";
+import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReportLinkButton.jsx";
 
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
@@ -39,8 +39,13 @@ function revisadoKeyOf(tk, iticket) {
   return String(tk.revisadoKey || tk.REVISADOKEY || ctx.revisadoKey || ctx.REVISADOKEY || ("tickets." + iticket));
 }
 
-function CopyDocLinkButton({ space, iticket, driver }) {
-  return <CopyReportLinkButton space={space} iticket={iticket} report="diligencia" driver={driver} />;
+function CopyDocLinkButton({ space, iticket, driver, titulo }) {
+  return (
+    <>
+      <CopyReportLinkButton space={space} iticket={iticket} report="diligencia" driver={driver} />
+      <CopyReportLinkHtmlButton space={space} iticket={iticket} report="diligencia" driver={driver} titulo={titulo} />
+    </>
+  );
 }
 
 function CopyHtmlButton({ tk }) {
@@ -158,12 +163,15 @@ function TicketDetail(props) {
         {reportView === "diligencia" && (
           <>
             <DriverToggle driver={driver} onChange={onDriverChange} />
-            <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} />
+            <CopyDocLinkButton space={tkSpace} iticket={props.iticket} driver={driver} titulo={tk.titulo || tk.title} />
             {driver === "html" && <CopyHtmlButton tk={tk} />}
           </>
         )}
         {reportView === "metricas" && (
-          <CopyReportLinkButton space={tkSpace} iticket={props.iticket} report="metricas" />
+          <>
+            <CopyReportLinkButton space={tkSpace} iticket={props.iticket} report="metricas" />
+            <CopyReportLinkHtmlButton space={tkSpace} iticket={props.iticket} report="metricas" titulo={tk.titulo || tk.title} />
+          </>
         )}
       </Stack>
       {reportView === "metricas" ? (

@@ -26,7 +26,7 @@ import {
   type TkDocSectionKey,
 } from "./tk-doc-constants.ts";
 import { roundTkMinutosTo5, computeCommitTotals } from "./tk-table.ts";
-import { isTicketSinEvidenciaProblema } from "./tk-normativa.ts";
+import { isTicketSinEvidenciaProblema, extractTipoSolicitudApertura, tipoSolicitudDisplayLabel } from "./tk-normativa.ts";
 
 export type TkDocSectionDot = {
   key: TkDocSectionKey;
@@ -119,6 +119,12 @@ function isCommitsTiempoEntry(t: { name?: string; detail?: string; phase?: strin
   return /commit|repositorio|trabajo en commits/i.test(text);
 }
 
+function heroBadgesFromTicket(tk: Record<string, unknown>): TkDocBlock[] {
+  const label = tipoSolicitudDisplayLabel(extractTipoSolicitudApertura(tk));
+  if (!label) return [];
+  return [{ kind: "badge", sortKey: 0, payload: { label, tone: "primary" } }];
+}
+
 /** Particiona el ticket y calcula qué secciones estándar tienen contenido. */
 export function buildTkDocViewModel(
   tk: Record<string, unknown>,
@@ -133,7 +139,7 @@ export function buildTkDocViewModel(
   const estadoCierre = opts?.ticketEstadoCierre?.(tk) ?? "abierto";
 
   const content = sortFn((tk.content as TkDocBlock[]) ?? []).filter((b) => !skipInfo(b, tk));
-  const badges = content.filter((b) => ["badge", "chip"].includes(String(b.kind).toLowerCase()));
+  const badges = heroBadgesFromTicket(tk);
   const docEvidencias = extractTicketDocEvidencias(tk);
 
   const { solicitudParts, evidenciaIntro, bodyBlocks } = partitionTkDocStandard(

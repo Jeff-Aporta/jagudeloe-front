@@ -8,7 +8,7 @@ import {
   formatHorasDecimal,
 } from "../core/tk-metrics.ts";
 import { extractTipoSolicitudApertura } from "../core/tk-normativa.ts";
-import { extractTicketMetricasEvidencias } from "../core/tk-evidencias.ts";
+import { extractTicketMetricasEvidencias, missingTiempoEvidenciaLabels, ticketTiempoEvidenciasCompletas } from "../core/tk-evidencias.ts";
 import { buildTicketTimeline, buildTicketMilestones } from "../core/tk-timeline.ts";
 import { extractEmpresaReport, computeEmpresaDesfase } from "../core/tk-empresa-report.ts";
 import { extractTicketPendingTasks } from "../core/checks.ts";
@@ -135,6 +135,8 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
   const evidencias = extractTicketMetricasEvidencias(tk);
   const tareasPendientes = extractTicketPendingTasks(tk).filter((t) => !t.done);
   const tipoApertura = extractTipoSolicitudApertura(tk);
+  const metricasCompletas = ticketTiempoEvidenciasCompletas(tk);
+  const evidenciasFaltantes = missingTiempoEvidenciaLabels(tk);
 
   return (
     <Box sx={{ maxWidth: 920, mx: "auto", py: 3, px: { xs: 2, md: 3 }, bgcolor: c.pageBg, color: c.text, minHeight: "100%" }}>
@@ -157,6 +159,20 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
       {m.fechaCreacion && !m.fechaCierre && (
         <Alert severity="info" sx={{ mb: 3 }}>
           Ticket abierto — sin cierre InSoft. Métricas de atención activa y total se calcularán al registrar {"fechaCierre"}.
+        </Alert>
+      )}
+
+      {!metricasCompletas && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          {evidenciasFaltantes.length > 0 ? (
+            <>
+              Métricas incompletas: faltan pantallazos de{" "}
+              <strong>{evidenciasFaltantes.join(", ")}</strong>. Los tiempos hábiles solo se muestran con
+              evidencias subidas y verificadas en R2.
+            </>
+          ) : (
+            <>Los tiempos hábiles solo se calculan con pantallazos InSoft subidos a R2.</>
+          )}
         </Alert>
       )}
 
@@ -198,7 +214,7 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
 
       {desfase && <EmpresaDesfaseCard desfase={desfase} />}
 
-      {milestones.length > 0 && (
+      {metricasCompletas && milestones.length > 0 && (
         <SectionCard title="Análisis del ticket" icon="mdi:chart-timeline-variant">
           <TicketAnalysisTimeline
             milestones={milestones}

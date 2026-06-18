@@ -56,7 +56,7 @@ export function TicketMetricsEvidencias({ items, variant = "metricas", embedded 
   const copy = EVIDENCIAS_COPY[variant] || EVIDENCIAS_COPY.metricas;
 
   const gallery = useMemo(
-    () => visible.map((ev) => ({ src: ev.url, alt: ev.label, caption: ev.label })),
+    () => visible.map((ev) => ({ src: ev.url, alt: ev.label || "Evidencia" })),
     [visible],
   );
 
@@ -92,8 +92,7 @@ export function TicketMetricsEvidencias({ items, variant = "metricas", embedded 
             <LightboxImage
               variant="grid"
               src={ev.url}
-              alt={ev.label}
-              caption={ev.label}
+              alt={ev.label || "Evidencia"}
               gallery={gallery}
               startIndex={index}
             />

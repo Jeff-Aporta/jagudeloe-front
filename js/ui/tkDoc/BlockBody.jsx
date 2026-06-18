@@ -45,15 +45,10 @@ export function BlockBody({ block, commits }) {
     return (
       <Box sx={{ textAlign: "center", my: 1 }}>
         <LightboxImage
+          variant="grid"
           src={src}
-          alt={p.alt ?? p.caption ?? ""}
-          caption={p.caption}
+          alt={p.alt ?? p.caption ?? "Evidencia"}
         />
-        {p.caption && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-            {p.caption}
-          </Typography>
-        )}
       </Box>
     );
   }

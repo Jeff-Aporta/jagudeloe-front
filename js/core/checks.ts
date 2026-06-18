@@ -1,6 +1,6 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
 import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
-import { ticketHasCierreEvidencia } from "./tk-evidencias.ts";
+import { ticketTiempoEvidenciasCompletas } from "./tk-evidencias.ts";
 import { patchTkDocSeed } from "./tk-doc-seed-patch.ts";
 
 export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
@@ -140,20 +140,9 @@ function cierreEmpresaText(tk: Record<string, unknown>): string {
   return String(doc.cierreEmpresa ?? "").toLowerCase();
 }
 
-/** Ticket con cierre registrado (fechas, estado InSoft o pantallazo de cierre/métricas). */
+/** Ticket con cierre documentado — solo con pantallazos InSoft de apertura, atención y cierre en R2. */
 export function ticketIsCerradoDocumentado(tk: Record<string, unknown>): boolean {
-  if (ticketHasCierreEvidencia(tk)) return true;
-
-  const input = extractMetricInput(tk);
-  if (input.fechaCierre) return true;
-
-  if (tk.fechaEntrega || tk.FECHAENTREGA) return true;
-  if (resolveTicketEstado(tk) === "cerrado") return true;
-
-  const cierreEmp = cierreEmpresaText(tk);
-  if (/cerrado|solucionado/.test(cierreEmp)) return true;
-
-  return false;
+  return ticketTiempoEvidenciasCompletas(tk);
 }
 
 /** Estado InSoft normalizado (listado puede venir sin tk.estado). */
