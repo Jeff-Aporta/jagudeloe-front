@@ -62,10 +62,23 @@ export function BlockBody({ block, commits }) {
     const href = tkLinkHref(p);
     const label = tkLinkLabel(p, href);
     const showPath = tkLinkShowsPath(p);
+    const urlEllipsisSx = {
+      display: "block",
+      maxWidth: "100%",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    };
     return (
-      <Box>
-        <Typography variant="body1">
-          <Link href={href} target="_blank" rel="noreferrer" sx={{ fontWeight: 600 }}>
+      <Box sx={{ minWidth: 0, maxWidth: "100%" }}>
+        <Typography variant="body1" sx={{ minWidth: 0, maxWidth: "100%" }}>
+          <Link
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            title={label}
+            sx={{ fontWeight: 600, ...urlEllipsisSx }}
+          >
             {label}
           </Link>
         </Typography>
@@ -73,9 +86,16 @@ export function BlockBody({ block, commits }) {
           <Typography
             variant="caption"
             component="div"
-            sx={{ mt: 0.25, wordBreak: "break-all", fontFamily: "monospace", fontSize: "0.8rem", lineHeight: 1.45 }}
+            sx={{ mt: 0.25, minWidth: 0, maxWidth: "100%", fontFamily: "monospace", fontSize: "0.8rem", lineHeight: 1.45 }}
           >
-            <Link href={href} target="_blank" rel="noreferrer" sx={{ color: "primary.main", fontWeight: 400, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+            <Link
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              title={href}
+              className="tk-doc-link-path"
+              sx={{ color: "primary.main", fontWeight: 400, textDecoration: "none", "&:hover": { textDecoration: "underline" }, ...urlEllipsisSx }}
+            >
               {href}
             </Link>
           </Typography>

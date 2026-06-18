@@ -57,6 +57,24 @@ export function isTicketTipoComparativo(tk: Record<string, unknown>): boolean {
   return isTipoAperturaComparativo(extractTipoSolicitudApertura(tk));
 }
 
+/** Mejora, ajuste o requerimiento — no exige «Evidencias del problema». */
+const TIPOS_SIN_EVIDENCIA_PROBLEMA = [
+  "requerimiento técnico",
+  "pqr ajuste",
+  "ing servicios otros",
+] as const;
+
+export function isTicketSinEvidenciaProblema(tk: Record<string, unknown>): boolean {
+  const tipo = normalizeTipoSolicitudApertura(extractTipoSolicitudApertura(tk));
+  if (tipo && TIPOS_SIN_EVIDENCIA_PROBLEMA.some((t) => tipo.startsWith(t))) return true;
+
+  const norm = (tk.normativa || {}) as Record<string, unknown>;
+  const tipoSol = String(norm.tipoSolucion ?? "").trim().toLowerCase();
+  if (tipoSol === "no aplica" || tipoSol.includes("no aplica")) return true;
+
+  return false;
+}
+
 /** Abreviaturas conocidas para chips en sidebar (texto completo queda en tooltip / detalle). */
 const TIPO_CHIP_ABBR: Array<[string, string]> = [
   ["PQR proyecto", "PQR Proy."],

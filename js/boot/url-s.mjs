@@ -58,6 +58,22 @@ export function writeDocReportView(reportView, search = location.search) {
   history.replaceState(null, "", url);
 }
 
+/** Ticket activo en vista doc (?s → sel). */
+export function parseDocSel(search = location.search) {
+  const s = decodeS(search);
+  const sel = typeof s.sel === "string" ? s.sel.trim() : "";
+  return sel || null;
+}
+
+/** Cambia solo sel en ?s= sin recargar (navegación SPA del catálogo footer). */
+export function writeDocSel(sel, search = location.search) {
+  const s = decodeS(search);
+  const next = { ...s, sel: String(sel || "").trim() };
+  const qs = encodeS(next);
+  const url = location.pathname + "?" + qs;
+  history.pushState(null, "", url);
+}
+
 /** ?isa_doc_load_hold o s.bootHold — mantiene el shimmer del doc-viewer (QA visual). */
 export function isDocLoadHold(search = location.search) {
   if (new URLSearchParams(search).has("isa_doc_load_hold")) return true;

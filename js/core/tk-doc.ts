@@ -68,6 +68,6 @@ export function tkLinkHtml(
   const label = opts.esc(tkLinkLabel(payload, rawHref));
   const link = `<a href="${href}" target="_blank" rel="noreferrer" style="${opts.linkStyle ?? ""}">${label}</a>`;
   if (!tkLinkShowsPath(payload)) return link;
-  const pathStyle = opts.pathStyle ?? "font-size:11px;color:#1e90ff;word-break:break-all;";
+  const pathStyle = opts.pathStyle ?? "display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#1e90ff;";
   return `${link}<br/><span style="${pathStyle}">${href}</span>`;
 }

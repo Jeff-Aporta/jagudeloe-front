@@ -146,14 +146,14 @@ const TK1439155_TIEMPOS: TkTiempoSeed[] = [
   {
     name: "Trabajo en commits ISS",
     detail: "9 commits · alineación modelo GENERAL",
-    minutos: 75,
+    minutos: 73,
     sortKey: 1,
     phase: "commits",
   },
   {
     name: "Diligencia del ticket",
     detail: "evidencias + documentación TK-1439155",
-    minutos: 50,
+    minutos: 60,
     sortKey: 2,
     phase: "diligencia",
   },
@@ -161,6 +161,39 @@ const TK1439155_TIEMPOS: TkTiempoSeed[] = [
 
 const DOC_SEED_OVERRIDES: Record<string, TkDocSeedOverride> = {
   "TK-1439155": { commits: TK1439155_COMMITS, tiempos: TK1439155_TIEMPOS },
+};
+
+const R2_PUBLIC = "https://pub-1c290cc606c8478899f5764899278571.r2.dev";
+
+/** Pantallazos confirmados en R2 (sync pendiente en BD). */
+const TK1439155_R2_SUBIDAS = [
+  "patyia/diligencias/tk1439155-solicitud-insoft.png",
+  "patyia/diligencias/tk1439155-metricas-insoft.png",
+  "patyia/diligencias/tk1439155-bd-insoft.png",
+  "patyia/diligencias/tk1439155-prompts-insoft.png",
+  "patyia/diligencias/tk1439155-chat-insoft.png",
+  "patyia/diligencias/tk1439155-trazabilidad-insoft.png",
+];
+
+const TK1439155_METRICAS_PATCH = {
+  horaInicioAtencion: "17/jun./2026 09:38:47 pm",
+  fechaCierre: "17/jun./2026 11:46:28 pm",
+  fechaSolucion: "17/jun./2026 11:46:28 pm",
+  documentacion: {
+    cierreEmpresa: "Solucionado",
+    imagenesR2Subidas: TK1439155_R2_SUBIDAS,
+    evidenciasSubidas: true,
+  },
+};
+
+const TK1439155_METRICAS_IMAGE = {
+  kind: "image",
+  sortKey: 3.5,
+  payload: {
+    url: `${R2_PUBLIC}/patyia/diligencias/tk1439155-metricas-insoft.png`,
+    alt: "Métricas InSoft TK-1439155",
+    caption: "Métricas InSoft · timeline y panel de tiempos (solucionado 17/jun).",
+  },
 };
 
 function normIticket(raw: unknown): string {
@@ -204,34 +237,121 @@ function needsTiemposPatch(
   return false;
 }
 
+function metricasDocBag(tk: Record<string, unknown>): Record<string, unknown> {
+  for (const root of [tk.detallesExtra, tk.meta, tk]) {
+    if (!root || typeof root !== "object") continue;
+    const metricas = (root as Record<string, unknown>).metricas;
+    if (!metricas || typeof metricas !== "object") continue;
+    const doc = (metricas as Record<string, unknown>).documentacion;
+    if (doc && typeof doc === "object") return doc as Record<string, unknown>;
+  }
+  return {};
+}
+
+function needsMetricasEvidenciasPatch(tk: Record<string, unknown>): boolean {
+  const doc = metricasDocBag(tk);
+  const subidas = Array.isArray(doc.imagenesR2Subidas) ? doc.imagenesR2Subidas : [];
+  const pendientes = Array.isArray(doc.imagenesR2Pendientes) ? doc.imagenesR2Pendientes : [];
+  const keys = [...subidas, ...pendientes].map((k) => String(k).toLowerCase());
+  const hasMetricasKey = keys.some((k) => k.includes("metricas-insoft"));
+  if (!hasMetricasKey) return true;
+  if (doc.evidenciasSubidas !== true && subidas.length === 0) return true;
+  const detMet = ((tk.detallesExtra as Record<string, unknown> | undefined)?.metricas || {}) as Record<
+    string,
+    unknown
+  >;
+  if (!detMet.horaInicioAtencion || !detMet.fechaCierre) return true;
+  const cierreEmp = String(doc.cierreEmpresa ?? "").toLowerCase();
+  if (!cierreEmp.includes("solucionado") && !cierreEmp.includes("cerrado")) return true;
+  return false;
+}
+
+function mergeMetricasRoot(
+  current: Record<string, unknown> | undefined,
+  patch: typeof TK1439155_METRICAS_PATCH,
+): Record<string, unknown> {
+  const base = { ...(current || {}) };
+  const doc = {
+    ...((base.documentacion as Record<string, unknown>) || {}),
+    ...patch.documentacion,
+  };
+  return { ...base, ...patch, documentacion: doc };
+}
+
+function ensureMetricasImageInContent(content: unknown[]): unknown[] {
+  const marker = "tk1439155-metricas-insoft.png";
+  const has = content.some((block) => {
+    if (!block || typeof block !== "object") return false;
+    const p = ((block as Record<string, unknown>).payload || {}) as Record<string, unknown>;
+    return String(p.url ?? p.src ?? "").includes(marker);
+  });
+  if (has) return content;
+  const blocks = [...content];
+  const solicitudIdx = blocks.findIndex((block) => {
+    if (!block || typeof block !== "object") return false;
+    const p = ((block as Record<string, unknown>).payload || {}) as Record<string, unknown>;
+    return String(p.url ?? p.src ?? "").includes("solicitud-insoft");
+  });
+  if (solicitudIdx >= 0) blocks.splice(solicitudIdx + 1, 0, TK1439155_METRICAS_IMAGE);
+  else blocks.push(TK1439155_METRICAS_IMAGE);
+  return blocks.sort(
+    (a, b) => Number((a as Record<string, unknown>).sortKey ?? 0) - Number((b as Record<string, unknown>).sortKey ?? 0),
+  );
+}
+
+function patchTk1439155Metricas(tk: Record<string, unknown>): Record<string, unknown> {
+  if (!needsMetricasEvidenciasPatch(tk)) return tk;
+
+  const detallesExtra = { ...((tk.detallesExtra as Record<string, unknown>) || {}) };
+  detallesExtra.metricas = mergeMetricasRoot(
+    detallesExtra.metricas as Record<string, unknown> | undefined,
+    TK1439155_METRICAS_PATCH,
+  );
+
+  let meta = tk.meta;
+  if (meta && typeof meta === "object") {
+    meta = {
+      ...(meta as Record<string, unknown>),
+      metricas: mergeMetricasRoot(
+        (meta as Record<string, unknown>).metricas as Record<string, unknown> | undefined,
+        TK1439155_METRICAS_PATCH,
+      ),
+    };
+  }
+
+  const content = ensureMetricasImageInContent((tk.content as unknown[]) ?? []);
+
+  return { ...tk, detallesExtra, meta, content };
+}
+
 /** Sustituye commits/tiempos/contenido del ticket si la API aún no coincide con el seed. */
 export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unknown> {
   const iticket = normIticket(tk.iticket);
-  const override = DOC_SEED_OVERRIDES[iticket];
-  if (!override) return tk;
-
   let out = { ...tk };
 
-  const currentCommits = collectCommits(out);
-  const currentTiempos = (out.tiempos as Record<string, unknown>[]) ?? [];
-  const patchCommits = needsCommitPatch(currentCommits, override.commits);
-  const patchTiempos = needsTiemposPatch(currentTiempos, override.tiempos);
+  const override = DOC_SEED_OVERRIDES[iticket];
+  if (override) {
+    const currentCommits = collectCommits(out);
+    const currentTiempos = (out.tiempos as Record<string, unknown>[]) ?? [];
+    const patchCommits = needsCommitPatch(currentCommits, override.commits);
+    const patchTiempos = needsTiemposPatch(currentTiempos, override.tiempos);
 
-  if (patchCommits || patchTiempos) {
-    const contexts = [...((out.contexts as Record<string, unknown>[]) ?? [])];
-    if (patchCommits) {
-      if (!contexts.length) {
-        contexts.push({ sortKey: 0, commits: override.commits });
-      } else {
-        contexts[0] = { ...contexts[0], commits: override.commits };
+    if (patchCommits || patchTiempos) {
+      const contexts = [...((out.contexts as Record<string, unknown>[]) ?? [])];
+      if (patchCommits) {
+        if (!contexts.length) {
+          contexts.push({ sortKey: 0, commits: override.commits });
+        } else {
+          contexts[0] = { ...contexts[0], commits: override.commits };
+        }
       }
+      out = {
+        ...out,
+        contexts: patchCommits ? contexts : out.contexts,
+        rootCommits: patchCommits ? [] : out.rootCommits,
+        tiempos: override.tiempos,
+      };
     }
-    out = {
-      ...out,
-      contexts: patchCommits ? contexts : out.contexts,
-      rootCommits: patchCommits ? [] : out.rootCommits,
-      tiempos: override.tiempos,
-    };
   }
 
   const content = (out.content as unknown[]) ?? [];
@@ -239,5 +359,91 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
     out = { ...out, content: mergeTk1439155Content(content) };
   }
 
+  if (iticket === "TK-1439155") {
+    out = patchTk1439155Metricas(out);
+  }
+
+  if (iticket === "TK-1437976") {
+    out = patchTk1437976Content(out);
+  }
+
+  return out;
+}
+
+const TK1437976_SOLICITUD =
+  "Este ticket documenta la integración de un **conector MCP de prueba** para el asistente de IA y una **pestaña de chat** en la aplicación de herramientas interna, para validar conversaciones en el entorno de pruebas del portal de soporte, con el mismo flujo funcional que el canal que usan los asesores.";
+
+const TK1437976_RESUMEN =
+  "Se atendió la solicitud de habilitar un conector MCP de prueba y una pestaña de chat en la aplicación de herramientas interna, para validar el asistente de IA contra el entorno de pruebas del portal de soporte. Alcance solo interno; no expuesto a clientes finales.";
+
+const TK1437976_LEGACY_MARKERS = [
+  "ISA PatyIA AppTools",
+  "AyudasCP staging",
+  "jeff-aporta.github.io",
+  "AppTools una pestaña Chat",
+  "isa-patyia",
+  "JAGUDELOE",
+  "VRESTREPO",
+  "soporte-staging",
+  "ayudascp-ia-staging",
+  "ia.contapyme.com/runtime/webhooks/mcp",
+];
+
+const TK1437976_BLOCK_TEXT: Record<string, string> = {
+  "Requerimiento InSoft (TK-1437976)":
+    "Se solicitó registrar el conector MCP en el entorno de pruebas para integrarlo con el asistente de IA. **Solo modo pruebas** — no disponible para clientes finales.",
+  "Solución entregada":
+    "- **Pestaña Chat:** conversaciones contra la API del portal de soporte en entorno de pruebas, autenticadas con JWT del staging.\n" +
+    "- **Token JWT:** modal dedicado; cada usuario autorizado guarda **su** token en el almacenamiento de sesión del navegador.\n" +
+    "- **Permisos:** usuarios con rol interactivo pueden enviar y eliminar **solo** con su propio token; demás usuarios autenticados ven **solo lectura**.\n" +
+    "- **Imágenes:** pegar desde portapapeles (Ctrl+V) en el campo de entrada.\n" +
+    "- **MCP:** conector registrado para pruebas internas; el backend del asistente lo consume en entorno de pruebas.",
+  "Cómo probar":
+    "1. Abrir la aplicación de herramientas interna e iniciar sesión con un usuario autorizado para pruebas.\n" +
+    "2. Ir a la pestaña **Chat** → botón de credenciales → pegar el token JWT obtenido del portal de soporte en entorno de pruebas (cabecera Authorization en las herramientas de desarrollo del navegador).\n" +
+    "3. **Nueva conversación** → escribir consulta o pegar imagen → **Enviar**.\n" +
+    "4. Verificar historial en la barra lateral (solo conversaciones del contacto asociado al token).\n" +
+    "5. Con otro usuario sin rol interactivo: debe verse **Solo lectura** sin botón Enviar.\n" +
+    "6. Validar en el servidor de pruebas que el webhook del conector MCP responde correctamente.",
+};
+
+function hasTk1437976LegacyText(text: string): boolean {
+  const t = String(text ?? "");
+  if (!t) return false;
+  return TK1437976_LEGACY_MARKERS.some((m) => t.includes(m)) || /\bPaty IA\b/.test(t);
+}
+
+function patchTk1437976Content(tk: Record<string, unknown>): Record<string, unknown> {
+  let out = { ...tk };
+  const resumen = String(out.resumen ?? "");
+  if (resumen && hasTk1437976LegacyText(resumen)) {
+    out = { ...out, resumen: TK1437976_RESUMEN };
+  }
+
+  let content = [...((out.content as Record<string, unknown>[]) ?? [])];
+  let changed = false;
+
+  content = content.map((block) => {
+    if (String(block?.kind ?? "").toLowerCase() !== "markdown") return block;
+    const payload = (block.payload || {}) as Record<string, unknown>;
+    const title = String(payload.title ?? "");
+    const text = String(payload.text ?? "");
+    const sortKey = Number(block.sortKey ?? -1);
+
+    if (sortKey === 0 && text && hasTk1437976LegacyText(text)) {
+      changed = true;
+      return { ...block, payload: { ...payload, text: TK1437976_SOLICITUD } };
+    }
+
+    const replacement = title ? TK1437976_BLOCK_TEXT[title] : undefined;
+    if (replacement && hasTk1437976LegacyText(text)) {
+      changed = true;
+      return { ...block, payload: { ...payload, text: replacement } };
+    }
+
+    return block;
+  });
+
+  if (changed) out = { ...out, content };
   return out;
 }

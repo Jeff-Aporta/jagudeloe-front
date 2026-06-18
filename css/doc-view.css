@@ -155,6 +155,15 @@ body.tk-doc-mode #root,
   text-decoration: none;
 }
 
+.tk-doc-markdown .tk-doc-link-path,
+.tk-doc-markdown a.tk-doc-link-path {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tk-doc-markdown .tk-inline-link:hover {
   text-decoration: underline;
 }

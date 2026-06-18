@@ -1,4 +1,5 @@
 /** Etiquetas del hero del ticket (creador del tiquete vs quien documenta la solución). */
+import { extractMetricInput } from "../core/tk-metrics.ts";
 
 const HONORIFIC_RE = /^(Asesora|Asesor|Ingeniero|Ingeniera|Ing\.?)\s+/i;
 
@@ -58,12 +59,16 @@ export function ticketReasignadoA(tk: Record<string, unknown>): string {
 }
 
 export function ticketEstadoCierre(tk: Record<string, unknown>): string {
+  const input = extractMetricInput(tk);
+  if (input.fechaCierre || tk.fechaEntrega || tk.FECHAENTREGA) return "cerrado";
+
   const estado = String(tk.estado ?? "").toLowerCase();
   if (estado) return estado;
+
   const doc = ticketDocBag(tk);
   const cierre = String(doc.cierreEmpresa ?? "").toLowerCase();
+  if (cierre.includes("solucionado") || cierre.includes("cerrado")) return "cerrado";
   if (cierre.includes("abierto")) return "abierto";
-  if (cierre.includes("cerrado")) return "cerrado";
   return estado;
 }
 

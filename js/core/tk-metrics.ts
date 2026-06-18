@@ -459,7 +459,9 @@ export function extractMetricInput(tk: Record<string, unknown>): TicketMetricInp
   const src = { ...detMet, ...metricas };
 
   let horaInicio = parseTicketDate(src.horaInicioAtencion || src.horaInicio || src.inicioAtencion);
-  let fechaCierre = parseTicketDate(src.fechaCierre || src.horaCierre || src.cierre || tk.fechaEntrega);
+  let fechaCierre = parseTicketDate(
+    src.fechaCierre || src.fechaSolucion || src.horaCierre || src.cierre || tk.fechaEntrega,
+  );
   let fechaCreacion = parseTicketDate(src.fechaCreacion || src.creacion || tk.fechaSolicitud);
 
   const contexts = (tk.contexts || []) as Record<string, unknown>[];

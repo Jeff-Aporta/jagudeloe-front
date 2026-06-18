@@ -1,6 +1,7 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
 import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
 import { ticketHasCierreEvidencia } from "./tk-evidencias.ts";
+import { patchTkDocSeed } from "./tk-doc-seed-patch.ts";
 
 export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
 
@@ -21,9 +22,9 @@ export function dotStateLabel(state: DotState | null | undefined): string {
 
 /** Tooltips del dot en listado / chip de ticket (evidencias + aging). */
 export const TICKET_DOT_STATE_LABELS: Partial<Record<DotState, string>> = {
-  complete: "Evidencia de cierre subida",
-  idle: "Sin evidencia de cierre",
-  none: "Sin evidencia de cierre",
+  complete: "Ticket cerrado / documentado",
+  idle: "Sin cierre documentado",
+  none: "Sin cierre documentado",
   warn: "Diligencia demorada (>7 h hábiles)",
   overdue: "Diligencia muy demorada (>14 h hábiles)",
 };
@@ -129,6 +130,32 @@ const ESTADO_TO_DOT: Record<string, DotState> = {
   bloqueado: "overdue",
 };
 
+/** Aplica parches de seed (métricas, cierre, etc.) antes de evaluar estado visual. */
+export function prepareTkForChecks(tk: Record<string, unknown>): Record<string, unknown> {
+  return patchTkDocSeed(tk);
+}
+
+function cierreEmpresaText(tk: Record<string, unknown>): string {
+  const doc = metricDocBag(tk);
+  return String(doc.cierreEmpresa ?? "").toLowerCase();
+}
+
+/** Ticket con cierre registrado (fechas, estado InSoft o pantallazo de cierre/métricas). */
+export function ticketIsCerradoDocumentado(tk: Record<string, unknown>): boolean {
+  if (ticketHasCierreEvidencia(tk)) return true;
+
+  const input = extractMetricInput(tk);
+  if (input.fechaCierre) return true;
+
+  if (tk.fechaEntrega || tk.FECHAENTREGA) return true;
+  if (resolveTicketEstado(tk) === "cerrado") return true;
+
+  const cierreEmp = cierreEmpresaText(tk);
+  if (/cerrado|solucionado/.test(cierreEmp)) return true;
+
+  return false;
+}
+
 /** Estado InSoft normalizado (listado puede venir sin tk.estado). */
 export function resolveTicketEstado(tk: Record<string, unknown>): string {
   const direct = String(tk.estado || tk.ESTADO || "").toLowerCase().trim();
@@ -137,13 +164,12 @@ export function resolveTicketEstado(tk: Record<string, unknown>): string {
   const norm = parseRecord(tk.normativa);
   for (const v of [norm.cierre, norm.cierreEmpresa, norm.estadoSolicitud]) {
     const s = String(v || "").toLowerCase();
-    if (s.includes("cerrado")) return "cerrado";
+    if (s.includes("cerrado") || s.includes("solucionado")) return "cerrado";
     if (s.includes("abierto") || s.includes("sin cerrar")) return "abierto";
   }
 
-  const doc = metricDocBag(tk);
-  const cierreEmp = String(doc.cierreEmpresa || "").toLowerCase();
-  if (cierreEmp.includes("cerrado")) return "cerrado";
+  const cierreEmp = cierreEmpresaText(tk);
+  if (cierreEmp.includes("cerrado") || cierreEmp.includes("solucionado")) return "cerrado";
   if (cierreEmp.includes("abierto")) return "abierto";
 
   if (tk.fechaEntrega || tk.FECHAENTREGA) return "cerrado";
@@ -156,25 +182,28 @@ export function resolveTicketEstado(tk: Record<string, unknown>): string {
 
 /** Dot por estado del ticket — misma semántica que el chip del detalle. */
 export function ticketEstadoDotState(tk: Record<string, unknown>): DotState {
-  const estado = resolveTicketEstado(tk);
+  const bag = prepareTkForChecks(tk);
+  if (ticketIsCerradoDocumentado(bag)) return "complete";
+  const estado = resolveTicketEstado(bag);
   if (estado && ESTADO_TO_DOT[estado]) return ESTADO_TO_DOT[estado];
-  if (ticketHasPendingTasks(tk)) return "warn";
+  if (ticketHasPendingTasks(bag)) return "warn";
   return "idle";
 }
 
-/** Dot en listado TK: verde solo con pantallazo de cierre; gris sin él; rojo/naranja si la diligencia abierta se demora. */
+/** Dot en listado TK: verde con cierre documentado; gris sin él; rojo/naranja si la diligencia abierta se demora. */
 export function ticketListDotState(
   tk: Record<string, unknown>,
   _revisadoMap?: Record<string, boolean>,
   _revisadoKey?: string,
 ): DotState | null {
-  if (ticketHasCierreEvidencia(tk)) return "complete";
+  const bag = prepareTkForChecks(tk);
+  if (ticketIsCerradoDocumentado(bag)) return "complete";
 
-  const input = extractMetricInput(tk);
+  const input = extractMetricInput(bag);
   const closed =
-    resolveTicketEstado(tk) === "cerrado" ||
+    resolveTicketEstado(bag) === "cerrado" ||
     !!input.fechaCierre ||
-    !!(tk.fechaEntrega || tk.FECHAENTREGA);
+    !!(bag.fechaEntrega || bag.FECHAENTREGA);
 
   if (!closed) {
     const cre = input.fechaCreacion;

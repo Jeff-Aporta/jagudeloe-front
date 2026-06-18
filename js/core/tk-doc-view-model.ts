@@ -25,13 +25,16 @@ import {
   TK_DOC_STANDARD,
   type TkDocSectionKey,
 } from "./tk-doc-constants.ts";
-import { roundTkMinutosTo5 } from "./tk-table.ts";
+import { roundTkMinutosTo5, computeCommitTotals } from "./tk-table.ts";
+import { isTicketSinEvidenciaProblema } from "./tk-normativa.ts";
 
 export type TkDocSectionDot = {
   key: TkDocSectionKey;
   title: string;
   accent: string;
   hasContent: boolean;
+  /** Mejora/requerimiento: sección «Evidencias del problema» no aplica (dot con slash). */
+  notApplicable?: boolean;
 };
 
 export type TkDocViewModel = {
@@ -83,6 +86,7 @@ function otrosRenderable(blocks: TkDocBlock[]): TkDocBlock[] {
 function buildSectionDots(
   presence: Record<TkDocSectionKey, boolean>,
   commitsTitle: string,
+  sinEvidenciaProblema = false,
 ): TkDocSectionDot[] {
   return TK_DOC_SECTION_ORDER.map((key) => {
     const meta = TK_DOC_STANDARD[key];
@@ -90,11 +94,13 @@ function buildSectionDots(
       key === "commits" && "titleCerrado" in meta && presence.commits
         ? commitsTitle
         : meta.title;
+    const notApplicable = key === "evidencias" && sinEvidenciaProblema;
     return {
       key,
       title,
       accent: meta.accent,
       hasContent: presence[key],
+      notApplicable,
     };
   });
 }
@@ -103,6 +109,14 @@ function sortCommits(commits: unknown[]): Record<string, unknown>[] {
   return [...(commits as Record<string, unknown>[])].sort(
     (a, b) => Number(a.sortKey ?? 0) - Number(b.sortKey ?? 0),
   );
+}
+
+/** Fila de tiempos que resume el bloque de commits — debe coincidir con la tabla. */
+function isCommitsTiempoEntry(t: { name?: string; detail?: string; phase?: string }): boolean {
+  const explicit = String(t.phase ?? "").trim().toLowerCase();
+  if (explicit === "commits") return true;
+  const text = `${t.name ?? ""} ${t.detail ?? ""}`.toLowerCase();
+  return /commit|repositorio|trabajo en commits/i.test(text);
 }
 
 /** Particiona el ticket y calcula qué secciones estándar tienen contenido. */
@@ -151,14 +165,23 @@ export function buildTkDocViewModel(
     ...((tk.contexts as { commits?: unknown[] }[]) ?? []).flatMap((c) => c.commits ?? []),
     ...((tk.rootCommits as unknown[]) ?? []),
   ]);
+  const commitMinutos = computeCommitTotals(allCommits).minutos;
 
   const tiempos = ((tk.tiempos as { name?: string; detail?: string; minutos?: number; phase?: string }[]) ?? [])
-    .map((t) => ({
-      name: String(t.name ?? ""),
-      detail: String(t.detail ?? ""),
-      minutos: roundTkMinutosTo5(t.minutos),
-      phase: String(t.phase ?? "").trim() || undefined,
-    }))
+    .map((t) => {
+      let minutos = Number(t.minutos ?? 0);
+      if (isCommitsTiempoEntry(t) && commitMinutos > 0) {
+        minutos = commitMinutos;
+      } else {
+        minutos = roundTkMinutosTo5(minutos);
+      }
+      return {
+        name: String(t.name ?? ""),
+        detail: String(t.detail ?? ""),
+        minutos,
+        phase: String(t.phase ?? "").trim() || undefined,
+      };
+    })
     .filter((t) => t.name && t.minutos > 0);
 
   const introText = String(evidenciaIntro ?? "").trim();
@@ -187,7 +210,11 @@ export function buildTkDocViewModel(
     tiempos,
     badges,
     sectionPresence,
-    sectionDots: buildSectionDots(sectionPresence, commitsTitle),
+    sectionDots: buildSectionDots(
+      sectionPresence,
+      commitsTitle,
+      isTicketSinEvidenciaProblema(tk),
+    ),
     commitsTitle,
   };
 }

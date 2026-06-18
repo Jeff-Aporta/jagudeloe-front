@@ -3,9 +3,58 @@ import { getReact, getMaterialUI } from "../core/platform.ts";
 import { getTickets } from "../api/client.ts";
 import { buildDocWebUrl } from "../core/tk-doc.ts";
 import { tkCatalogTooltipLines } from "../core/tk-catalog.ts";
+import { inlineMdWeb } from "./tkHtml.ts";
 import { TK_CATALOG_CHIP_SX, TK_DOC_RADIUS, tkCatalogCurrentChipBg } from "../core/tk-table.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { NavStatusDot } from "./parts.jsx";
+
+const TOOLTIP_TEXT_SX = {
+  fontSize: "0.75rem",
+  lineHeight: 1.5,
+  letterSpacing: 0.1,
+  "& .tk-inline-code": {
+    fontFamily: "Consolas, monospace",
+    fontSize: "0.72em",
+    px: 0.45,
+    py: 0.1,
+    borderRadius: 0.5,
+    bgcolor: "action.hover",
+  },
+  "& .tk-inline-link": {
+    color: "primary.light",
+    textDecoration: "none",
+    "&:hover": { textDecoration: "underline" },
+  },
+  "& b": { fontWeight: 600 },
+};
+
+function CatalogTooltip({ lines }) {
+  const { Stack, Typography } = getMaterialUI();
+  const [headline, ...meta] = lines;
+
+  return (
+    <Stack spacing={0.45} sx={{ maxWidth: 360, py: 0.15 }}>
+      {headline ? (
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ ...TOOLTIP_TEXT_SX, fontWeight: 500, color: "inherit" }}
+          dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(headline)) }}
+        />
+      ) : null}
+      {meta.map((line, i) => (
+        <Typography
+          key={i}
+          variant="caption"
+          component="div"
+          sx={{ ...TOOLTIP_TEXT_SX, fontWeight: 400, color: "text.secondary" }}
+        >
+          {line}
+        </Typography>
+      ))}
+    </Stack>
+  );
+}
 
 function ticketId(row) {
   return String(row.iticket ?? row.id ?? "").trim();
@@ -15,29 +64,7 @@ function ticketSpace(row, fallback) {
   return String(row.space ?? fallback ?? "patyia").toLowerCase();
 }
 
-function CatalogTooltip({ lines }) {
-  const { Stack, Typography } = getMaterialUI();
-  return (
-    <Stack spacing={0.5} sx={{ maxWidth: 360, py: 0.25 }}>
-      {lines.map((line, i) => (
-        <Typography
-          key={i}
-          variant={i === 0 ? "body2" : "caption"}
-          component="div"
-          sx={{
-            fontWeight: i === 0 ? 500 : 400,
-            color: i === 0 ? "inherit" : "text.secondary",
-            lineHeight: 1.45,
-          }}
-        >
-          {line}
-        </Typography>
-      ))}
-    </Stack>
-  );
-}
-
-export function TicketCatalogFooter({ space, currentIticket }) {
+export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
   const { useState, useEffect } = getReact();
   const { Box, Chip, Tooltip, Typography } = getMaterialUI();
   const project = String(space ?? "patyia").toLowerCase();
@@ -119,6 +146,15 @@ export function TicketCatalogFooter({ space, currentIticket }) {
               size="small"
               label={chipLabel}
               aria-current={isCurrent ? "page" : undefined}
+              onClick={
+                isCurrent || !onSelectTicket
+                  ? undefined
+                  : (e) => {
+                      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.button !== 0) return;
+                      e.preventDefault();
+                      onSelectTicket(id);
+                    }
+              }
               sx={chipSx}
             />
           );
@@ -128,6 +164,16 @@ export function TicketCatalogFooter({ space, currentIticket }) {
               arrow
               placement="top"
               title={<CatalogTooltip lines={tip} />}
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    maxWidth: 380,
+                    px: 1.25,
+                    py: 0.9,
+                    fontSize: "0.75rem",
+                  },
+                },
+              }}
             >
               {chip}
             </Tooltip>
