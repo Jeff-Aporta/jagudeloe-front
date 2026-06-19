@@ -1,0 +1,1 @@
+import{TK_DOC_RADIUS as x}from"../core/tk-table.js";const n={p:{xs:1.25,sm:2,md:3}};function r(o={}){return{flex:1,minHeight:0,overflow:"auto",...n,...o}}function t(o={}){return{minHeight:"100vh",boxSizing:"border-box",position:"relative",zIndex:1,bgcolor:"transparent",...n,...o}}export{x as TK_DOC_RADIUS,t as tkDocPageSx,r as tkDocSurfaceSx};

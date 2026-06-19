@@ -1,61 +1,8 @@
 /* css/code — bloques de código SQL de la bitácora. */
 
 /* Editor CodeMirror del SqlBlock: altura automática y tipografía monoespaciada. */
-.sql-cm .CodeMirror,
-.tk-code-cm .CodeMirror {
-  height: auto;
-  font-family: "Consolas", "Courier New", monospace;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-.tk-code-cm .CodeMirror-scroll { min-height: 0; }
-
-.tk-content .tk-code-wrap,
-.tk-content .tk-code-cm,
-.tk-content .tk-code-cm.sql-cm-scroll {
-  max-width: 100%;
-  max-height: none;
-  overflow: visible;
-}
-
-.tk-content .tk-code-cm .CodeMirror {
-  height: auto !important;
-  max-width: 100%;
-}
-
-.tk-content .tk-code-cm .CodeMirror-scroll {
-  overflow: visible !important;
-  max-height: none !important;
-}
-
-.tk-content .tk-code-cm .CodeMirror-sizer {
-  min-width: 0 !important;
-  max-width: 100%;
-}
-
-.tk-content .tk-code-cm .CodeMirror-lines {
-  word-break: break-word;
-}
-
-.tk-content {
-  overflow-x: hidden;
-}
-
-.tk-content table {
-  max-width: 100%;
-}
 
 /* SqlBlock bitácora: scroll interno cuando el SQL supera 70vh */
-.sql-cm-scroll,
-.tk-code-cm.sql-cm-scroll {
-  max-height: 70vh;
-  overflow: auto;
-}
-.sql-cm-scroll .CodeMirror-scroll,
-.tk-code-cm.sql-cm-scroll .CodeMirror-scroll {
-  max-height: calc(70vh - 4px);
-  overflow: auto !important;
-}
 
 pre.sql-body {
   margin: 0;
@@ -68,3 +15,85 @@ pre.sql-body {
   padding: 10px 12px;
   border-radius: 6px;
 }
+
+.sql-cm {
+  & .CodeMirror {
+    height: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  &-scroll {
+    max-height: 70vh;
+    overflow: auto;
+  }
+}
+
+.sql-cm-scroll {
+  & .CodeMirror-scroll {
+    max-height: calc(70vh - 4px);
+    overflow: auto !important;
+  }
+}
+
+.tk-code-cm {
+  & .CodeMirror {
+    height: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  & .CodeMirror-scroll {
+    min-height: 0;
+  }
+  &.sql-cm-scroll {
+    max-height: 70vh;
+    overflow: auto;
+  }
+}
+
+.tk-code-cm.sql-cm-scroll {
+  & .CodeMirror-scroll {
+    max-height: calc(70vh - 4px);
+    overflow: auto !important;
+  }
+}
+
+.tk-content {
+  overflow-x: hidden;
+  & .tk-code-cm {
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  & .tk-code-cm .CodeMirror {
+    height: auto !important;
+    max-width: 100%;
+  }
+  & .tk-code-cm .CodeMirror-lines {
+    word-break: break-word;
+  }
+  & .tk-code-cm .CodeMirror-scroll {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+  & .tk-code-cm .CodeMirror-sizer {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+  & .tk-code-cm.sql-cm-scroll {
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  & .tk-code-wrap {
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  & table {
+    max-width: 100%;
+  }
+}
+
+/* nest-css-max:processed */

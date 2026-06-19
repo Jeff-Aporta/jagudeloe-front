@@ -27,7 +27,7 @@ export const LIGHTBOX_ZOOM_REF = "1d8119f";
 export function lightboxZoomBase() {
   const base = document.querySelector("base")?.href || location.href;
   if (isDevHost) {
-    return new URL("../../components/lightbox/cdn/", base).href.replace(/\/?$/, "/");
+    return new URL("../../../components/lightbox/cdn/", base).href.replace(/\/?$/, "/");
   }
   return `https://cdn.jsdelivr.net/gh/Jeff-Aporta/lightbox-zoom@${LIGHTBOX_ZOOM_REF}/cdn/`;
 }
@@ -46,13 +46,14 @@ function ensureLightboxStylesheet(href) {
 }
 
 function ensureLightboxScript(src) {
-  if (document.querySelector("[data-isa-lb-zoom-js]") && globalThis.ISAComponents?.LightboxZoom?.LightboxZoomDialog) {
+  if (globalThis.ISAComponents?.LightboxZoom?.LightboxZoomDialog) {
     return Promise.resolve();
   }
+  const stale = document.querySelector("script[data-isa-lb-zoom-js]");
+  if (stale) stale.remove();
   return new Promise((resolve, reject) => {
     const el = document.createElement("script");
     el.src = src;
-    el.defer = true;
     el.setAttribute("data-isa-lb-zoom-js", "1");
     el.onload = () => {
       if (!globalThis.ISAComponents?.LightboxZoom?.LightboxZoomDialog) {

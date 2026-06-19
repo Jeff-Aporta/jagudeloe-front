@@ -1,0 +1,1 @@
+const t=window.ISAFront.createUrlState({param:"s",debounceMs:300,maxValue:100,initial:()=>({}),normalize:e=>e&&typeof e=="object"?e:{}}),o=t.MAX_VALUE,r=t.get,s=t.merge,c=t.subscribe,n=t.boot;export{o as MAX_VALUE,n as boot,r as get,s as merge,c as subscribe};

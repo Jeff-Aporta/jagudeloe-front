@@ -1,0 +1,1 @@
+import{Lightbox as i}from"../core/platform.js";import{getLightboxUi as m}from"../core/app-manifest.js";function b(t){const o=i.LightboxImage,{thumbSize:g}=m();return React.createElement(o,{ns:"ISAJ",thumbSize:t.thumbSize??g,...t})}function h(t){const o=i.ImageLightboxDialog;return React.createElement(o,{ns:"ISAJ",...t})}export{h as ImageLightboxDialog,b as LightboxImage};
