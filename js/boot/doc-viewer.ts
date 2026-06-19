@@ -112,6 +112,7 @@ async function runJsxDriver(
   tk: Record<string, unknown>,
   opts: { space: string; iticket: string; reportView?: string },
 ): Promise<void> {
+  const cdnMod = await import(appAssetUrl("js/boot/cdn.mjs"));
   const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(bootHelperUrl());
   const { importAppEntry } = await import(appAssetUrl("js/boot/module-graph.mjs"));
 
@@ -120,6 +121,7 @@ async function runJsxDriver(
   assertStack();
   await loadIsaFront();
   await loadSharedUi(Babel);
+  await cdnMod.ensureLightboxZoom();
   await importAppEntry("js/core/isa-setup.ts", Babel);
   const mod = await importAppEntry("js/boot/doc-viewer-web.jsx", Babel);
   mod.mountDocWebView(tk, {

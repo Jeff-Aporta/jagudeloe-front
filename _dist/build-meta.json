@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-06-19T13:24:59.566Z",
+  "builtAt": "2026-06-19T14:06:17.237Z",
   "files": 99,
-  "bytesIn": 597527,
-  "bytesOut": 340303,
-  "ratio": 0.57,
-  "hash": "00bacb543dfe",
+  "bytesIn": 602576,
+  "bytesOut": 344298,
+  "ratio": 0.571,
+  "hash": "5870fce42d4b",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -15,8 +15,8 @@
     {
       "src": "css/boot-loading.css",
       "dist": "_dist/css/boot-loading.css",
-      "bytesIn": 883,
-      "bytesOut": 633
+      "bytesIn": 4627,
+      "bytesOut": 3804
     },
     {
       "src": "css/code.css",
@@ -75,8 +75,8 @@
     {
       "src": "js/boot/doc-viewer.ts",
       "dist": "_dist/js/boot/doc-viewer.js",
-      "bytesIn": 6494,
-      "bytesOut": 3861
+      "bytesIn": 6596,
+      "bytesOut": 3928
     },
     {
       "src": "js/boot/loader.ts",
@@ -441,8 +441,8 @@
     {
       "src": "js/ui/bootShimmer.ts",
       "dist": "_dist/js/ui/bootShimmer.js",
-      "bytesIn": 3299,
-      "bytesOut": 1597
+      "bytesIn": 4502,
+      "bytesOut": 2354
     },
     {
       "src": "js/ui/glassSurface.ts",
