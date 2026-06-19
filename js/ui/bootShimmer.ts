@@ -1,4 +1,4 @@
-/** HTML y componente React para pantallas de carga con shimmer. */
+/** Pantalla de carga viewport — misma tarjeta que index.html / front-boot-block.mjs */
 
 const DEFAULT_ICON = "mdi:notebook-outline";
 export const BOOT_WATERMARK_URL =
@@ -29,6 +29,7 @@ export function appBootLabel(suffix = "…"): string {
 
 export type BootShimmerHtmlOpts = {
   icon?: string;
+  title?: string;
   viewport?: boolean;
   watermark?: boolean;
 };
@@ -40,22 +41,32 @@ export function bootShimmerHtml(
 ): string {
   const icon = escapeHtml(opts.icon || appBootIcon());
   const text = escapeHtml(label);
+  const title = escapeHtml(opts.title || appBootName());
   const viewport = opts.viewport !== false;
-  const classes = viewport ? "isa-app-boot isa-app-boot--viewport" : "isa-app-boot";
+  const className = viewport ? "isa-app-boot isa-app-boot--viewport" : "isa-app-boot";
   const watermark = opts.watermark !== false
     ? `<img class="isa-app-boot-watermark" src="${BOOT_WATERMARK_URL}" alt="" aria-hidden="true" decoding="async" />`
     : "";
+
   return (
-    `<div class="${classes}">` +
-    `<div class="isa-app-boot-shimmer">` +
-    `<iconify-icon icon="${icon}" width="1.5em" height="1.5em"></iconify-icon>` +
-    `<span>${text}</span>` +
-    `</div>${watermark}</div>`
+    `<div class="${className}">` +
+    `<div class="isa-app-boot__mesh" aria-hidden="true"></div>` +
+    `<div class="isa-app-boot__card" role="status" aria-live="polite" aria-busy="true">` +
+    `<div class="isa-app-boot__icon-wrap">` +
+    `<iconify-icon icon="${icon}" width="1.85em" height="1.85em"></iconify-icon>` +
+    `</div>` +
+    `<p class="isa-app-boot__title">${title}</p>` +
+    `<p class="isa-app-boot__label">${text}</p>` +
+    `<div class="isa-app-boot__bar" aria-hidden="true"><span class="isa-app-boot__bar-fill"></span></div>` +
+    `</div>` +
+    watermark +
+    `</div>`
   );
 }
 
 export type BootShimmerProps = {
   label?: string;
+  title?: string;
   icon?: string;
   viewport?: boolean;
   watermark?: boolean;
@@ -64,25 +75,40 @@ export type BootShimmerProps = {
 export function createBootShimmer(React: typeof window.React) {
   return function BootShimmer(props: BootShimmerProps) {
     const label = props.label || appBootLabel();
+    const title = props.title || appBootName();
     const icon = props.icon || appBootIcon();
     const viewport = props.viewport !== false;
     const showWatermark = props.watermark !== false;
-    const className = viewport
-      ? "isa-app-boot isa-app-boot--viewport"
-      : "isa-app-boot";
+    const className = viewport ? "isa-app-boot isa-app-boot--viewport" : "isa-app-boot";
 
     return React.createElement(
       "div",
       { className },
+      React.createElement("div", { className: "isa-app-boot__mesh", "aria-hidden": "true" }),
       React.createElement(
         "div",
-        { className: "isa-app-boot-shimmer" },
-        React.createElement("iconify-icon", {
-          icon,
-          width: "1.5em",
-          height: "1.5em",
-        }),
-        React.createElement("span", null, label),
+        {
+          className: "isa-app-boot__card",
+          role: "status",
+          "aria-live": "polite",
+          "aria-busy": "true",
+        },
+        React.createElement(
+          "div",
+          { className: "isa-app-boot__icon-wrap" },
+          React.createElement("iconify-icon", {
+            icon,
+            width: "1.85em",
+            height: "1.85em",
+          }),
+        ),
+        React.createElement("p", { className: "isa-app-boot__title" }, title),
+        React.createElement("p", { className: "isa-app-boot__label" }, label),
+        React.createElement(
+          "div",
+          { className: "isa-app-boot__bar", "aria-hidden": "true" },
+          React.createElement("span", { className: "isa-app-boot__bar-fill" }),
+        ),
       ),
       showWatermark
         ? React.createElement("img", {
@@ -97,7 +123,7 @@ export function createBootShimmer(React: typeof window.React) {
   };
 }
 
-/** Reemplaza UI.Loading del namespace ISA con shimmer. */
+/** Reemplaza UI.Loading del namespace ISA con la tarjeta viewport. */
 export function registerBootShimmer(ns: string): void {
   const React = window.React;
   const bag = (window as Record<string, { UI?: Record<string, unknown> }>)[ns];

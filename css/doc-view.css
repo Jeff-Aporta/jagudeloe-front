@@ -639,6 +639,16 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
   }
 }
 
+.tk-catalog-footer-chips {
+  & .MuiChip-root {
+    pointer-events: none;
+  }
+  & .MuiChip-label,
+  & .nav-status-dot {
+    pointer-events: none;
+  }
+}
+
 .tk-doc-web-surface {
   & .isa-cm-panel__copy {
     background: rgba(30, 144, 255, 0.1) !important;

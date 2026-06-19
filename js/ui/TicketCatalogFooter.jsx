@@ -106,6 +106,7 @@ export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
         Tiquetes (JAGUDELOE)
       </Typography>
       <Box
+        className="tk-catalog-footer-chips"
         sx={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))",
@@ -128,23 +129,20 @@ export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
           const chipSx = {
             ...TK_CATALOG_CHIP_SX,
             borderRadius: TK_DOC_RADIUS,
+            pointerEvents: "none",
             ...(isCurrent
               ? {
                   bgcolor: tkCatalogCurrentChipBg,
                   color: "primary.contrastText",
-                  cursor: "default",
                   "&:hover": { bgcolor: tkCatalogCurrentChipBg },
                   "& .nav-status-dot": { boxShadow: "0 0 0 1px rgba(255,255,255,0.35)" },
                 }
               : {}),
           };
-          const chip = (
-            <Chip
+          const trigger = (
+            <Box
               component={isCurrent ? "span" : "a"}
               href={isCurrent ? undefined : href}
-              clickable={!isCurrent}
-              size="small"
-              label={chipLabel}
               aria-current={isCurrent ? "page" : undefined}
               onClick={
                 isCurrent || !onSelectTicket
@@ -155,18 +153,34 @@ export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
                       onSelectTicket(id);
                     }
               }
-              sx={chipSx}
-            />
+              sx={{
+                display: "inline-flex",
+                width: "100%",
+                textDecoration: "none",
+                color: "inherit",
+                cursor: isCurrent ? "default" : "pointer",
+              }}
+            >
+              <Chip
+                component="span"
+                clickable={false}
+                size="small"
+                label={chipLabel}
+                sx={chipSx}
+              />
+            </Box>
           );
           return (
             <Tooltip
               key={id}
               arrow
               placement="top"
+              disableInteractive
               title={<CatalogTooltip lines={tip} />}
               slotProps={{
                 tooltip: {
                   sx: {
+                    pointerEvents: "none",
                     maxWidth: 380,
                     px: 1.25,
                     py: 0.9,
@@ -175,7 +189,7 @@ export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
                 },
               }}
             >
-              {chip}
+              {trigger}
             </Tooltip>
           );
         })}

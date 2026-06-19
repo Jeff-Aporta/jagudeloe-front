@@ -6,7 +6,7 @@ const isDevHost =
 
 function devCdnBase() {
   const base = document.querySelector("base")?.href || location.href;
-  return new URL("../../front-shared/cdn/", base).href.replace(/\/?$/, "/");
+  return new URL("../../components/front-shared/cdn/", base).href.replace(/\/?$/, "/");
 }
 
 export const CDN = isDevHost

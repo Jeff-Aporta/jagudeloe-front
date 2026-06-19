@@ -31,6 +31,7 @@
     "local:css/theme.css",
     "local:css/markdown.css",
     "local:css/app-shell.css",
+    "local:css/boot-loading.css",
     "local:css/doc-view.css",
     "local:css/tk-lightbox.css",
     "photoswipe",

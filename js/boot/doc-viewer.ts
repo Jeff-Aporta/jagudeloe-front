@@ -103,7 +103,7 @@ function appAssetUrl(path: string): string {
 function bootHelperUrl(): string {
   const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
   if (isLocalDev) {
-    return appAssetUrl("../../front-shared/cdn/boot-helper.mjs");
+    return appAssetUrl("../../components/front-shared/cdn/boot-helper.mjs");
   }
   return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a5a6597/cdn/boot-helper.mjs?v=a87602c";
 }

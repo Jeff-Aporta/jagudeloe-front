@@ -47,7 +47,7 @@ registerBootShimmer("ISAJ");
 if (!window.ISAJ?.Session) {
   throw new Error(
     "ISAJ.Session no registrado — recargue sin caché (Ctrl+Shift+R). " +
-      "Si persiste, actualice FRONT_SHARED_REF en front-shared/cdn/boot-helper.mjs.",
+      "Si persiste, actualice FRONT_SHARED_REF en components/front-shared/cdn/boot-helper.mjs.",
   );
 }
 if (!window.ISAJ.Session.isLoggedIn()) {
