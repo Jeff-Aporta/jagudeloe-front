@@ -19,3 +19,58 @@ export const bootHelperUrl = isDevHost
 
 export const asset = (p) =>
   isDevHost ? `${CDN}${p}` : `${CDN}/${p}?v=${PIN}`;
+
+/* @isa-lightbox-boot:start */
+/** @jeff-aporta/lightbox-zoom — pin: sync-component-refs.mjs */
+export const LIGHTBOX_ZOOM_REF = "d4414a0";
+
+export function lightboxZoomBase() {
+  const base = document.querySelector("base")?.href || location.href;
+  if (isDevHost) {
+    return new URL("../../components/lightbox/cdn/", base).href.replace(/\/?$/, "/");
+  }
+  return `https://cdn.jsdelivr.net/gh/Jeff-Aporta/lightbox-zoom@${LIGHTBOX_ZOOM_REF}/cdn/`;
+}
+
+function ensureLightboxStylesheet(href) {
+  if (document.querySelector("[data-isa-lb-zoom-css]")) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.setAttribute("data-isa-lb-zoom-css", "1");
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error("No se pudo cargar " + href));
+    document.head.appendChild(link);
+  });
+}
+
+function ensureLightboxScript(src) {
+  if (document.querySelector("[data-isa-lb-zoom-js]") && globalThis.ISAComponents?.LightboxZoom?.LightboxZoomDialog) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = src;
+    el.defer = true;
+    el.setAttribute("data-isa-lb-zoom-js", "1");
+    el.onload = () => {
+      if (!globalThis.ISAComponents?.LightboxZoom?.LightboxZoomDialog) {
+        reject(new Error("LightboxZoom no registró ISAComponents.LightboxZoom"));
+        return;
+      }
+      resolve();
+    };
+    el.onerror = () => reject(new Error("No se pudo cargar " + src));
+    document.head.appendChild(el);
+  });
+}
+
+/** Carga CSS + bundle. Requiere stack React/MUI y registerApp previo. */
+export async function ensureLightboxZoom(base = lightboxZoomBase()) {
+  const b = base.endsWith("/") ? base : base + "/";
+  await ensureLightboxStylesheet(b + "lightbox-zoom.min.css");
+  await ensureLightboxScript(b + "lightbox-zoom.min.js");
+  return globalThis.ISAComponents.LightboxZoom;
+}
+/* @isa-lightbox-boot:end */

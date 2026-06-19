@@ -96,6 +96,28 @@ export const getReact = () => window.ISAFront.getReact();
 export const getReactDOM = () => window.ISAFront.getReactDOM();
 export const getMaterialUI = () => window.ISAFront.getMaterialUI();
 
+function lightboxApi() {
+  const api = window.ISAComponents?.LightboxZoom;
+  if (!api?.LightboxZoomDialog) {
+    throw new Error("ISAComponents.LightboxZoom no cargado — recargue sin caché (Ctrl+Shift+R).");
+  }
+  return api;
+}
+
+/** Visor lightbox-zoom (@isa-components/lightbox). */
+export const LightboxZoom = {
+  get LightboxZoomDialog() { return lightboxApi().LightboxZoomDialog; },
+  get LightboxZoomImage() { return lightboxApi().LightboxZoomImage; },
+  get useLightboxZoom() { return lightboxApi().useLightboxZoom; },
+};
+
+/** Alias legacy (migración desde ISAFront.Lightbox). */
+export const Lightbox = {
+  get ImageLightboxDialog() { return lightboxApi().LightboxZoomDialog; },
+  get LightboxImage() { return lightboxApi().LightboxZoomImage; },
+  get useImageLightboxZoom() { return lightboxApi().useLightboxZoom; },
+};
+
 /** Constantes y utilidades del runtime compartido ISAFront (global). */
 export function getRealtimeConstants() {
   const f = window.ISAFront || {};

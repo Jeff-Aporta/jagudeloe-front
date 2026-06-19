@@ -18,7 +18,7 @@
   async function boot() {
     if (new URLSearchParams(location.search).has("isa_boot_hold")) return;
 
-    const { bootHelperUrl, asset } = await import("./js/boot/cdn.mjs");
+    const { bootHelperUrl, asset, ensureLightboxZoom } = await import("./js/boot/cdn.mjs");
     const { importAppEntry } = await import(MODULE_LOADER);
     const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
     manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
@@ -40,6 +40,7 @@
 
     await loadIsaFrontPinned({ loadIsaFront }, asset);
     await loadSharedUi(Babel);
+    await ensureLightboxZoom();
     await importAppEntry("js/core/isa-setup.ts", Babel);
     await importAppEntry(ENTRY, Babel);
   }
