@@ -1,5 +1,6 @@
 /** Registra widgets compartidos en window.ISAJ vía ISAFront. */
 import { registerBootShimmer } from "../ui/bootShimmer.ts";
+import { patchJagudeloeThemeRadius } from "./jagudeloe-theme-radius.ts";
 
 const ORCH = {
   local: "http://localhost:8780",
@@ -21,6 +22,8 @@ window.ISAFront.registerApp({
     showIntroText: true,
   },
 });
+
+patchJagudeloeThemeRadius();
 
 registerBootShimmer("ISAJ");
 

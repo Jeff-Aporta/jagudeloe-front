@@ -23,7 +23,15 @@
     const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
     manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
 
-    const { docBootFromSearch } = await import("./js/boot/url-s.mjs");
+    const { docBootFromSearch, diagramBootFromSearch } = await import("./js/boot/url-s.mjs");
+
+    const diagramBoot = diagramBootFromSearch();
+    if (diagramBoot) {
+      const mod = await importAppEntry("js/boot/diagram-viewer.ts", Babel);
+      await mod.runDiagramViewer(diagramBoot);
+      return;
+    }
+
     const docBoot = docBootFromSearch();
     if (docBoot) {
       const mod = await importAppEntry("js/boot/doc-viewer.ts", Babel);

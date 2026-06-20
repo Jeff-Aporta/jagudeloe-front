@@ -1,7 +1,7 @@
 /* Galería de pantallazos / evidencias (MUI ImageList + lightbox). */
 import { getReact, getMaterialUI } from "../core/platform.ts";
 import { useGlassColors, glassCardSx } from "./glassSurface.ts";
-import { LightboxImage } from "./ImageLightbox.jsx";
+import { DiagramLightbox } from "./DiagramLightbox.jsx";
 import { TK_DOC_RADIUS } from "../core/tk-table.ts";
 
 const ROW_HEIGHT = 164;
@@ -48,7 +48,7 @@ const EVIDENCIAS_COPY = {
 };
 
 export function TicketMetricsEvidencias({ items, variant = "metricas", embedded = false }) {
-  const { useMemo } = getReact();
+  const { useMemo, useState } = getReact();
   const c = useGlassColors();
   const mui = getMaterialUI();
   const { Box, Paper, Typography, ImageList, ImageListItem } = mui;
@@ -56,9 +56,10 @@ export function TicketMetricsEvidencias({ items, variant = "metricas", embedded 
   const copy = EVIDENCIAS_COPY[variant] || EVIDENCIAS_COPY.metricas;
 
   const gallery = useMemo(
-    () => visible.map((ev) => ({ src: ev.url, alt: ev.label || "Evidencia" })),
+    () => visible.map((ev) => ({ src: ev.url, alt: ev.label || "Evidencia", caption: ev.label || "" })),
     [visible],
   );
+  const [lb, setLb] = useState({ open: false, index: 0 });
 
   if (!visible.length) return null;
 
@@ -89,16 +90,22 @@ export function TicketMetricsEvidencias({ items, variant = "metricas", embedded 
               bgcolor: "action.hover",
             }}
           >
-            <LightboxImage
-              variant="grid"
+            <img
               src={ev.url}
               alt={ev.label || "Evidencia"}
-              gallery={gallery}
-              startIndex={index}
+              loading="lazy"
+              onClick={() => setLb({ open: true, index })}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: "zoom-in" }}
             />
           </ImageListItem>
         ))}
       </ImageList>
+      <DiagramLightbox
+        open={lb.open}
+        onClose={() => setLb((s) => ({ ...s, open: false }))}
+        slides={gallery}
+        startIndex={lb.index}
+      />
     </Box>
   );
 

@@ -3,7 +3,52 @@
  * Mantener sync con backend-tks/scripts/lib/tk-content-1437191.mjs
  */
 
+import { tk1437191StepperSpec } from "./tk-stepper.ts";
+import { tk1437191FileTreeSpec } from "./tk-file-tree.ts";
+import { tableBlockPayload, tk1437191ArchivosTableSpec, tk1437191SolucionTableSpec } from "./tk-doc-table.ts";
+import { markdownTextIsTableOnly } from "./tk-markdown.ts";
+import { withDocLane, TK_DOC_LANES } from "./tk-doc-interpreter.ts";
+
 const R2 = "https://pub-1c290cc606c8478899f5764899278571.r2.dev/patyia/diligencias";
+
+/** Migración PK compuesta MENSAJESCALIFICADOS (ISS-AyudasCPIA · commit 23121c3). */
+export const TK1437191_MIGRATION_SQL = `SET NOCOUNT ON;
+
+DECLARE @pk sysname;
+SELECT @pk = kc.name
+FROM sys.key_constraints kc
+INNER JOIN sys.tables t ON t.object_id = kc.parent_object_id
+WHERE kc.[type] = 'PK'
+  AND t.[name] = N'MENSAJESCALIFICADOS'
+  AND SCHEMA_NAME(t.[schema_id]) = N'dbo';
+
+IF @pk IS NOT NULL
+BEGIN
+    DECLARE @dropPk nvarchar(300) = N'ALTER TABLE dbo.MENSAJESCALIFICADOS DROP CONSTRAINT ' + QUOTENAME(@pk);
+    EXEC sp_executesql @dropPk;
+END;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.key_constraints kc
+    INNER JOIN sys.tables t ON t.object_id = kc.parent_object_id
+    WHERE kc.[type] = 'PK'
+      AND t.[name] = N'MENSAJESCALIFICADOS'
+      AND SCHEMA_NAME(t.[schema_id]) = N'dbo'
+)
+BEGIN
+    ALTER TABLE dbo.MENSAJESCALIFICADOS
+    ADD CONSTRAINT PK_MENSAJESCALIFICADOS PRIMARY KEY (IMENSAJE, ICONVERSACION);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.foreign_keys WHERE [name] = N'FK_MENSAJESCALIFICADOS_CONVERSACIONES'
+)
+BEGIN
+    ALTER TABLE dbo.MENSAJESCALIFICADOS
+    ADD CONSTRAINT FK_MENSAJESCALIFICADOS_CONVERSACIONES
+        FOREIGN KEY (ICONVERSACION) REFERENCES dbo.CONVERSACIONES (ICONVERSACION);
+END;`;
 
 export const TK1437191_COMMITS = [
   {
@@ -151,14 +196,14 @@ export const TK1437191_TIEMPOS = [
   {
     name: "Implementación ISS-AyudasCPIA",
     detail: "12 commits · imensaje + PK compuesta + validación POST /api/mensaje",
-    minutos: 111,
+    minutos: 110,
     sortKey: 1,
     phase: "commits",
   },
   {
     name: "Diligencia del ticket",
     detail: "documentación TK-1437191 · evidencias problema + métricas InSoft (200 min)",
-    minutos: 54,
+    minutos: 55,
     sortKey: 2,
     phase: "diligencia",
   },
@@ -170,7 +215,7 @@ export const TK1437191_CONTENT: Record<string, unknown>[] = [
     sortKey: 0,
     payload: {
       text:
-        "**Culminado y entregado.** Se restableció el vínculo entre **`mensajesCalificados`** y el hilo **`mensajesOpenAI`** usando el identificador interno **`imensaje`** (slot del turno en `CONVERSACION_LOG`), con **`fecha_hora`** visible en cada mensaje del hilo. La calificación 👍/👎 queda asociada al mensaje concreto de Paty que el usuario evaluó.",
+        "**Culminado y entregado.** Se restableció el vínculo entre **`mensajesCalificados`** y el hilo **`mensajesOpenAI`** usando el identificador interno **`imensaje`** (slot del turno en `CONVERSACION_LOG`), con **`fecha_hora`** visible en cada mensaje del hilo. La calificación {{thumb-up}}/{{thumb-down}} queda asociada al mensaje concreto de Paty que el usuario evaluó.",
     },
   },
   {
@@ -234,63 +279,35 @@ export const TK1437191_CONTENT: Record<string, unknown>[] = [
       title: "Causa del problema",
       text:
         "Al reconstruir el hilo en **GET `/api/conversacion`**, el backend **no propagaba `fecha_hora`** en `mensajesOpenAI` (llegaba `\"\"`) aunque en `CONVERSACION_LOG` del asistente sí existía `meta.ts` con timestamp.\n\n" +
-        "El cruce con **`mensajesCalificados`** dependía de **`ireferencia`**, que en producción llegaba en **0** y no identificaba el turno Paty que el usuario calificó. **`imensaje`** (slot del turno en el log) **no se devolvía** de forma estable en el hilo, en **POST `/api/mensaje`** ni en el evento SSE **`end`**, por lo que la UI no podía anclar 👍/👎 al mensaje correcto.\n\n" +
+        "El cruce con **`mensajesCalificados`** dependía de **`ireferencia`**, que en producción llegaba en **0** y no identificaba el turno Paty que el usuario calificó. **`imensaje`** (slot del turno en el log) **no se devolvía** de forma estable en el hilo, en **POST `/api/mensaje`** ni en el evento SSE **`end`**, por lo que la UI no podía anclar {{thumb-up}}/{{thumb-down}} al mensaje correcto.\n\n" +
         "En base de datos, la clave de calificaciones **no estaba alineada** al par **`(imensaje, iconversacion)`** que exige el contrato API.",
     },
   },
   {
-    kind: "markdown",
+    kind: "table",
     sortKey: 4,
-    payload: {
-      title: "Solución aplicada",
-      text:
-        "| Aspecto | Antes | Después |\n| --- | --- | --- |\n| Identificador | `ireferencia` / fechas inconsistentes | **`imensaje`** + **`iconversacion`** (PK compuesta) |\n| Hilo OpenAI | `fecha_hora` vacío | Epoch desde `created_at` / meta del log |\n| POST calificar | Sin validación de pertenencia | Solo **`imensaje`** de asistente existente en el log |\n| GET conversación | Calificaciones sueltas | **`attachCalificadosToMensajesOpenAI`** cruza por par |\n| Stream SSE | Sin slot para UI | Evento **`end`** incluye **`imensaje`** del turno |",
-    },
+    payload: withDocLane(TK_DOC_LANES.SOLUCION, tableBlockPayload(tk1437191SolucionTableSpec())),
   },
   {
-    kind: "markdown",
+    kind: "sequence",
     sortKey: 5,
     payload: {
-      title: "Flujo funcional",
-      text:
-        "1. El usuario envía un turno → el backend persiste **`CONVERSACION_LOG`** y asigna **`imensaje`** al slot del asistente.\n" +
-        "2. **GET `/api/conversacion/{id}`** devuelve `mensajesOpenAI[]` con **`fecha_hora`**, **`mensaje`** e **`imensaje`** en respuestas Paty.\n" +
-        "3. La UI envía **POST `/api/mensaje`** con `{ iconversacion, imensaje, butil, contenido }`.\n" +
-        "4. El servidor valida que **`imensaje`** exista en el log de la conversación y que no esté duplicado.\n" +
-        "5. Al reconsultar la conversación, la calificación queda enlazada al mensaje correcto del hilo.",
+      title: "Diagrama de secuencia",
+      preset: "tk1437191",
+      caption: "Turno → log → GET conversación → calificar → validar → enlace en el hilo",
     },
   },
   {
     kind: "table",
     sortKey: 6,
-    payload: {
-      title: "Archivos modificados (ISS-AyudasCPIA)",
-      headers: ["Ruta", "Rol"],
-      rows: [
-        ["schema/migrations/001-mensajescalificados-pk-composite.sql", "PK (imensaje, iconversacion)"],
-        ["src/lib/logs/UlMetrics.ts", "imensaje, fecha_hora, cruce calificados"],
-        ["src/lib/controller/010-conversacion/010 - ConversacionesServer.ts", "Enriquecimiento GET conversación"],
-        ["src/lib/controller/010-conversacion/020 - MensajesCalificadosServer.ts", "Validación POST calificar"],
-        ["src/lib/controller/000-core/005 - OpenIAServer.ts", "imensaje en stream end"],
-        ["src/lib/constants/UlConst.ts", "Contrato MensajeOpenAI"],
-        ["src/lib/model/010-conversacion/020 - TMensaje.ts", "Modelo calificado sin ireferencia"],
-      ],
-    },
+    payload: tableBlockPayload(tk1437191ArchivosTableSpec()),
   },
   {
     kind: "file-tree",
     sortKey: 7,
     payload: {
       title: "Árbol de cambios",
-      paths: [
-        "schema/migrations/001-mensajescalificados-pk-composite.sql",
-        "src/lib/logs/UlMetrics.ts",
-        "src/lib/controller/010-conversacion/010 - ConversacionesServer.ts",
-        "src/lib/controller/010-conversacion/020 - MensajesCalificadosServer.ts",
-        "src/lib/controller/000-core/005 - OpenIAServer.ts",
-        "src/lib/constants/UlConst.ts",
-        "src/lib/model/010-conversacion/020 - TMensaje.ts",
-      ],
+      ...tk1437191FileTreeSpec(),
     },
   },
   {
@@ -304,44 +321,22 @@ export const TK1437191_CONTENT: Record<string, unknown>[] = [
     },
   },
   {
-    kind: "markdown",
+    kind: "mui-stepper",
     sortKey: 9,
     payload: {
       title: "Cómo probar",
-      text:
-        "1. Crear conversación en staging y anotar **`imensaje`** del evento SSE **`end`**.\n" +
-        "2. **GET conversación** → verificar **`fecha_hora`** e **`imensaje`** en mensajes del asistente.\n" +
-        "3. **POST `/api/mensaje`** con ese **`imensaje`** → respuesta OK.\n" +
-        "4. Repetir POST con el mismo par → debe rechazar duplicado.\n" +
-        "5. **GET conversación** → el mensaje calificado coincide con el turno Paty evaluado.",
+      stepper: tk1437191StepperSpec(),
     },
   },
   {
-    kind: "markdown",
+    kind: "code",
     sortKey: 10,
     payload: {
       title: "Migración base de datos",
-      text:
-        "Script **`001-mensajescalificados-pk-composite.sql`**: PK compuesta **`(IMENSAJE, ICONVERSACION)`** en `MENSAJESCALIFICADOS`, alineada con el contrato API y Postman.",
-    },
-  },
-  {
-    kind: "markdown",
-    sortKey: 11,
-    payload: {
-      title: "Métricas InSoft (200 min)",
-      text:
-        "Tiempo registrado en el sistema de tickets: **200 minutos** (~3 h 20 min). Timeline: apertura **11/jun** · inicio atención **12/jun 12:31** · solucionado **19/jun 21:26**. Desglose jagudeloe: 35 min investigación + 111 min implementación + 54 min diligencia.",
-    },
-  },
-  {
-    kind: "image",
-    sortKey: 12,
-    payload: {
-      url: `${R2}/tk1437191-metricas-insoft.png`,
-      alt: "Métricas InSoft TK-1437191 — 200 min",
-      caption:
-        "InSoft TK-1437191 — timeline del ticket (apertura, inicio atención y cierre Solucionado) · **200 min** registrados.",
+      language: "sql",
+      intro:
+        "PK compuesta **(IMENSAJE, ICONVERSACION)** en `MENSAJESCALIFICADOS`, alineada con el contrato API y Postman.",
+      code: TK1437191_MIGRATION_SQL,
     },
   },
 ];
@@ -352,13 +347,103 @@ export function needsTk1437191ContentPatch(content: unknown[]): boolean {
   if (!Array.isArray(content) || content.length === 0) return true;
   let hasProblemaImg = false;
   let hasCausa = false;
+  let hasSequence = false;
+  let hasStepper = false;
+  let hasFileTree = false;
+  let hasSolucionTable = false;
+  let hasArchivosTable = false;
+  let hasLegacyMarkdownTable = false;
+  let hasMigrationSql = false;
+  let hasLegacyMigrationMarkdown = false;
+  let hasLegacyMetricasInContent = false;
+  let hasLegacyThumbEmojis = false;
+  let sequenceMissingLog = false;
+  let sequenceMissingDesc = false;
+  let hasDocLanes = false;
+  let hasTimeline = false;
   for (const block of content) {
     if (!block || typeof block !== "object") continue;
-    const p = ((block as Record<string, unknown>).payload || {}) as Record<string, unknown>;
+    const b = block as Record<string, unknown>;
+    const p = (b.payload || {}) as Record<string, unknown>;
     if (String(p.url ?? p.src ?? "").includes(CONTENT_MARKER)) hasProblemaImg = true;
+    if (String(p.url ?? p.src ?? "").includes("tk1437191-metricas-insoft.png")) hasLegacyMetricasInContent = true;
     if (/causa del problema/i.test(String(p.title ?? ""))) hasCausa = true;
+    if (String(b.kind ?? "").toLowerCase() === "sequence") {
+      if (String(p.preset ?? "") === "tk1437191") hasSequence = true;
+      else {
+        const seq = p.sequence as Record<string, unknown> | undefined;
+        hasSequence = Array.isArray(seq?.actors) && (seq.actors as unknown[]).length > 0;
+        const msgs = (seq?.messages as Record<string, unknown>[]) ?? [];
+        if (msgs.length > 0) {
+          if (msgs.some((m) => !String(m?.log ?? "").trim())) sequenceMissingLog = true;
+          if (msgs.some((m) => !String(m?.desc ?? m?.description ?? "").trim())) sequenceMissingDesc = true;
+        }
+      }
+    }
+    if (String(b.kind ?? "").toLowerCase() === "flow") {
+      if (String(p.preset ?? "") === "tk1437191") hasSequence = true;
+    }
+    if (String(b.kind ?? "").toLowerCase() === "mui-stepper") {
+      hasStepper = String(p.preset ?? "") === "tk1437191" || !!p.stepper;
+    }
+    if (String(b.kind ?? "").toLowerCase() === "file-tree") {
+      if (String(p.preset ?? "") === "tk1437191") hasFileTree = true;
+      else {
+        const tree = p.tree ?? (p.fileTree as Record<string, unknown> | undefined)?.tree;
+        hasFileTree = Array.isArray(tree) && tree.length > 0;
+      }
+    }
+    const kind = String(b.kind ?? "").toLowerCase();
+    if (kind === "markdown" || kind === "md" || kind === "text") {
+      const text = String(p.text ?? p.body ?? "");
+      if (markdownTextIsTableOnly(text)) hasLegacyMarkdownTable = true;
+      if (/migraci[oó]n base de datos/i.test(String(p.title ?? "")) && /\.sql/i.test(text)) {
+        hasLegacyMigrationMarkdown = true;
+      }
+      if (/m[eé]tricas insoft/i.test(String(p.title ?? ""))) hasLegacyMetricasInContent = true;
+      if (text.includes("👍") || text.includes("👎")) hasLegacyThumbEmojis = true;
+    }
+    if ((kind === "code" || kind === "sql") && /migraci[oó]n base de datos/i.test(String(p.title ?? ""))) {
+      const code = String(p.code ?? p.sql ?? "");
+      if (code.includes("MENSAJESCALIFICADOS") && code.includes("PRIMARY KEY")) hasMigrationSql = true;
+    }
+    if (kind === "table") {
+      const table = p.table as Record<string, unknown> | undefined;
+      const hasMatrix = Array.isArray(table?.matrix) && (table.matrix as unknown[]).length >= 2;
+      const hasLegacyRows = Array.isArray(table?.rows) && (table.rows as unknown[]).length > 0;
+      const lane = String(p.docLane ?? p.section ?? p.lane ?? "").toLowerCase();
+      if (String(p.preset ?? "") === "tk1437191-archivos" || /archivos modificados/i.test(String(p.title ?? table?.title ?? ""))) {
+        hasArchivosTable = hasMatrix || hasLegacyRows;
+      } else if (lane === "solucion" || /aspecto/i.test(String((table?.matrix as unknown[][])?.[0]?.[0] ?? ""))) {
+        hasSolucionTable = hasMatrix || hasLegacyRows;
+      } else if (hasMatrix || hasLegacyRows) {
+        hasArchivosTable = true;
+      }
+    }
+    if (p.docLane || p.section || p.lane) hasDocLanes = true;
+    if (String(b.kind ?? "").toLowerCase() === "timeline") {
+      const tl = p.timeline as Record<string, unknown> | undefined;
+      hasTimeline = Array.isArray(tl?.milestones) && (tl.milestones as unknown[]).length > 0;
+    }
   }
-  return !hasProblemaImg || !hasCausa;
+  return (
+    !hasProblemaImg ||
+    !hasCausa ||
+    !hasSequence ||
+    !hasStepper ||
+    !hasFileTree ||
+    !hasSolucionTable ||
+    !hasArchivosTable ||
+    hasLegacyMarkdownTable ||
+    hasLegacyMigrationMarkdown ||
+    hasLegacyMetricasInContent ||
+    hasLegacyThumbEmojis ||
+    sequenceMissingLog ||
+    sequenceMissingDesc ||
+    !hasMigrationSql ||
+    !hasDocLanes ||
+    !hasTimeline
+  );
 }
 
 export function mergeTk1437191Content(content: unknown[]): unknown[] {

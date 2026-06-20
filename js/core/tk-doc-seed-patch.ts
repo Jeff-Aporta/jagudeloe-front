@@ -1,8 +1,14 @@
 /**
- * Parche de commits/tiempos/contenido cuando la API aún no refleja el seed de BD.
- * Fuente canónica: backend-tks/scripts/lib/tk-content-*.mjs
+ * Parche de commits/tiempos/contenido cuando la API local aún no refleja el seed de BD.
+ * Fuente canónica: backend-tks/scripts/lib/tk-content-*.mjs + BD_ISADOC.TK_CONTENT.
+ * Solo en localhost (prod GitHub Pages no aplica). Desactivar: ?tkPatch=0 o localStorage tkDocLocalPatch=0.
+ * Preferir BD remota (misma que prod): client.ts consulta jagudeloe-tks antes que 127.0.0.1:8786.
  */
 
+import {
+  normalizeTkDocument,
+  tkDocLocalContentPatchEnabled,
+} from "./tk-doc-interpreter.ts";
 import {
   mergeTk1437191Content,
   needsTk1437191ContentPatch,
@@ -232,7 +238,7 @@ const TK1437191_METRICAS_PATCH = {
   fechaSolucion: "19/jun./2026 09:26:00 pm",
   documentacion: {
     cierreEmpresa: "Solucionado",
-    diligenciaMinutos: { investigacion: 35, commits: 111, ticket: 54, total: 200 },
+    diligenciaMinutos: { investigacion: 35, commits: 110, ticket: 55, total: 200 },
     imagenesR2Subidas: TK1437191_R2_SUBIDAS,
     evidenciasTiempo: [...TK1437191_EVIDENCIAS_TIEMPO],
     evidenciasSubidas: true,
@@ -378,12 +384,10 @@ function patchTk1439155Metricas(tk: Record<string, unknown>): Record<string, unk
 }
 
 function needsTk1437191MetricasPatch(tk: Record<string, unknown>): boolean {
+  if (!tkDocLocalContentPatchEnabled()) return false;
   if (needsTk1437191ContentPatch((tk.content as unknown[]) ?? [])) return true;
   if (Number(tk.diligenciaMinutos ?? 0) !== 200) return true;
   if (Number(tk.tiempoTotalMinutos ?? 0) !== 200) return true;
-  const doc = metricasDocBag(tk);
-  const subidas = Array.isArray(doc.imagenesR2Subidas) ? doc.imagenesR2Subidas : [];
-  if (!subidas.some((k) => String(k).toLowerCase().includes("1437191-metricas"))) return true;
   const detMet = ((tk.detallesExtra as Record<string, unknown> | undefined)?.metricas || {}) as Record<
     string,
     unknown
@@ -429,10 +433,10 @@ function patchTk1437191Metricas(tk: Record<string, unknown>): Record<string, unk
 /** Sustituye commits/tiempos/contenido del ticket si la API aún no coincide con el seed. */
 export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unknown> {
   const iticket = normIticket(tk.iticket);
-  let out = { ...tk };
+  let out = normalizeTkDocument(tk);
 
   const override = DOC_SEED_OVERRIDES[iticket];
-  if (override) {
+  if (override && tkDocLocalContentPatchEnabled()) {
     const currentCommits = collectCommits(out);
     const currentTiempos = (out.tiempos as Record<string, unknown>[]) ?? [];
     const patchCommits = needsCommitPatch(currentCommits, override.commits);
@@ -457,19 +461,21 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
   }
 
   const content = (out.content as unknown[]) ?? [];
-  if (iticket === "TK-1437191" && needsTk1437191ContentPatch(content)) {
-    out = { ...out, content: mergeTk1437191Content(content) };
-  }
+  if (tkDocLocalContentPatchEnabled()) {
+    if (iticket === "TK-1437191" && needsTk1437191ContentPatch(content)) {
+      out = normalizeTkDocument({ ...out, content: mergeTk1437191Content(content) });
+    }
 
-  if (iticket === "TK-1439155" && needsTk1439155ContentPatch(content)) {
-    out = { ...out, content: mergeTk1439155Content(content) };
+    if (iticket === "TK-1439155" && needsTk1439155ContentPatch(content)) {
+      out = normalizeTkDocument({ ...out, content: mergeTk1439155Content(content) });
+    }
   }
 
   if (iticket === "TK-1439155") {
     out = patchTk1439155Metricas(out);
   }
 
-  if (iticket === "TK-1437191") {
+  if (iticket === "TK-1437191" && tkDocLocalContentPatchEnabled()) {
     out = patchTk1437191Metricas(out);
   }
 
@@ -477,7 +483,7 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
     out = patchTk1437976Content(out);
   }
 
-  return out;
+  return normalizeTkDocument(out);
 }
 
 const TK1437976_SOLICITUD =

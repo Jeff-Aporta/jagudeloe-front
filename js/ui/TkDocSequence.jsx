@@ -1,22 +1,123 @@
 import { getReact, getMaterialUI } from "../core/platform.ts";
+import { DiagramLightbox } from "./DiagramLightbox.jsx";
+import { SequenceTurtle } from "./SequenceTurtle.jsx";
 import {
   computeSequenceLayout,
-  sequenceSpecFromPayload,
+  resolveSequenceSpec,
+  sequenceMessageTooltipText,
   sequenceThemeDark,
   sequenceThemeLight,
-  tk1431662SequenceSpec,
 } from "../core/tk-sequence.ts";
+import { TK_DIAGRAM_RADIUS_PX } from "../core/tk-diagram-grid.ts";
+import { inlineMdWeb } from "./tkHtml.ts";
+import { iconifyApiUrl, hasIconifyJsonSugar } from "../core/tk-iconify-inline.ts";
+import { tkHueToHex } from "../core/tk-hue.ts";
+import { contrastFontColor } from "../core/tk-color.ts";
+import { registerDiagramKind } from "./diagram-kinds.ts";
 
 const { useMemo, useRef, useState, useCallback } = getReact();
 
-function iconifyUrl(icon, color) {
-  const path = icon.includes(":") ? icon.replace(":", "/") : `mdi/${icon}`;
-  return `https://api.iconify.design/${path}.svg?color=${encodeURIComponent(color)}`;
+const GUIDE_X = 44;
+
+/** Avatar del actor: disco tenue + ícono Iconify (hue 0–360). */
+function ActorAvatar({ icon, hue, cx, cy, size = 16 }) {
+  const fill = tkHueToHex(hue) ?? "#64748b";
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={size * 0.74} fill={fill} opacity={0.16} />
+      <image
+        href={iconifyApiUrl(icon, hue, size * 2)}
+        x={cx - size / 2}
+        y={cy - size / 2}
+        width={size}
+        height={size}
+        preserveAspectRatio="xMidYMid meet"
+      />
+    </>
+  );
 }
 
-function TkDocSequenceSvg({ layout, theme, dark, hoverId, onMsgEnter, onMsgLeave }) {
-  const { width: W, height: H, actors, lifelines, messages, altBox, title, subtitle, titleY, subtitleY } = layout;
-  const uid = useMemo(() => `tk-seq-neon-${Math.random().toString(36).slice(2, 9)}`, []);
+function DiagramMessageLabel({ label, labelX, labelY, labelW, labelH, theme, active }) {
+  if (!label) return null;
+  const color = active ? theme.text : theme.muted;
+  if (label.includes("{{")) {
+    return (
+      <foreignObject x={labelX} y={labelY} width={labelW} height={labelH} overflow="visible">
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          className="tk-doc-seq-label tk-doc-markdown"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: "100%",
+            fontSize: 10,
+            fontFamily: "Consolas, Menlo, monospace",
+            color,
+            fontWeight: active ? 600 : 400,
+            lineHeight: 1.2,
+            textAlign: "center",
+          }}
+          dangerouslySetInnerHTML={{ __html: inlineMdWeb(label) }}
+        />
+      </foreignObject>
+    );
+  }
+  return (
+    <text
+      x={labelX + labelW / 2}
+      y={labelY + 13}
+      textAnchor="middle"
+      fill={color}
+      fontSize="10"
+      fontWeight={active ? "600" : "400"}
+      fontFamily="Consolas,Menlo,monospace"
+    >
+      {label}
+    </text>
+  );
+}
+
+function MessageArrow({ m, theme, active }) {
+  const stroke = (m.groupHue != null && tkHueToHex(m.groupHue)) || theme.accent;
+  const sw = active ? 1.75 : 1.15;
+  const dash = m.kind === "async" ? "5 3" : undefined;
+  const tipX = m.arrowTipX;
+  const tipY = m.arrowTipY ?? m.y;
+  const dir = m.arrowDir;
+
+  // Punta horizontal según la dirección del último tramo (sync/self/async).
+  const head =
+    dir > 0
+      ? `${tipX},${tipY} ${tipX - 7},${tipY - 3.5} ${tipX - 7},${tipY + 3.5}`
+      : `${tipX},${tipY} ${tipX + 7},${tipY - 3.5} ${tipX + 7},${tipY + 3.5}`;
+
+  return (
+    <>
+      <path
+        d={m.path}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={sw}
+        strokeDasharray={dash}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        vectorEffect="non-scaling-stroke"
+      />
+      {m.kind === "async" ? (
+        <polyline points={head} fill="none" stroke={stroke} strokeWidth={sw} strokeLinejoin="miter" />
+      ) : (
+        <polygon points={head} fill={stroke} />
+      )}
+    </>
+  );
+}
+
+function TkDocSequenceSvg({ layout, theme, hoverId, onMsgEnter, onMsgLeave, fit, turtlePaused, turtleAutoLoop, turtleControlRef, turtleOnState, hiddenGroups, onToggleGroup }) {
+  const { width: W, height: H, actors, lifelines, messages, altBox, title, subtitle, titleY, subtitleY, groups, legendX } = layout;
+  const hoveredMsg = hoverId ? messages.find((m) => m.id === hoverId) : null;
+  const hiColor = hoveredMsg?.groupHue != null ? tkHueToHex(hoveredMsg.groupHue) || theme.accent : theme.accent;
 
   return (
     <svg
@@ -24,43 +125,12 @@ function TkDocSequenceSvg({ layout, theme, dark, hoverId, onMsgEnter, onMsgLeave
       viewBox={`0 0 ${W} ${H}`}
       role="img"
       aria-label={title || "Diagrama de secuencia"}
+      preserveAspectRatio="xMidYMid meet"
       className="tk-doc-sequence-svg"
-      style={{ width: "100%", maxWidth: W, height: "auto", display: "block" }}
+      style={fit ? { width: "100%", height: "100%", maxWidth: "none", display: "block", margin: "0 auto" } : { width: "100%", maxWidth: W, height: "auto", display: "block", margin: "0 auto" }}
     >
-      <defs>
-        <filter id={`${uid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id={`${uid}-glow-strong`} x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4.5" result="blur" />
-          <feColorMatrix
-            in="blur"
-            type="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1.15 0"
-            result="glow"
-          />
-          <feMerge>
-            <feMergeNode in="glow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <linearGradient id={`${uid}-panel`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={dark ? "rgba(30,144,255,0.1)" : "rgba(30,144,255,0.05)"} />
-          <stop offset="100%" stopColor={theme.panel} />
-        </linearGradient>
-        <marker id={`${uid}-arrow`} markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <polygon points="0,0 8,4 0,8" fill={theme.accent} />
-        </marker>
-      </defs>
-
-      <rect x="0" y="0" width={W} height={H} rx="12" fill={`url(#${uid}-panel)`} stroke={theme.border} strokeWidth="1" />
-
       {title && (
-        <text x={W / 2} y={titleY} textAnchor="middle" fill={theme.text} fontSize="13" fontWeight="700" fontFamily="Tahoma,Arial,sans-serif">
+        <text x={W / 2} y={titleY} textAnchor="middle" fill={theme.text} fontSize="13" fontWeight="600" fontFamily="Tahoma,Arial,sans-serif">
           {title}
         </text>
       )}
@@ -70,52 +140,127 @@ function TkDocSequenceSvg({ layout, theme, dark, hoverId, onMsgEnter, onMsgLeave
         </text>
       )}
 
+      {groups && groups.length > 0 && (
+        <g className="tk-doc-seq-legend">
+          {groups.map((grp, gi) => {
+            const ly = 18 + gi * 16;
+            const color = tkHueToHex(grp.hue) ?? theme.accent;
+            const off = hiddenGroups ? hiddenGroups.has(grp.id) : false;
+            const clickable = !!onToggleGroup;
+            return (
+              <g
+                key={grp.id ?? gi}
+                className={`tk-doc-seq-legend__item${off ? " is-off" : ""}`}
+                onClick={clickable ? () => onToggleGroup(grp.id) : undefined}
+                style={clickable ? { cursor: "pointer" } : undefined}
+                opacity={off ? 0.4 : 1}
+              >
+                {clickable && (
+                  <rect x={legendX - 2} y={ly - 8} width={grp.name.length * 6 + 26} height={16} rx={4} fill="transparent" />
+                )}
+                {off ? (
+                  <circle cx={legendX + 5} cy={ly} r={4.5} fill="none" stroke={color} strokeWidth={1.4} />
+                ) : (
+                  <circle cx={legendX + 5} cy={ly} r={4.5} fill={color} />
+                )}
+                <text
+                  x={legendX + 16}
+                  y={ly + 3.5}
+                  fill={theme.muted}
+                  fontSize="10"
+                  fontFamily="Tahoma,Arial,sans-serif"
+                  textDecoration={off ? "line-through" : undefined}
+                >
+                  {grp.name}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
+
       {actors.map((a) => {
-        const bw = a.kind === "actor" ? 92 : 108;
+        const bw = a.w;
         const bx = a.x - bw / 2;
+        const iconInLabel = hasIconifyJsonSugar(a.label);
+        const iconCx = bx + 18;
+        const labelLeft = iconInLabel ? bx + 8 : bx + 32;
+        const labelRight = bx + bw - 8;
+        const labelCx = (labelLeft + labelRight) / 2;
         const active = hoverId && messages.some((m) => m.id === hoverId && (m.fromX === a.x || m.toX === a.x));
+        const dim = hoverId && !active;
         return (
-          <g key={a.id} className={`tk-doc-seq-actor${active ? " is-active" : ""}`}>
+          <g
+            key={a.id}
+            className={`tk-doc-seq-actor${active ? " is-active" : ""}${dim ? " is-dim" : ""}`}
+            opacity={dim ? 0.32 : 1}
+          >
             <rect
               x={bx}
-              y={a.y - 14}
+              y={a.y - 16}
               width={bw}
-              height={36}
-              rx="8"
-              fill={theme.panel}
-              stroke={a.color}
-              strokeWidth={active ? 2 : 1.2}
-              filter={active ? `url(#${uid}-glow)` : undefined}
+              height={32}
+              rx={TK_DIAGRAM_RADIUS_PX}
+              fill="transparent"
+              stroke={active ? theme.accent : theme.border}
+              strokeWidth={active ? 1.4 : 1}
             />
-            <image href={iconifyUrl(a.icon, a.color)} x={a.x - (a.kind === "actor" ? 28 : 24)} y={a.y - 10} width="16" height="16" />
-            <text
-              x={a.x + (a.kind === "actor" ? -6 : 2)}
-              y={a.y + 8}
-              textAnchor="middle"
-              fill={theme.text}
-              fontSize="11"
-              fontWeight="700"
-              fontFamily="Tahoma,Arial,sans-serif"
-            >
-              {a.label}
-            </text>
+            {!iconInLabel && <ActorAvatar icon={a.icon} hue={a.hue} cx={iconCx} cy={a.y} size={16} />}
+            {a.label.includes("{{") ? (
+              <foreignObject x={labelLeft} y={a.y - 10} width={labelRight - labelLeft} height={20} overflow="visible">
+                <div
+                  xmlns="http://www.w3.org/1999/xhtml"
+                  className="tk-doc-seq-actor-label tk-doc-markdown"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "100%",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "Tahoma,Arial,sans-serif",
+                    color: theme.text,
+                    lineHeight: 1,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: inlineMdWeb(a.label) }}
+                />
+              </foreignObject>
+            ) : (
+              <text
+                x={labelCx}
+                y={a.y + 4}
+                textAnchor="middle"
+                fill={theme.text}
+                fontSize="11"
+                fontWeight="600"
+                fontFamily="Tahoma,Arial,sans-serif"
+              >
+                {a.label}
+              </text>
+            )}
           </g>
         );
       })}
 
-      {lifelines.map((l) => (
-        <line
-          key={l.id}
-          x1={l.x}
-          y1={l.y1}
-          x2={l.x}
-          y2={l.y2}
-          stroke={theme.grid}
-          strokeWidth="1.2"
-          strokeDasharray="5 4"
-          className="tk-doc-seq-lifeline"
-        />
-      ))}
+      {lifelines.map((l) => {
+        const involved = hoveredMsg && (hoveredMsg.fromX === l.x || hoveredMsg.toX === l.x);
+        const dim = hoverId && !involved;
+        return (
+          <line
+            key={l.id}
+            x1={l.x}
+            y1={l.y1}
+            x2={l.x}
+            y2={l.y2}
+            stroke={involved ? hiColor : theme.grid}
+            strokeWidth={involved ? 1.6 : 1}
+            strokeDasharray="4 4"
+            className="tk-doc-seq-lifeline"
+            opacity={dim ? 0.3 : 1}
+          />
+        );
+      })}
 
       {altBox && (
         <g className="tk-doc-seq-alt">
@@ -124,13 +269,13 @@ function TkDocSequenceSvg({ layout, theme, dark, hoverId, onMsgEnter, onMsgLeave
             y={altBox.y}
             width={altBox.w}
             height={altBox.h}
-            rx="10"
-            fill={theme.altFill}
+            rx={TK_DIAGRAM_RADIUS_PX}
+            fill="transparent"
             stroke={theme.altBorder}
-            strokeWidth="1.2"
-            strokeDasharray="6 4"
+            strokeWidth="1"
+            strokeDasharray="5 4"
           />
-          <text x={altBox.x + 10} y={altBox.y + 14} fill={theme.accent} fontSize="10" fontWeight="700" fontFamily="Tahoma,Arial,sans-serif">
+          <text x={altBox.x + 10} y={altBox.y + 14} fill={theme.muted} fontSize="10" fontWeight="600" fontFamily="Tahoma,Arial,sans-serif">
             {altBox.label}
           </text>
         </g>
@@ -139,69 +284,81 @@ function TkDocSequenceSvg({ layout, theme, dark, hoverId, onMsgEnter, onMsgLeave
       {messages.map((m) => {
         const active = hoverId === m.id;
         const dim = hoverId && !active;
-        const dash = m.kind === "async" ? "6 4" : undefined;
         return (
           <g
             key={m.id}
             className={`tk-doc-seq-msg${active ? " is-active" : ""}${dim ? " is-dim" : ""}`}
-            onMouseEnter={() => onMsgEnter?.(m)}
-            onMouseLeave={() => onMsgLeave?.()}
-            style={{ cursor: "pointer" }}
+            onMouseEnter={onMsgEnter ? () => onMsgEnter(m) : undefined}
+            onMouseLeave={onMsgLeave ? () => onMsgLeave() : undefined}
+            style={onMsgEnter ? { cursor: "pointer" } : undefined}
           >
             {m.branchFirst && m.branch && (
-              <text x={altBox ? altBox.x + 14 : 20} y={m.y - 6} fill={theme.muted} fontSize="9" fontFamily="Tahoma,Arial,sans-serif">
+              <text x={altBox ? altBox.x + 36 : GUIDE_X + 8} y={m.y - 10} fill={theme.muted} fontSize="9" fontFamily="Tahoma,Arial,sans-serif">
                 [{m.branch}]
               </text>
             )}
-            <circle cx="18" cy={m.y} r="9" fill={theme.accent} opacity={active ? 1 : 0.92} filter={active ? `url(#${uid}-glow-strong)` : undefined} />
-            <text x="18" y={m.y + 4} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700" fontFamily="Tahoma,Arial,sans-serif">
-              {m.step}
-            </text>
-            <path
-              d={m.path}
-              fill="none"
-              stroke={theme.accent}
-              strokeWidth={active ? 2.4 : 1.6}
-              strokeDasharray={dash}
-              markerEnd={m.kind !== "self" ? `url(#${uid}-arrow)` : undefined}
-              filter={active ? `url(#${uid}-glow)` : undefined}
-            />
-            {m.kind === "self" && (
-              <polygon points={`${m.toX + 56},${m.y} ${m.toX + 6},${m.y - 2} ${m.toX + 6},${m.y + 2}`} fill={theme.accent} />
+            <MessageArrow m={m} theme={theme} active={active} />
+            {(() => {
+              const dotFill = (m.groupHue != null && tkHueToHex(m.groupHue)) || theme.accent;
+              return (
+                <g className="tk-doc-seq-start">
+                  <circle cx={m.fromX} cy={m.y} r={active ? 9 : 8} fill={dotFill} />
+                  <text
+                    x={m.fromX}
+                    y={m.y + 3.2}
+                    textAnchor="middle"
+                    fill={contrastFontColor(dotFill)}
+                    fontSize="9"
+                    fontWeight="700"
+                    fontFamily="Tahoma,Arial,sans-serif"
+                  >
+                    {m.step}
+                  </text>
+                </g>
+              );
+            })()}
+            {m.label && (
+              <rect x={m.labelX} y={m.labelY} width={m.labelW} height={m.labelH} rx={4} fill={theme.chipFill} />
             )}
-            <rect
-              x={W / 2 - 172}
-              y={m.y - 12}
-              width="344"
-              height="24"
-              rx="5"
-              fill={active ? (dark ? "rgba(30,144,255,0.18)" : "rgba(30,144,255,0.1)") : theme.panel}
-              stroke={active ? theme.accent : theme.border}
-              strokeWidth={active ? 1.4 : 0.8}
+            <DiagramMessageLabel
+              label={m.label}
+              labelX={m.labelX}
+              labelY={m.labelY}
+              labelW={m.labelW}
+              labelH={m.labelH}
+              theme={theme}
+              active={active}
             />
-            <text x={W / 2} y={m.y + 4} textAnchor="middle" fill={theme.text} fontSize="10" fontFamily="Consolas,Menlo,monospace">
-              {m.label}
-            </text>
           </g>
         );
       })}
+
+      <SequenceTurtle
+        messages={messages}
+        theme={theme}
+        viewW={W}
+        viewH={H}
+        paused={turtlePaused}
+        autoLoop={turtleAutoLoop}
+        controlRef={turtleControlRef}
+        onState={turtleOnState}
+      />
     </svg>
   );
 }
 
-export function TkDocSequence({ payload }) {
+export function TkDocSequence({ payload, variant = "inline", turtle, groupCtl }) {
   const { Box, Typography, useTheme } = getMaterialUI();
   const theme = useTheme();
   const dark = theme.palette.mode === "dark";
   const containerRef = useRef(null);
+  const localTurtleRef = useRef(null);
+  const turtleControlRef = turtle?.ref ?? localTurtleRef;
   const [hoverMsg, setHoverMsg] = useState(null);
-  const [cursor, setCursor] = useState({ x: 0, y: 0, active: false });
+  const [cursor, setCursor] = useState({ x: 0, y: 0, w: 0, h: 0, active: false });
+  const [lbOpen, setLbOpen] = useState(false);
 
-  const spec = useMemo(() => {
-    if (payload?.preset === "tk1431662") return tk1431662SequenceSpec();
-    return sequenceSpecFromPayload(payload ?? {});
-  }, [payload]);
-
+  const spec = useMemo(() => resolveSequenceSpec(payload ?? {}), [payload]);
   const seqTheme = useMemo(() => (dark ? sequenceThemeDark() : sequenceThemeLight()), [dark]);
   const layout = useMemo(() => (spec ? computeSequenceLayout(spec) : null), [spec]);
 
@@ -209,13 +366,16 @@ export function TkDocSequence({ payload }) {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top, active: true });
+    setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height, active: true });
   }, []);
 
   const onPointerLeave = useCallback(() => {
     setCursor((c) => ({ ...c, active: false }));
     setHoverMsg(null);
   }, []);
+
+  // Preview inline: entrar al visor con 1 clic / 1 tap.
+  const openViewer = useCallback(() => setLbOpen(true), []);
 
   if (!spec || !layout) {
     return (
@@ -225,55 +385,92 @@ export function TkDocSequence({ payload }) {
     );
   }
 
-  const caption = payload?.caption ?? payload?.note ?? "";
+  const isViewer = variant === "viewer";
+
+  // Tooltip que sigue al cursor pero SIEMPRE por debajo de la fila (no tapa el dot
+  // index, ni la flecha, ni los actores; los flujos se leen de arriba→abajo).
+  const tipPos = {
+    left: Math.max(8, Math.min((cursor.w || 320) - 300, cursor.x + 16)),
+    top: cursor.y + 26,
+  };
+
+  // Inline = SVG estático (sin hover); solo gesto de entrada (long-press / doble clic).
+  const interaction = isViewer
+    ? { onMouseMove: onPointerMove, onMouseLeave: onPointerLeave }
+    : { onClick: openViewer };
+
+  const panel = (
+    <Box
+      ref={containerRef}
+      className={`tk-doc-sequence-panel${hoverMsg ? " is-hover-msg" : ""}${isViewer ? " is-viewer" : ""}`}
+      {...interaction}
+      sx={{
+        position: "relative",
+        borderRadius: "0.5rem",
+        overflow: "visible",
+        bgcolor: "transparent",
+        ...(isViewer
+          ? { width: "100%", height: "100%", display: "flex", flexDirection: "column", border: 0, p: 0 }
+          : {
+              border: 1,
+              borderColor: "divider",
+              cursor: "zoom-in",
+              p: { xs: 1, sm: 1.5 },
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              WebkitTouchCallout: "none",
+              touchAction: "manipulation",
+            }),
+      }}
+    >
+      {isViewer && hoverMsg && (
+        <Box className="tk-doc-chart-tooltip" sx={tipPos}>
+          <Typography component="span" variant="caption" sx={{ fontWeight: 700, display: "block" }}>
+            <Box component="span" sx={{ opacity: 0.7, mr: 0.5 }}>{hoverMsg.step}.</Box>
+            <Box component="span" dangerouslySetInnerHTML={{ __html: inlineMdWeb(hoverMsg.label) }} />
+          </Typography>
+          {(() => {
+            const tip = sequenceMessageTooltipText(hoverMsg);
+            return tip ? (
+              <Box
+                className="tk-doc-markdown tk-doc-seq-tooltip-desc"
+                sx={{ display: "block", mt: 0.5, fontSize: "0.78rem", lineHeight: 1.45 }}
+                dangerouslySetInnerHTML={{ __html: inlineMdWeb(tip) }}
+              />
+            ) : null;
+          })()}
+        </Box>
+      )}
+      <TkDocSequenceSvg
+        layout={layout}
+        theme={seqTheme}
+        hoverId={isViewer ? hoverMsg?.id ?? null : null}
+        onMsgEnter={isViewer ? setHoverMsg : undefined}
+        onMsgLeave={isViewer ? () => setHoverMsg(null) : undefined}
+        fit={isViewer}
+        turtlePaused={!!hoverMsg}
+        turtleAutoLoop={isViewer}
+        turtleControlRef={turtleControlRef}
+        turtleOnState={turtle?.onState}
+        hiddenGroups={groupCtl?.hidden}
+        onToggleGroup={isViewer ? groupCtl?.toggle : undefined}
+      />
+    </Box>
+  );
+
+  if (isViewer) return panel;
 
   return (
     <Box className="tk-doc-sequence" sx={{ my: 0.5 }}>
-      <Box
-        ref={containerRef}
-        className={`tk-doc-sequence-neon${cursor.active ? " is-active" : ""}${hoverMsg ? " is-hover-msg" : ""}`}
-        onMouseMove={onPointerMove}
-        onMouseLeave={onPointerLeave}
-        sx={{
-          position: "relative",
-          borderRadius: 2,
-          overflow: "hidden",
-          border: 1,
-          borderColor: dark ? "rgba(30,144,255,0.22)" : "rgba(30,144,255,0.14)",
-          bgcolor: dark ? "rgba(15,23,42,0.45)" : "#fff",
-          boxShadow: dark
-            ? "0 0 24px rgba(30,144,255,0.12), inset 0 1px 0 rgba(255,255,255,0.04)"
-            : "0 4px 24px rgba(15,23,42,0.06), 0 0 20px rgba(30,144,255,0.06)",
-          p: { xs: 1, sm: 1.5 },
-          "--chart-cx": `${cursor.x}px`,
-          "--chart-cy": `${cursor.y}px`,
-        }}
-      >
-        <Box className="tk-doc-chart-spotlight" aria-hidden />
-        {hoverMsg && (
-          <Box className="tk-doc-chart-tooltip" sx={{ left: cursor.x, top: Math.max(8, cursor.y - 52) }}>
-            <Typography component="span" variant="caption" sx={{ fontWeight: 700, display: "block" }}>
-              Paso {hoverMsg.step}
-            </Typography>
-            <Typography component="span" variant="caption" color="text.secondary" sx={{ display: "block", fontFamily: "monospace" }}>
-              {hoverMsg.label}
-            </Typography>
-          </Box>
-        )}
-        <TkDocSequenceSvg
-          layout={layout}
-          theme={seqTheme}
-          dark={dark}
-          hoverId={hoverMsg?.id ?? null}
-          onMsgEnter={setHoverMsg}
-          onMsgLeave={() => setHoverMsg(null)}
-        />
-      </Box>
-      {caption && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-          {String(caption)}
-        </Typography>
-      )}
+      {panel}
+      <DiagramLightbox open={lbOpen} onClose={() => setLbOpen(false)} kind="sequence" payload={payload} />
     </Box>
   );
 }
+
+/** Registra el tipo `sequence` para el visor general (DiagramLightbox / ruta `d`). */
+const SequenceDiagramViewer = ({ payload, turtle, groupCtl }) => (
+  <TkDocSequence payload={payload} variant="viewer" turtle={turtle} groupCtl={groupCtl} />
+);
+registerDiagramKind("sequence", SequenceDiagramViewer);
+registerDiagramKind("sequence-diagram", SequenceDiagramViewer);

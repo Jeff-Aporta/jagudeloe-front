@@ -14,6 +14,12 @@ export const SECTION_META = {
   cambios_bd: { icon: "mdi:database-cog-outline", title: "Cambios en base de datos", accent: "#f59e0b" },
   "file-tree": { icon: "mdi:file-tree-outline", title: "Archivos modificados", accent: "#10b981" },
   filetree: { icon: "mdi:file-tree-outline", title: "Archivos modificados", accent: "#10b981" },
+  flow: { icon: "mdi:graph-outline", title: "Flujo funcional", accent: "#06b6d4" },
+  flowchart: { icon: "mdi:graph-outline", title: "Flujo funcional", accent: "#06b6d4" },
+  "flow-diagram": { icon: "mdi:graph-outline", title: "Flujo funcional", accent: "#06b6d4" },
+  "mui-stepper": { icon: "mdi:stairs", title: "Cómo probar", accent: "#8b5cf6" },
+  timeline: { icon: "mdi:chart-timeline-variant", title: "Análisis del ticket", accent: "#06b6d4" },
+  "metrics-timeline": { icon: "mdi:chart-timeline-variant", title: "Análisis del ticket", accent: "#06b6d4" },
   html: { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" },
   body: { icon: "mdi:file-document-outline", title: "Detalle", accent: "#64748b" },
 };

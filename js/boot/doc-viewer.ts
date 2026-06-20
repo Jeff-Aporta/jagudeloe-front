@@ -8,11 +8,9 @@ import { bootShimmerHtml } from "../ui/bootShimmer.ts";
 import { isDocLoadHold } from "./url-s.mjs";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 
-const ORCH = {
-  local: "http://localhost:8780",
-  online: "https://main-orchestrator.jeffaporta.workers.dev",
-  lsKey: "gateway:local",
-};
+/** API tickets — misma fuente BD que prod. Local 8786 solo con tkApi:local=1. */
+const TK_API_REMOTE = "https://jagudeloe-tks.jeffaporta.workers.dev";
+const TK_API_LOCAL = "http://127.0.0.1:8786";
 
 function showError(root: HTMLElement, message: string) {
   root.innerHTML = `<p style="margin:0;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#c62828">${message}</p>`;
@@ -46,11 +44,14 @@ async function fetchTicketFrom(base: string, space: string, iticket: string): Pr
 }
 
 function ticketApiBases(): string[] {
-  const bases: string[] = [];
-  try {
-    if (localStorage.getItem(ORCH.lsKey) === "1") bases.push(ORCH.local);
-  } catch { /* ignore */ }
-  if (!bases.includes(ORCH.online)) bases.push(ORCH.online);
+  const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
+  const bases: string[] = [TK_API_REMOTE];
+  if (isLocalDev) {
+    try {
+      if (localStorage.getItem("tkApi:local") === "1") bases.push(TK_API_LOCAL);
+    } catch { /* ignore */ }
+    return bases;
+  }
   return bases;
 }
 

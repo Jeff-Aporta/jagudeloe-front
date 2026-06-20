@@ -2,12 +2,14 @@ import { getMaterialUI } from "../../core/platform.ts";
 import { UI } from "../../core/platform.ts";
 import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
 import { useGlassColors, glassCardGradientSx, glassInnerSx, glassGradient } from "../glassSurface.ts";
+import { TkDocJsonEditButton } from "./TkDocJsonEditorDialog.jsx";
 
-export function SectionCard({ icon, title, accent, children, sectionKey }) {
+export function SectionCard({ icon, title, accent, children, sectionKey, docJsonBlocks, onDocJsonSave, docJsonDisabled }) {
   const { Paper, Stack, Typography, Box } = getMaterialUI();
   const { Icon } = UI;
   const c = useGlassColors();
   const color = accent || "#1e90ff";
+  const showJson = docJsonBlocks?.length && onDocJsonSave;
 
   return (
     <Paper
@@ -37,25 +39,33 @@ export function SectionCard({ icon, title, accent, children, sectionKey }) {
           }),
         }}
       >
-        <Stack direction="row" spacing={1.25} alignItems="center">
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ width: "100%" }}>
           <Box
             sx={{
               width: 32,
               height: 32,
-              borderRadius: 1.5,
+              borderRadius: TK_DOC_RADIUS,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               background: `linear-gradient(135deg, ${color}, ${color}99)`,
               color: "#fff",
               boxShadow: `0 4px 12px ${color}44`,
+              flexShrink: 0,
             }}
           >
             <Icon icon={icon} size={18} />
           </Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, letterSpacing: -0.2, color: c.text }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, letterSpacing: -0.2, color: c.text, flex: 1, minWidth: 0 }}>
             {title}
           </Typography>
+          {showJson ? (
+            <TkDocJsonEditButton
+              blocks={docJsonBlocks}
+              disabled={docJsonDisabled}
+              onSave={onDocJsonSave}
+            />
+          ) : null}
         </Stack>
       </Box>
       <Box sx={{ p: { xs: 2, sm: 2.5 }, color: c.text }}>{children}</Box>

@@ -186,13 +186,57 @@ body[data-mui-color-scheme="dark"] .tk-doc-chart-neon.is-active {
   inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
+.tk-doc-chart-tooltip {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(13, 27, 42, 0.55);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  color: #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  white-space: normal;
+}
+
+.tk-doc-chart-tooltip .tk-doc-seq-tooltip-desc img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
 body[data-mui-color-scheme="light"] .tk-doc-chart-tooltip {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.6);
   color: #0b2e4e;
   border-color: rgba(30, 144, 255, 0.22);
   box-shadow:
   0 0 20px rgba(30, 144, 255, 0.15),
-  0 4px 16px rgba(15, 23, 42, 0.08);
+  0 8px 24px rgba(15, 23, 42, 0.12),
+  inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.tk-doc-chart-tooltip .tk-doc-seq-tooltip-desc {
+  color: inherit;
+  opacity: 0.92;
+  & .tk-inline-code {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.88em;
+    padding: 0.08em 0.32em;
+    border-radius: 4px;
+    background: rgba(30, 144, 255, 0.12);
+  }
+  & .tk-inline-iconify,
+  & iconify-icon.tk-inline-iconify {
+    width: 0.95em;
+    height: 0.95em;
+    vertical-align: -0.14em;
+  }
 }
 
 body[data-mui-color-scheme="dark"] .tk-doc-markdown .tk-inline-code {
@@ -579,6 +623,17 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
     font-style: italic;
     opacity: 0.9;
   }
+  & .tk-inline-iconify,
+  & iconify-icon.tk-inline-iconify {
+    display: inline-block;
+    vertical-align: -0.18em;
+    width: 1.1em;
+    height: 1.1em;
+    line-height: 1;
+  }
+  & .tk-inline-iconify-img {
+    vertical-align: -0.2em;
+  }
   html[data-mui-color-scheme="dark"] & {
     & .tk-inline-code {
       background: rgba(255, 255, 255, 0.06);
@@ -591,36 +646,123 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
   }
 }
 
-.tk-doc-sequence-neon {
+.tk-doc-sequence-panel {
   position: relative;
-  & .tk-doc-seq-actor.is-active rect {
-    filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.45));
-  }
   & .tk-doc-seq-msg {
-    transition: opacity 0.2s ease;
-  }
-  & .tk-doc-seq-msg.is-active .tk-doc-seq-lifeline {
-    stroke: rgba(30, 144, 255, 0.32);
+    transition: opacity 0.18s ease;
   }
   & .tk-doc-seq-msg.is-dim {
-    opacity: 0.35;
+    opacity: 0.42;
+  }
+  & .tk-doc-seq-actor.is-active rect {
+    stroke-width: 1.4;
   }
 }
 
-.tk-doc-sequence-neon.is-hover-msg {
+.tk-doc-sequence-panel.is-hover-msg {
   & .tk-doc-seq-lifeline {
-    stroke: rgba(30, 144, 255, 0.32);
-  }
-  html[data-mui-color-scheme="dark"] & {
-    & .tk-doc-seq-lifeline {
-      stroke: rgba(0, 229, 255, 0.28);
-    }
+    opacity: 0.85;
   }
 }
 
 .tk-doc-sequence-svg {
   position: relative;
   z-index: 1;
+  & .tk-doc-seq-label .tk-inline-iconify,
+  & .tk-doc-seq-label iconify-icon.tk-inline-iconify {
+    width: 0.95em;
+    height: 0.95em;
+    vertical-align: -0.12em;
+    margin: 0 0.22em;
+  }
+}
+
+.tk-doc-flow-svg {
+  position: relative;
+  z-index: 1;
+  & .tk-doc-flow-label .tk-inline-iconify,
+  & .tk-doc-flow-label iconify-icon.tk-inline-iconify {
+    width: 0.9em;
+    height: 0.9em;
+    vertical-align: -0.1em;
+  }
+}
+
+.tk-doc-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  & svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+  &-neon {
+    cursor: crosshair;
+    isolation: isolate;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    & .tk-doc-flow-node,
+    & .tk-doc-flow-edge {
+      transition: opacity 0.2s ease;
+    }
+    & .tk-doc-flow-node.is-dim,
+    & .tk-doc-flow-edge.is-dim {
+      opacity: 0.38;
+    }
+    &.is-hover-node .tk-doc-flow-edge.is-active path {
+      stroke-width: 2.4;
+    }
+  }
+  html[data-mui-color-scheme="dark"] &-neon.is-active {
+    box-shadow:
+      0 0 28px rgba(0, 229, 255, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+}
+
+.tk-doc-stepper {
+  &-neon {
+    & .MuiStepLabel-root {
+      align-items: flex-start;
+    }
+    & .MuiStepLabel-iconContainer {
+      padding-top: 2px;
+      width: 32px;
+      min-width: 32px;
+      justify-content: center;
+    }
+    &.is-dark .tk-doc-stepper-icon {
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.35));
+    }
+  }
+  &-icon {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  & .MuiStep-root:hover .tk-doc-stepper-icon {
+    transform: scale(1.05);
+  }
+}
+
+.tk-doc-flow-inline .isa-lb-zoom-inline__expand {
+  opacity: 0.72;
+}
+
+.tk-doc-flow-inline:hover .isa-lb-zoom-inline__expand {
+  opacity: 1;
+}
+
+/* Secuencia: el botón expandir se oculta; el lightbox se abre con doble clic. */
+.tk-doc-sequence-inline .isa-lb-zoom-inline__expand {
+  display: none;
+}
+
+/* Lightbox (visor isa-lb-zoom): el diagrama se dibuja con contain-fit en toda el área. */
+.isa-lb-zoom__viewport img,
+.isa-lb-zoom__stage img {
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .tk-doc-themed-image {
@@ -642,6 +784,15 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
 }
 
 .tk-doc-web-surface {
+  [id^="tk-doc-section-"],
+  [data-tk-doc-section] {
+    scroll-margin-top: 12px;
+  }
+
+  & [data-tk-doc-section].tk-doc-section--focus {
+    animation: tk-doc-section-focus 1.4s ease-out;
+  }
+
   & .isa-cm-panel__copy {
     background: rgba(30, 144, 255, 0.1) !important;
     border: 1px solid rgba(30, 144, 255, 0.26) !important;
@@ -656,6 +807,63 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
       color: #0b4a82 !important;
     }
   }
+}
+
+@keyframes tk-doc-section-focus {
+  0% {
+    box-shadow: 0 0 0 0 rgba(30, 144, 255, 0.45);
+  }
+  35% {
+    box-shadow: 0 0 0 4px rgba(30, 144, 255, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(30, 144, 255, 0);
+  }
+}
+
+/* Dot tortuga cometa: chip (índice + log) que persigue al dot */
+.tk-doc-seq-turtle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 210px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  background: rgba(13, 27, 42, 0.94);
+  color: #e2e8f0;
+  font-family: "Tahoma", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: normal;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+}
+
+.tk-doc-seq-turtle-chip__idx {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+body[data-mui-color-scheme="light"] .tk-doc-seq-turtle-chip {
+  background: rgba(255, 255, 255, 0.96);
+  color: #0b2e4e;
+}
+
+.tk-doc-seq-turtle-btn {
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+}
+
+.tk-doc-sequence-panel:hover .tk-doc-seq-turtle-btn {
+  opacity: 1;
 }
 
 /* nest-css-max:processed */

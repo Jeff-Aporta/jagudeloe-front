@@ -16,6 +16,8 @@ import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReportLinkButton.jsx";
+import { tkToolbarSoftChipSx } from "../core/tk-table.ts";
+import { tkSpaceChipTone } from "../core/tk-spaces.ts";
 
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
@@ -185,9 +187,9 @@ function TicketDetail(props) {
           }
           sx={{ bgcolor: "#fff", color: "#111", fontWeight: 700 }}
         />
-        <Chip size="small" variant="outlined" label={tkSpace} />
+        <Chip size="small" label={tkSpace} sx={(t) => tkToolbarSoftChipSx(tkSpaceChipTone(tkSpace), t)} />
         {ticketTotalMinutos(tk) != null && (
-          <Chip size="small" variant="outlined" label={"Total " + String(ticketTotalMinutos(tk)) + " min"} />
+          <Chip size="small" label={"Total " + String(ticketTotalMinutos(tk)) + " min"} sx={(t) => tkToolbarSoftChipSx("warning", t)} />
         )}
         <Box sx={{ flex: 1 }} />
         <TkReportSwitch mode={reportView} onToggle={toggleReport} />
@@ -214,7 +216,11 @@ function TicketDetail(props) {
           className="tk-doc-web-surface"
           sx={tkDocSurfaceSx()}
         >
-          <TicketDocWebView tk={tk} />
+          <TicketDocWebView
+            tk={tk}
+            project={tkSpace}
+            onTicketUpdated={(updated) => setState((s) => ({ ...s, tk: patchTkDocSeed(updated) }))}
+          />
         </Box>
       ) : (
         <Box

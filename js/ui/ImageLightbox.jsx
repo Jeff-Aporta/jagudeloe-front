@@ -12,3 +12,9 @@ export function ImageLightboxDialog(props) {
   const Comp = Lightbox.ImageLightboxDialog;
   return <Comp ns="ISAJ" {...props} />;
 }
+
+export function LightboxZoomInline(props) {
+  const Comp = Lightbox.LightboxZoomInline;
+  if (!Comp) return props.children ?? null;
+  return <Comp ns="ISAJ" {...props} />;
+}

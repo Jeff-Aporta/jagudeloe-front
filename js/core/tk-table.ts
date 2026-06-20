@@ -1,5 +1,7 @@
 /** Tablas en diligencias TK — columnas Descripción con máx. 2 líneas. */
 
+import { richTextPlain } from "./tk-rich-text.ts";
+
 /** Radio unificado de cards y tablas en vista doc TK. */
 export const TK_DOC_RADIUS = "0.5rem";
 
@@ -20,10 +22,7 @@ export const TK_TABLE_DESC_CLAMP_CSS =
   "display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45;word-break:break-word;max-width:420px;";
 
 export function tkTablePlainText(raw: unknown): string {
-  return String(raw ?? "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return richTextPlain(raw);
 }
 
 const TK_COMMIT_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -83,9 +82,9 @@ export function computeCommitTotals(commits: unknown[]): {
   minutos: number;
 } {
   const list = Array.isArray(commits) ? commits : [];
-  return list.reduce(
-    (acc, raw) => {
-      const c = (raw ?? {}) as Record<string, unknown>;
+  const raw = list.reduce(
+    (acc, row) => {
+      const c = (row ?? {}) as Record<string, unknown>;
       return {
         count: acc.count + 1,
         ins: acc.ins + Number(c.insCount ?? 0),
@@ -95,6 +94,7 @@ export function computeCommitTotals(commits: unknown[]): {
     },
     { count: 0, ins: 0, del: 0, minutos: 0 },
   );
+  return { ...raw, minutos: roundTkMinutosTo5(raw.minutos) };
 }
 
 /** Ins/Del en tabla de commits — fondo suave (alineado con pill del correo HTML). */
@@ -102,25 +102,92 @@ export const TK_COMMIT_INS_CHIP_SX = {
   height: 22,
   fontWeight: 600,
   fontSize: "0.75rem",
-  border: "none",
   bgcolor: (theme: { palette: { mode: string } }) =>
-    theme.palette.mode === "dark" ? "rgba(76, 175, 80, 0.2)" : "#e9f7ee",
-  color: (theme: { palette: { mode: string; success: { dark: string; main: string } } }) =>
-    theme.palette.mode === "dark" ? theme.palette.success.main : theme.palette.success.dark,
-  "& .MuiChip-label": { px: 0.75 },
+    theme.palette.mode === "dark" ? "rgba(16, 185, 129, 0.34)" : "#e9f7ee",
+  color: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === "dark" ? "#bbf7d0" : "#047857",
+  border: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === "dark" ? "1px solid rgba(52, 211, 153, 0.55)" : "1px solid transparent",
+  "& .MuiChip-label": {
+    px: 0.75,
+    color: "inherit",
+    fontWeight: 600,
+  },
 };
 
 export const TK_COMMIT_DEL_CHIP_SX = {
   height: 22,
   fontWeight: 600,
   fontSize: "0.75rem",
-  border: "none",
   bgcolor: (theme: { palette: { mode: string } }) =>
-    theme.palette.mode === "dark" ? "rgba(211, 47, 47, 0.2)" : "#fdecea",
-  color: (theme: { palette: { mode: string; error: { dark: string; main: string } } }) =>
-    theme.palette.mode === "dark" ? theme.palette.error.main : "#c0392b",
-  "& .MuiChip-label": { px: 0.75 },
+    theme.palette.mode === "dark" ? "rgba(239, 68, 68, 0.34)" : "#fdecea",
+  color: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === "dark" ? "#fecaca" : "#c0392b",
+  border: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === "dark" ? "1px solid rgba(248, 113, 113, 0.55)" : "1px solid transparent",
+  "& .MuiChip-label": {
+    px: 0.75,
+    color: "inherit",
+    fontWeight: 600,
+  },
 };
+
+/** Fondo suave para chips TK (diligencias, toolbar, catálogo). */
+export function tkDocSoftBadgeSx(tone: string, t: { palette: { mode: string; primary: { dark: string } } }) {
+  const dark = t.palette.mode === "dark";
+  const tones: Record<string, { bgcolor: string; color: string; borderColor: string }> = {
+    primary: {
+      bgcolor: dark ? "rgba(30,144,255,0.22)" : "rgba(30,144,255,0.1)",
+      color: dark ? "#bfdbfe" : t.palette.primary.dark,
+      borderColor: dark ? "rgba(30,144,255,0.45)" : "rgba(30,144,255,0.28)",
+    },
+    secondary: {
+      bgcolor: dark ? "rgba(148,163,184,0.18)" : "rgba(100,116,139,0.1)",
+      color: dark ? "#e2e8f0" : "#475569",
+      borderColor: dark ? "rgba(148,163,184,0.4)" : "rgba(100,116,139,0.25)",
+    },
+    success: {
+      bgcolor: dark ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.12)",
+      color: dark ? "#a7f3d0" : "#047857",
+      borderColor: dark ? "rgba(16,185,129,0.5)" : "rgba(16,185,129,0.35)",
+    },
+    warning: {
+      bgcolor: dark ? "rgba(245,158,11,0.22)" : "rgba(245,158,11,0.14)",
+      color: dark ? "#fde68a" : "#b45309",
+      borderColor: dark ? "rgba(245,158,11,0.55)" : "rgba(245,158,11,0.4)",
+    },
+    danger: {
+      bgcolor: dark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.1)",
+      color: dark ? "#fecaca" : "#b91c1c",
+      borderColor: dark ? "rgba(239,68,68,0.45)" : "rgba(239,68,68,0.3)",
+    },
+    violet: {
+      bgcolor: dark ? "rgba(124,58,237,0.22)" : "rgba(124,58,237,0.12)",
+      color: dark ? "#ede9fe" : "#5b21b6",
+      borderColor: dark ? "rgba(167,139,250,0.55)" : "rgba(124,58,237,0.35)",
+    },
+  };
+  return tones[tone] ?? tones.secondary;
+}
+
+/** Chip soft de la toolbar de detalle (space, total minutos). */
+export function tkToolbarSoftChipSx(tone: string, t: { palette: { mode: string; primary: { dark: string } } }) {
+  const chip = tkDocSoftBadgeSx(tone, t);
+  return {
+    height: 32,
+    fontWeight: 600,
+    fontSize: "0.75rem",
+    borderRadius: TK_DOC_RADIUS,
+    border: "1px solid",
+    bgcolor: chip.bgcolor,
+    color: chip.color,
+    borderColor: chip.borderColor,
+    boxShadow: t.palette.mode === "dark"
+      ? "0 1px 0 rgba(255,255,255,0.06) inset"
+      : "0 1px 0 rgba(255,255,255,0.9) inset",
+    "& .MuiChip-label": { px: 1.1 },
+  };
+}
 
 /** Chips del catálogo footer — fondo suave, sin outline. */
 export function tkCatalogCurrentChipBg(theme: {

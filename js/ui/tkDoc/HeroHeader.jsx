@@ -3,7 +3,7 @@ import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "../tkHeroAutho
 import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
 import { SectionProgressDots } from "./SectionProgressDots.jsx";
 
-export function HeroHeader({ tk, space, iticket, badges, sectionDots }) {
+export function HeroHeader({ tk, space, iticket, badges, sectionDots, activeSectionKey, onSectionClick, editAction }) {
   const { Box, Stack, Typography, Chip } = getMaterialUI();
   const creadoPor = formatTiqueteCreadoPor(tk.solicitante);
   const documentador = resolveDocumentadorBlock(tk);
@@ -77,8 +77,15 @@ export function HeroHeader({ tk, space, iticket, badges, sectionDots }) {
           filter: "blur(4px)",
         })}
       />
+      {editAction}
       <Stack spacing={1} sx={{ position: "relative", zIndex: 1 }}>
-        {sectionDots?.length > 0 && <SectionProgressDots sections={sectionDots} />}
+        {sectionDots?.length > 0 && (
+          <SectionProgressDots
+            sections={sectionDots}
+            activeKey={activeSectionKey}
+            onSectionClick={onSectionClick}
+          />
+        )}
         <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
           {iticket && (
             <Chip

@@ -25,3 +25,10 @@ export function projectLabel(project: string): string {
   if (project === "clientesis") return "Clientes";
   return project;
 }
+
+/** Tono soft del chip de space en toolbar de detalle. */
+export function tkSpaceChipTone(space: string): string {
+  const s = String(space ?? "").toLowerCase();
+  if (s === "clientesis") return "violet";
+  return "primary";
+}

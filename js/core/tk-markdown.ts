@@ -1,4 +1,5 @@
-/** Markdown ligero para diligencias TK — tablas pipe, párrafos, viñetas, headings. */
+/** Markdown ligero para diligencias TK — tablas pipe, párrafos, viñetas, headings.
+ *  Inline: **negrilla**, `código`, [enlaces], {{mdi:icon}} / {{thumb-up}} (Iconify), HTML en la misma cadena. */
 
 export type MdTable = { headers: string[]; rows: string[][] };
 
@@ -197,4 +198,29 @@ export function splitMarkdownBlocks(text: unknown): MdBlock[] {
 
   flushPara();
   return recoverBlocks(out);
+}
+
+/** true si el markdown es únicamente una tabla pipe (sin párrafos extra). */
+export function markdownTextIsTableOnly(text: unknown): boolean {
+  const raw = normalizeMdInput(text).trim();
+  if (!raw.startsWith("|")) return false;
+
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const table = parseMdPipeTable(lines);
+  if (!table || !table.headers.length) return false;
+
+  const prose = raw
+    .replace(/^\|.+\|\s*$/gm, "")
+    .replace(/^\|[\s:|-]+\|\s*$/gm, "")
+    .trim();
+  return !prose;
+}
+
+/** Extrae matrix [cabecera, ...filas] de markdown tabla-only. */
+export function markdownTableMatrixFromText(text: unknown): string[][] | null {
+  if (!markdownTextIsTableOnly(text)) return null;
+  const lines = normalizeMdInput(text).split("\n").map((l) => l.trim()).filter(Boolean);
+  const table = parseMdPipeTable(lines);
+  if (!table) return null;
+  return [table.headers, ...table.rows];
 }

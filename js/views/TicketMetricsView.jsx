@@ -9,12 +9,13 @@ import {
 } from "../core/tk-metrics.ts";
 import { extractTipoSolicitudApertura } from "../core/tk-normativa.ts";
 import { extractTicketMetricasEvidencias, missingTiempoEvidenciaLabels, ticketTiempoEvidenciasCompletas } from "../core/tk-evidencias.ts";
-import { buildTicketTimeline, buildTicketMilestones } from "../core/tk-timeline.ts";
 import { extractEmpresaReport, computeEmpresaDesfase } from "../core/tk-empresa-report.ts";
 import { extractTicketPendingTasks } from "../core/checks.ts";
-import { TicketAnalysisTimeline } from "../ui/TicketAnalysisTimeline.jsx";
+import { TkDocMetricsTimeline } from "../ui/TkDocMetricsTimeline.jsx";
 import { TicketMetricsEvidencias } from "../ui/TicketMetricsEvidencias.jsx";
 import { EmpresaDesfaseCard } from "../ui/EmpresaDesfaseCard.jsx";
+import { TkCalificacionInfoButton } from "../ui/TkCalificacionInfoModal.jsx";
+import { TkCalificacionResumen } from "../ui/TkCalificacionResumen.jsx";
 import { useGlassColors, glassCardGradientSx, glassInnerSx, glassGradient } from "../ui/glassSurface.ts";
 
 function useDocColors() {
@@ -130,8 +131,6 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
   const input = extractMetricInput(tk);
   const reporteEmpresa = extractEmpresaReport(tk, project);
   const desfase = computeEmpresaDesfase(m, reporteEmpresa);
-  const timeline = buildTicketTimeline(iticket, tk.titulo || tk.title || "", m, input);
-  const milestones = buildTicketMilestones(m, input);
   const evidencias = extractTicketMetricasEvidencias(tk);
   const tareasPendientes = extractTicketPendingTasks(tk).filter((t) => !t.done);
   const tipoApertura = extractTipoSolicitudApertura(tk);
@@ -141,14 +140,19 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
   return (
     <Box sx={{ maxWidth: 920, mx: "auto", py: 3, px: { xs: 2, md: 3 }, bgcolor: c.pageBg, color: c.text, minHeight: "100%" }}>
       <Box sx={{ mb: 3 }}>
-        <DocText variant="subtitle2" muted bold sx={{ letterSpacing: 0.3 }}>Estudio de métricas · tiempo hábil</DocText>
-        <DocText variant="h4" bold sx={{ mt: 0.75, fontSize: "1.75rem" }}>{iticket}</DocText>
-        <DocText variant="h6" muted sx={{ mt: 0.75, fontWeight: 500 }}>{tk.titulo || tk.title || ""}</DocText>
-        {tipoApertura && (
-          <DocText muted sx={{ mt: 0.75, fontSize: "0.95rem" }}>
-            Tipo solicitud apertura: {tipoApertura}
-          </DocText>
-        )}
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <DocText variant="subtitle2" muted bold sx={{ letterSpacing: 0.3 }}>Estudio de métricas · tiempo hábil</DocText>
+            <DocText variant="h4" bold sx={{ mt: 0.75, fontSize: "1.75rem" }}>{iticket}</DocText>
+            <DocText variant="h6" muted sx={{ mt: 0.75, fontWeight: 500 }}>{tk.titulo || tk.title || ""}</DocText>
+            {tipoApertura && (
+              <DocText muted sx={{ mt: 0.75, fontSize: "0.95rem" }}>
+                Tipo solicitud apertura: {tipoApertura}
+              </DocText>
+            )}
+          </Box>
+          <TkCalificacionInfoButton sx={{ mt: 0.25, flexShrink: 0 }} />
+        </Stack>
       </Box>
 
       {!m.fechaCreacion && (
@@ -189,6 +193,8 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
         </Alert>
       )}
 
+      <TkCalificacionResumen tk={tk} />
+
       <MetricKpiStrip
         items={[
           {
@@ -214,16 +220,9 @@ export function TicketMetricsDocument({ tk, iticket, project }) {
 
       {desfase && <EmpresaDesfaseCard desfase={desfase} />}
 
-      {metricasCompletas && milestones.length > 0 && (
+      {metricasCompletas && (
         <SectionCard title="Análisis del ticket" icon="mdi:chart-timeline-variant">
-          <TicketAnalysisTimeline
-            milestones={milestones}
-            resumen={[
-              { label: "Hasta atención", value: formatMinutos(m.minutosHastaAtencion) },
-              { label: "Atención activa", value: formatMinutos(m.minutosAtencionActiva) },
-              { label: "Total hábil", value: formatMinutos(m.minutosTotalSolucion), highlight: true },
-            ]}
-          />
+          <TkDocMetricsTimeline tk={tk} metrics={m} metricInput={input} />
         </SectionCard>
       )}
 

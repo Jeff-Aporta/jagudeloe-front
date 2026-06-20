@@ -1,6 +1,7 @@
 import { getReact, getMaterialUI } from "../../core/platform.ts";
 import { UI } from "../../core/platform.ts";
 import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
+import { fileTreeToRenderRoot } from "../../core/tk-file-tree.ts";
 import { glassInnerSx, useGlassColors } from "../glassSurface.ts";
 import { latestTkCommit, tkCommitGithubBlobUrl } from "../tkCommitGithub.ts";
 
@@ -191,15 +192,31 @@ function TreeBranch({ node, depth, hints, fileHref }) {
 }
 
 /** Árbol de archivos modificados — clic abre el archivo en el commit más reciente del ticket. */
-export function FileTree({ paths, rootLabel = "ISS", hints, commits, commitHash, commitProyecto }) {
+export function FileTree({
+  spec,
+  paths,
+  rootLabel = "ISS",
+  hints,
+  commits,
+  commitHash,
+  commitProyecto,
+}) {
   const { Box, List, Typography, Paper } = getMaterialUI();
   const c = useGlassColors();
-  const tree = buildTreeFromPaths(paths);
-  const root = { name: rootLabel, path: "", children: tree.children, isRoot: true };
+
+  const root = spec
+    ? fileTreeToRenderRoot(spec)
+    : (() => {
+      const built = buildTreeFromPaths(paths);
+      return { name: rootLabel, path: "", children: built.children, isRoot: true };
+    })();
+
+  const headerTitle = String(spec?.title ?? "").trim() || "Archivos modificados";
+  const label = spec?.rootLabel ?? rootLabel;
 
   const latest = latestTkCommit(commits ?? []);
-  const hash = String(commitHash ?? latest?.hash ?? "").trim();
-  const proyecto = String(commitProyecto ?? latest?.proyecto ?? rootLabel).trim();
+  const hash = String(commitHash ?? spec?.commitHash ?? latest?.hash ?? "").trim();
+  const proyecto = String(commitProyecto ?? spec?.commitProyecto ?? latest?.proyecto ?? label).trim();
 
   const fileHref = hash
     ? (node) => {
@@ -226,7 +243,7 @@ export function FileTree({ paths, rootLabel = "ISS", hints, commits, commitHash,
           color="text.secondary"
           sx={{ letterSpacing: 0.4, textTransform: "uppercase", lineHeight: 1.2 }}
         >
-          Archivos modificados
+          {headerTitle}
         </Typography>
       </Box>
       <List dense disablePadding sx={{ py: 0.25 }}>

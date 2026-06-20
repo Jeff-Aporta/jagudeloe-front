@@ -1,6 +1,6 @@
 import { getMaterialUI } from "../../core/platform.ts";
 import { TK_DOC_SECTION_GRAY, TK_DOC_STANDARD } from "../../core/tk-doc-constants.ts";
-import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
+import { TK_DOC_RADIUS, roundTkMinutosTo5 } from "../../core/tk-table.ts";
 import { glassInnerSx, useGlassColors } from "../glassSurface.ts";
 
 const META_SX = {
@@ -79,7 +79,8 @@ function TimeRow({ item, total, isLast }) {
   const { Box, Stack, Typography, LinearProgress, Chip } = getMaterialUI();
   const phase = resolveTiempoPhase(item);
   const phaseStyle = PHASE_META[phase] ?? PHASE_META.otro;
-  const pctTotal = Math.min(100, (item.minutos / total) * 100);
+  const minutos = roundTkMinutosTo5(item.minutos);
+  const pctTotal = Math.min(100, (minutos / total) * 100);
 
   return (
     <Box
@@ -131,7 +132,7 @@ function TimeRow({ item, total, isLast }) {
           fontWeight={700}
           sx={{ whiteSpace: "nowrap", color: "text.primary", lineHeight: 1.5, pt: 0.1 }}
         >
-          {item.minutos} min
+          {minutos} min
         </Typography>
       </Stack>
 
@@ -168,7 +169,8 @@ export function TimeSummary({ tiempos }) {
 
   if (!tiempos.length) return null;
 
-  const total = tiempos.reduce((s, t) => s + t.minutos, 0) || 1;
+  const total =
+    tiempos.reduce((s, t) => s + roundTkMinutosTo5(t.minutos), 0) || 1;
 
   return (
     <Paper

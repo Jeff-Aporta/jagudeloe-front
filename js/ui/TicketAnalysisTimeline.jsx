@@ -104,6 +104,35 @@ function DetailLine({ parts }) {
   );
 }
 
+function AcumuladoBadge({ ms, colors: c }) {
+  const { Box, Typography } = getMaterialUI();
+  const jCol = ms.esJornada ? jornadaColors(ms, c) : null;
+  const valueColor = jCol ? jCol.color : c.segHabil;
+
+  return (
+    <Box sx={{ textAlign: "right", flexShrink: 0, pl: 1, minWidth: 56 }}>
+      <Typography
+        variant="caption"
+        sx={{ display: "block", fontSize: "0.625rem", color: c.muted, lineHeight: 1.1, letterSpacing: 0.2 }}
+      >
+        Σ hábil
+      </Typography>
+      <Typography
+        sx={{
+          fontWeight: 800,
+          fontSize: "0.8125rem",
+          color: valueColor,
+          lineHeight: 1.25,
+          fontFamily: "Consolas, Menlo, monospace",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {formatMinutos(ms.acumuladoHabilMin ?? 0)}
+      </Typography>
+    </Box>
+  );
+}
+
 function TimelineNode({ ms, isLast, colors: c }) {
   const { Box, Stack, Typography } = getMaterialUI();
   const { Icon } = UI;
@@ -125,17 +154,7 @@ function TimelineNode({ ms, isLast, colors: c }) {
         : "jornadaOut"
       : "node";
 
-  const metaParts = [
-    { text: ms.hora, mono: true, color: jCol ? jCol.color : c.text },
-  ];
-  if (!ms.esExclusion && !isJornada) {
-    metaParts.push({
-      text: `Σ ${formatMinutos(ms.acumuladoHabilMin)}`,
-      color: c.segHabil,
-      bold: true,
-    });
-  }
-
+  const metaParts = [{ text: ms.hora, mono: true, color: jCol ? jCol.color : c.text }];
   return (
     <Box sx={{ position: "relative", pb: isLast ? 0 : 0.35 }}>
       {!isLast && (
@@ -178,14 +197,17 @@ function TimelineNode({ ms, isLast, colors: c }) {
             ...glassInnerSx(c, nodeTone),
           }}
         >
-          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.35 }}>
-            <Icon icon={ms.icon} size={16} style={{ color: titleColor }} />
-            <Typography
-              component="span"
-              sx={{ fontWeight: 600, color: titleColor, fontSize: "0.875rem", lineHeight: 1.25 }}
-            >
-              {ms.label}
-            </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={0.5} sx={{ mb: 0.35 }}>
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+              <Icon icon={ms.icon} size={16} style={{ color: titleColor, flexShrink: 0 }} />
+              <Typography
+                component="span"
+                sx={{ fontWeight: 600, color: titleColor, fontSize: "0.875rem", lineHeight: 1.25 }}
+              >
+                {ms.label}
+              </Typography>
+            </Stack>
+            <AcumuladoBadge ms={ms} colors={c} />
           </Stack>
           <DetailLine parts={metaParts} />
           <Typography
@@ -354,6 +376,7 @@ export function TicketAnalysisTimeline({ milestones, resumen }) {
           sx={{
             mt: 1,
             pt: 1.25,
+            pb: 1.25,
             px: 1,
             borderRadius: 1.5,
             borderTop: 1,

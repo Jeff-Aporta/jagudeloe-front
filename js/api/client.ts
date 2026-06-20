@@ -10,8 +10,28 @@ interface FetchOpts {
   body?: unknown;
 }
 
+/** Misma BD que prod (GitHub Pages). Local 8786 solo con localStorage tkApi:local=1. */
+const TK_API_REMOTE = "https://jagudeloe-tks.jeffaporta.workers.dev";
+const TK_API_LOCAL = "http://127.0.0.1:8786";
+
+function isDevHost(): boolean {
+  const h = typeof location !== "undefined" ? location.hostname : "";
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+}
+
+function tkApiLocalEnabled(): boolean {
+  try {
+    return window.localStorage?.getItem("tkApi:local") === "1";
+  } catch {
+    return false;
+  }
+}
+
 const LOCAL_DIRECT = [
-  { test: (p: string) => p.startsWith("/api/tk"), base: "http://127.0.0.1:8786" },
+  {
+    test: (p: string) => p.startsWith("/api/tk") && tkApiLocalEnabled(),
+    base: TK_API_LOCAL,
+  },
   {
     test: (p: string) =>
       p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
@@ -21,7 +41,7 @@ const LOCAL_DIRECT = [
 ];
 
 const REMOTE_DIRECT = [
-  { test: (p: string) => p.startsWith("/api/tk"), base: "https://jagudeloe-tks.jeffaporta.workers.dev" },
+  { test: (p: string) => p.startsWith("/api/tk"), base: TK_API_REMOTE },
   {
     test: (p: string) =>
       p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
@@ -35,12 +55,41 @@ const http = window.ISAFront.createCapFetch({
   Config,
   localDirect: LOCAL_DIRECT,
   remoteDirect: REMOTE_DIRECT,
+  orchOnline: TK_API_REMOTE,
+  orchOnlineInLocal: true,
   fetchTimeoutMs: 15000,
 });
 
 const revisadoCache: Record<string, Record<string, boolean>> = {};
 
+async function fetchTkRemoteFirst<T>(path: string, opts: FetchOpts): Promise<T | null> {
+  if (!isDevHost() || !Config.isLocal() || tkApiLocalEnabled() || !path.startsWith("/api/tk")) {
+    return null;
+  }
+  const apiPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${TK_API_REMOTE}${apiPath}`;
+  try {
+    const headers: Record<string, string> = { Accept: "application/json", ...(opts.headers || {}) };
+    if (Session.isLoggedIn()) {
+      Object.assign(headers, Session.authHeader(), Session.appHeader());
+    }
+    const res = await fetch(url, {
+      method: opts.method || "GET",
+      headers,
+      body: opts.body != null ? JSON.stringify(opts.body) : undefined,
+    });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+    if (!res.ok || data.ok === false) return null;
+    return data as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function labFetch<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
+  const remote = await fetchTkRemoteFirst<T>(path, opts);
+  if (remote !== null) return remote;
   return http.capFetch(path, {
     method: opts.method,
     headers: opts.headers,
@@ -123,16 +172,51 @@ export function deleteBitacoraTodo(project: string, segmentId: string, todoId: s
   );
 }
 
-export function getTickets(project: string, opts?: { estado?: string }) {
-  let qs = "";
-  if (opts?.estado === "inactivo") qs = "?activo=false";
-  else if (opts?.estado === "activo") qs = "?activo=true";
-  else if (opts?.estado) qs = "?activo=" + encodeURIComponent(opts.estado);
+function encodeTkQueryQ(bag: Record<string, unknown>): string {
+  const json = JSON.stringify(bag);
+  return btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export function getTickets(project: string, opts?: { estado?: string; limit?: number }) {
+  const bag: Record<string, unknown> = { limit: opts?.limit ?? 100 };
+  if (opts?.estado === "inactivo") bag.activo = false;
+  else if (opts?.estado === "activo") bag.activo = true;
+  else if (opts?.estado) bag.activo = opts.estado;
+  const qs = "?q=" + encodeURIComponent(encodeTkQueryQ(bag));
   return labFetch("/api/tk/" + project + "/tickets" + qs);
 }
 
 export const getTicket = (project: string, iticket: string) =>
   labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
+
+/** PATCH TK_DOC — edición manual de content[] / blocks (no toca commits ni tiempos). */
+export function patchTicketDoc(project: string, iticket: string, content: unknown[]) {
+  return labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket) + "/doc", {
+    method: "PATCH",
+    body: { content },
+  });
+}
+
+/** PATCH cabecera TK_TICKET — título, solicitante, resumen, documentador (sin tocar doc/commits). */
+export function patchTicketHead(
+  project: string,
+  iticket: string,
+  patch: {
+    titulo?: string;
+    solicitante?: string | null;
+    resumen?: string | null;
+    documentadorNombre?: string | null;
+    documentadorCargo?: string | null;
+  },
+) {
+  return labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket) + "/head", {
+    method: "PATCH",
+    body: patch,
+  });
+}
 
 export const getChecks = (project: string) => labFetch("/api/isa/" + project + "/checks");
 

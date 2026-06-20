@@ -1,13 +1,10 @@
 /** Normalización de bloques TK para vista doc homogénea (estándar 1436238 / 1437976). */
 
 import { stripRedundantTicketHtml } from "../ui/tkHtml.ts";
+import { readBlockDocLane } from "./tk-doc-lanes.ts";
 
-export type TkDocBlock = {
-  kind?: string;
-  payload?: Record<string, unknown>;
-  sortKey?: number;
-  blocks?: TkDocBlock[];
-};
+export type { TkDocBlock } from "./tk-doc-types.ts";
+import type { TkDocBlock } from "./tk-doc-types.ts";
 
 const MD_KIND = new Set(["markdown", "md", "text"]);
 const TK_RESUMEN_MAX = 560;
@@ -195,6 +192,17 @@ export function partitionTkDocStandard(
     const kind = String(b.kind ?? "").toLowerCase();
     const title = String(b.payload?.title ?? "").trim();
     const text = blockText(b);
+    const docLane = readBlockDocLane(b);
+
+    if (docLane === "solicitud" && MD_DOC_KIND.has(kind)) {
+      pushSolicitudPart(solicitudParts, text);
+      continue;
+    }
+
+    if (docLane === "evidencias" && MD_DOC_KIND.has(kind)) {
+      if (!evidenciaIntro) evidenciaIntro = text;
+      continue;
+    }
 
     if (MD_DOC_KIND.has(kind)) {
       const isEarly = mdIndex < 2 || (b.sortKey ?? 0) < 3;

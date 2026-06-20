@@ -7,6 +7,7 @@
  */
 
 import type { TkDocBlock } from "./tk-doc-layout.ts";
+import { pathsToTreeNodes } from "./tk-file-tree.ts";
 
 const INTRO_KINDS = new Set(["markdown", "md", "text"]);
 
@@ -81,18 +82,26 @@ export function finalizeSolutionLane(
 
 /** Payload mínimo para bloque estándar `file-tree`. */
 export function buildFileTreeBlock(payload: {
-  paths: string[];
+  tree?: import("./tk-file-tree.ts").FileTreeNode[];
+  paths?: string[];
   hints?: Record<string, string>;
   rootLabel?: string;
+  title?: string;
   sortKey?: number;
 }): TkDocBlock {
+  const hints = payload.hints ?? {};
+  const tree = payload.tree?.length
+    ? payload.tree
+    : pathsToTreeNodes(payload.paths ?? [], hints);
+
   return {
     kind: "file-tree",
     sortKey: payload.sortKey ?? 21,
     payload: {
+      title: payload.title ?? "Árbol de cambios",
       rootLabel: payload.rootLabel ?? "ISS",
-      paths: payload.paths,
-      hints: payload.hints ?? {},
+      tree,
+      hints,
     },
   };
 }

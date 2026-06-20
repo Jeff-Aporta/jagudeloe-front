@@ -1,5 +1,22 @@
 /* Jagudeloe — mesh doc TK (embebida + full-page). */
 
+:root {
+  --jgl-radius: 0.5rem;
+  --tk-doc-radius: 0.5rem;
+}
+
+/* MUI — modales, cards, inputs y botones (refuerzo sobre tema dodger). */
+.MuiDialog-paper,
+.MuiButton-root,
+.MuiOutlinedInput-root,
+.MuiFilledInput-root,
+.MuiPaper-root.MuiPaper-rounded,
+.MuiPaper-root.MuiPaper-outlined,
+.MuiCard-root,
+.MuiAlert-root {
+  border-radius: var(--jgl-radius) !important;
+}
+
 /* Superficie embebida en shell (?s → sub=tickets) — mismo mesh que full-page. */
 
 html[data-mui-color-scheme="light"] {

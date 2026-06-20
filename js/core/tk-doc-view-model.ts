@@ -178,13 +178,11 @@ export function buildTkDocViewModel(
       let minutos = Number(t.minutos ?? 0);
       if (isCommitsTiempoEntry(t) && commitMinutos > 0) {
         minutos = commitMinutos;
-      } else {
-        minutos = roundTkMinutosTo5(minutos);
       }
       return {
         name: String(t.name ?? ""),
         detail: String(t.detail ?? ""),
-        minutos,
+        minutos: roundTkMinutosTo5(minutos),
         phase: String(t.phase ?? "").trim() || undefined,
       };
     })

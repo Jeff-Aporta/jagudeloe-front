@@ -3,16 +3,20 @@ import { UI } from "../../core/platform.ts";
 import { inlineMdWeb, stripRedundantTicketHtml } from "../tkHtml.ts";
 import { tkCodeLanguageForRender, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage, tkCodeBlockIntro } from "../../core/tk-code-policy.ts";
 import { tkLinkHref, tkLinkLabel, tkLinkShowsPath } from "../../core/tk-doc.ts";
-import { isStandardMappedTitle } from "../../core/tk-doc-sections.ts";
 import { TK_DOC_RADIUS } from "../../core/tk-table.ts";
 import { LightboxImage } from "../ImageLightbox.jsx";
 import { CodeBlock } from "../CodeBlock.jsx";
 import { MdBody } from "./MdBody.jsx";
-import { DataTable } from "./DataTable.jsx";
-import { FileTree } from "./FileTree.jsx";
 import { SoftBadges, tkDocSoftBadgeSx } from "./SoftBadges.jsx";
 import { StepsBlock } from "./StepsBlock.jsx";
+import { TkDocFlow } from "../TkDocFlow.jsx";
+import { TkDocSequence } from "../TkDocSequence.jsx";
+import { TkDocStepper } from "../TkDocStepper.jsx";
+import { TkDocFileTree } from "../TkDocFileTree.jsx";
+import { TkDocTable } from "../TkDocTable.jsx";
+import { TkDocTimeline } from "../TkDocTimeline.jsx";
 
+/** Intérprete de un bloque TK_CONTENT (kind + payload JSON). */
 export function BlockBody({ block, commits }) {
   const { Box, Typography, Link, Accordion, AccordionSummary, AccordionDetails, Chip } = getMaterialUI();
   const { Icon } = UI;
@@ -20,8 +24,10 @@ export function BlockBody({ block, commits }) {
   const kind = String(block.kind || "text").toLowerCase();
   const p = block.payload || {};
 
-  if (kind === "markdown" || kind === "md" || kind === "text") {
-    return <MdBody text={p.text ?? p.body ?? ""} />;
+  if (kind === "markdown" || kind === "md" || kind === "text" || kind === "html" || kind === "body") {
+    let raw = String(p.text ?? p.body ?? p.html ?? p.content ?? "");
+    if (kind === "html" || kind === "body") raw = stripRedundantTicketHtml(raw);
+    return <MdBody text={raw} />;
   }
 
   if (kind === "code" || kind === "sql") {
@@ -36,8 +42,7 @@ export function BlockBody({ block, commits }) {
   }
 
   if (kind === "table") {
-    const tableTitle = isStandardMappedTitle(String(p.title ?? "")) ? undefined : p.title;
-    return <DataTable headers={p.headers} rows={p.rows} title={tableTitle} />;
+    return <TkDocTable payload={p} />;
   }
 
   if (kind === "image" || kind === "img") {
@@ -119,21 +124,31 @@ export function BlockBody({ block, commits }) {
     return <StepsBlock phases={p.phases ?? p.steps ?? []} />;
   }
 
+  if (kind === "sequence" || kind === "sequence-diagram") {
+    return <TkDocSequence payload={p} />;
+  }
+
+  if (kind === "flow" || kind === "flowchart" || kind === "flow-diagram") {
+    if (String(p.preset ?? "") === "tk1437191") {
+      return <TkDocSequence payload={p} />;
+    }
+    return <TkDocFlow payload={p} />;
+  }
+
+  if (kind === "mui-stepper") {
+    return <TkDocStepper payload={p} />;
+  }
+
   if (kind === "badges" || kind === "badge-row") {
     return <SoftBadges items={p.items ?? p.badges ?? []} />;
   }
 
   if (kind === "file-tree" || kind === "filetree") {
-    return (
-      <FileTree
-        paths={p.paths ?? p.files ?? []}
-        rootLabel={p.rootLabel ?? p.root ?? "ISS"}
-        hints={p.hints ?? p.notes}
-        commits={commits}
-        commitHash={p.commitHash ?? p.hash}
-        commitProyecto={p.commitProyecto ?? p.proyecto}
-      />
-    );
+    return <TkDocFileTree payload={p} commits={commits} />;
+  }
+
+  if (kind === "timeline" || kind === "metrics-timeline") {
+    return <TkDocTimeline payload={p} />;
   }
 
   if (kind === "accordion") {
@@ -143,7 +158,7 @@ export function BlockBody({ block, commits }) {
       ? <CodeBlock code={code} language={tkCodeLanguageForRender(lang)} />
       : code
         ? <MdBody text={TK_CODE_OMITTED_NOTE} />
-        : <Box dangerouslySetInnerHTML={{ __html: String(p.html ?? "") }} />;
+        : <Box dangerouslySetInnerHTML={{ __html: inlineMdWeb(String(p.html ?? "")) }} />;
 
     return (
       <Accordion disableGutters variant="outlined" sx={{ my: 1, borderRadius: TK_DOC_RADIUS, "&:before": { display: "none" } }}>
@@ -168,11 +183,6 @@ export function BlockBody({ block, commits }) {
         {p.sql && <CodeBlock code={p.sql} language="sql" />}
       </Box>
     );
-  }
-
-  if (kind === "html" || kind === "body") {
-    const cleaned = stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? ""));
-    return <Box className="tk-doc-markdown tk-doc-legacy-html" sx={{ "& p": { mb: 1.25, lineHeight: 1.65 }, "& ul, & ol": { pl: 2.5, mb: 1.25 }, "& h3": { fontSize: "0.95rem", fontWeight: 700, mt: 2, mb: 0.75 } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
   }
 
   return <CodeBlock code={JSON.stringify(p, null, 2)} language="json" />;

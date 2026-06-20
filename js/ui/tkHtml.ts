@@ -8,11 +8,14 @@ import { formatTkCommitFecha } from "../core/tk-table.ts";
 import { formatTiqueteCreadoPor, resolveDocumentadorBlock } from "./tkHeroAuthors.ts";
 import { normalizeTkContentBlock, tkCodeLanguageForRender, tkCodeForRender, tkCodeBlockIntro, TK_CODE_OMITTED_NOTE, isDisallowedTkCodeLanguage, stripDisallowedCodeFromHtml } from "../core/tk-code-policy.ts";
 import { tkLinkHtml } from "../core/tk-doc.ts";
-import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS, computeCommitTotals } from "../core/tk-table.ts";
+import { isTkDescColumn, TK_TABLE_DESC_CLAMP_CSS, computeCommitTotals, roundTkMinutosTo5 } from "../core/tk-table.ts";
 import { splitMarkdownBlocks } from "../core/tk-markdown.ts";
+import { richTextInline, richTextPlain, richTextEsc } from "../core/tk-rich-text.ts";
 import { filterDocViewContentBlocks } from "../core/tk-evidencias.ts";
 import { extractTipoSolicitudApertura, tipoSolicitudDisplayLabel } from "../core/tk-normativa.ts";
 import { parsePhaseItems, phaseListFromPayload } from "../core/tk-doc-steps.ts";
+import { replaceIconifyTokensEmail, replaceIconifyTokensWeb } from "../core/tk-iconify-inline.ts";
+import { tableSpecFromPayload } from "../core/tk-doc-table.ts";
 
 const C = {
   pageBg: "#eef2f7",
@@ -37,12 +40,46 @@ const FONT = "font-family:Tahoma,Arial,Helvetica,sans-serif;";
 const MONO = "font-family:Consolas,Monaco,monospace;";
 
 export function esc(s: unknown): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return richTextEsc(s);
 }
+
+function applyInlineMdPlainEmail(plain: string): string {
+  let s = esc(plain);
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  s = s.replace(/`([^`]+)`/g, (_m, code) => codeChip(code));
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer" style="color:${C.blue};">$1</a>`);
+  return s;
+}
+
+function applyInlineMdPlainWeb(plain: string): string {
+  let s = esc(plain);
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  s = s.replace(/`([^`]+)`/g, (_m, code) => codeChipWeb(code));
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="tk-inline-link">$1</a>');
+  return s;
+}
+
+function applyInlineMdEmail(plain: string): string {
+  return replaceIconifyTokensEmail(plain, applyInlineMdPlainEmail);
+}
+
+function applyInlineMdWeb(plain: string): string {
+  return replaceIconifyTokensWeb(plain, applyInlineMdPlainWeb);
+}
+
+/** Inline MD + HTML: **negrilla**, `código`, [label](url) y etiquetas HTML en la misma cadena. */
+export function inlineMd(raw: string): string {
+  return richTextInline(raw, applyInlineMdEmail);
+}
+
+/** Igual que inlineMd, con `<code class="tk-inline-code">` para el driver JSX. */
+export function inlineMdWeb(raw: string): string {
+  return richTextInline(raw, applyInlineMdWeb);
+}
+
+/** Alias explícito para payloads JSON de componentes TK. */
+export const richTextWeb = inlineMdWeb;
+export { richTextPlain } from "../core/tk-rich-text.ts";
 
 function icon(name: string, color: string, size = 15): string {
   const c = encodeURIComponent(color);
@@ -55,24 +92,6 @@ function codeChip(text: string): string {
 
 function codeChipWeb(text: string): string {
   return `<code class="tk-inline-code">${text}</code>`;
-}
-
-/** Inline markdown ligero: **negrilla**, `código`, [label](url). Escapa el resto. */
-export function inlineMd(raw: string): string {
-  let s = esc(raw);
-  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  s = s.replace(/`([^`]+)`/g, (_m, code) => codeChip(code));
-  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer" style="color:${C.blue};">$1</a>`);
-  return s;
-}
-
-/** Igual que inlineMd, con `<code class="tk-inline-code">` para el driver JSX (tema claro/oscuro vía CSS). */
-export function inlineMdWeb(raw: string): string {
-  let s = esc(raw);
-  s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  s = s.replace(/`([^`]+)`/g, (_m, code) => codeChipWeb(code));
-  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="tk-inline-link">$1</a>');
-  return s;
 }
 
 function bulletRow(iconName: string, html: string): string {
@@ -240,15 +259,23 @@ function codeBlockWithIntro(p: Record<string, unknown>, lang: string): string {
   return introHtml + codeBlock(code, lang);
 }
 
+function tkDocTextPayload(p: Record<string, unknown>): string {
+  return String(p.text ?? p.body ?? p.html ?? p.content ?? "");
+}
+
 const DRIVERS: Record<string, (p: Record<string, unknown>) => string> = {
-  markdown: (p) => mdBody(String(p.text ?? p.body ?? "")),
-  md: (p) => mdBody(String(p.text ?? p.body ?? "")),
-  text: (p) => mdBody(String(p.text ?? p.body ?? "")),
-  html: (p) => stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? "")),
-  body: (p) => stripRedundantTicketHtml(String(p.html ?? p.body ?? p.content ?? "")),
+  markdown: (p) => mdBody(tkDocTextPayload(p)),
+  md: (p) => mdBody(tkDocTextPayload(p)),
+  text: (p) => mdBody(tkDocTextPayload(p)),
+  html: (p) => mdBody(stripRedundantTicketHtml(tkDocTextPayload(p))),
+  body: (p) => mdBody(stripRedundantTicketHtml(tkDocTextPayload(p))),
   code: (p) => codeBlockWithIntro(p, String(p.language ?? "sql")),
   sql: (p) => codeBlockWithIntro(p, "sql"),
-  table: (p) => dataTable((p.headers as string[]) ?? [], (p.rows as unknown[][]) ?? []),
+  table: (p) => {
+    const spec = tableSpecFromPayload(p);
+    if (!spec) return "";
+    return dataTable(spec.headers, spec.rows);
+  },
   image: (p) => {
     const src = esc(p.url ?? p.src ?? "");
     const alt = esc(p.alt ?? p.caption ?? "");
@@ -579,7 +606,11 @@ export function renderTicketRows(tk: Record<string, unknown>): string {
   // Si no hay tk.tiempos estructurado pero el contenido ya trae resumen embebido, no duplicar sección auto.
   const embeddedTiemposLegacy = !hasStructuredTiempos && blocks.some((b) => isEmbeddedTiemposBlock(b));
   const tiempos = ((tk.tiempos as Record<string, unknown>[]) ?? [])
-    .map((t) => ({ name: String(t.name ?? ""), detail: String(t.detail ?? ""), minutos: Math.round(Number(t.minutos ?? 0)) }))
+    .map((t) => ({
+      name: String(t.name ?? ""),
+      detail: String(t.detail ?? ""),
+      minutos: roundTkMinutosTo5(t.minutos),
+    }))
     .filter((t) => t.name && t.minutos > 0);
   let timeRows = "";
   let timeTotal = 0;

@@ -99,7 +99,7 @@ function DocWebPage({ tk: initialTk, space, iticket: initialIticket, initialRepo
           bgcolor: "background.paper",
           border: 1,
           borderColor: "divider",
-          borderRadius: 1,
+          borderRadius: "0.5rem",
           boxShadow: 1,
           p: 0.25,
         }}
@@ -128,7 +128,11 @@ function DocWebPage({ tk: initialTk, space, iticket: initialIticket, initialRepo
               <TicketMetricsDocument tk={tk} iticket={ticketId} project={project} />
             </Box>
           ) : (
-            <TicketDocWebView tk={tk} />
+            <TicketDocWebView
+              tk={tk}
+              project={project}
+              onTicketUpdated={(updated) => setTk(patchTkDocSeed(updated))}
+            />
           )}
           {loading ? (
             <Box
