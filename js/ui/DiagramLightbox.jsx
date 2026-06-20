@@ -258,6 +258,7 @@ export function DiagramLightbox({ open, onClose, kind = "sequence", payload, clo
           {...view.bind}
           onDoubleClick={view.reset}
           sx={{
+            position: "relative",
             flex: 1,
             minHeight: 0,
             display: "flex",
@@ -267,6 +268,51 @@ export function DiagramLightbox({ open, onClose, kind = "sequence", payload, clo
             p: { xs: 0.5, sm: 1.5 },
           }}
         >
+          {view.pull.active && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 14,
+                left: "50%",
+                zIndex: 10,
+                pointerEvents: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 0.5,
+                transform: `translate(-50%, ${Math.min(view.pull.dy * 0.5, 160)}px)`,
+              }}
+            >
+              <Box sx={{ position: "relative", width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CircularProgress
+                  variant="determinate"
+                  value={Math.round(view.pull.progress * 100)}
+                  size={52}
+                  thickness={4}
+                  sx={{ color: view.pull.progress >= 1 ? "#ef4444" : "rgba(255,255,255,0.9)" }}
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: view.pull.progress >= 1 ? "#ef4444" : "rgba(255,255,255,0.14)",
+                    color: view.pull.progress >= 1 ? "#fff" : "rgba(255,255,255,0.92)",
+                    transition: "background-color 0.15s ease",
+                  }}
+                >
+                  <UI.Icon icon="mdi:close" size={22} />
+                </Box>
+              </Box>
+              <Box sx={{ fontSize: 11, fontWeight: 600, color: view.pull.progress >= 1 ? "#ef4444" : "rgba(255,255,255,0.78)" }}>
+                {view.pull.progress >= 1 ? "Soltar para cerrar" : "Desliza para cerrar"}
+              </Box>
+            </Box>
+          )}
           <Box
             sx={{
               flex: 1,
@@ -275,8 +321,9 @@ export function DiagramLightbox({ open, onClose, kind = "sequence", payload, clo
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              transform: view.transform,
+              transform: view.pull.active ? `translateY(${view.pull.dy}px) ${view.transform}` : view.transform,
               transformOrigin: "center center",
+              opacity: view.pull.active ? 1 - 0.3 * view.pull.progress : 1,
             }}
           >
             {gallery ? (
