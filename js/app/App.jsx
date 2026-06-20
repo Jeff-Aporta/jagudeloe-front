@@ -117,12 +117,21 @@ export function App() {
   /** toolbarExtra existe en AppShell legacy; toolbarEnd/toolbarActions no. */
   const toolbarTools = <LoginButton />;
 
+  const viewShellSx = {
+    flex: 1,
+    minHeight: 0,
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  };
+
   const body = hasNavShell
-    ? renderView()
+    ? <Box className="isa-view-shell" sx={viewShellSx}>{renderView()}</Box>
     : (
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
         <LegacyNav space={space} setSpace={setSpace} sub={sub} setSub={setSub} />
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{renderView()}</Box>
+        <Box className="isa-view-shell" sx={viewShellSx}>{renderView()}</Box>
       </Box>
     );
 

@@ -313,14 +313,6 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
   color: #e0f2fe !important;
 }
 
-#root {
-  display: block !important;
-  height: auto !important;
-  min-height: 100vh;
-  overflow: visible !important;
-  flex: none !important;
-}
-
 .tk-content {
   & .tk-code-cm {
     max-height: none;

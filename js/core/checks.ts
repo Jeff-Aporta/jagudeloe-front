@@ -1,15 +1,16 @@
 /** Utilidades checks — sqlexec + tickets (BITACORA_REVISADO). */
-import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE } from "./tk-metrics.ts";
-import { ticketTiempoEvidenciasCompletas } from "./tk-evidencias.ts";
+import { businessMinutesBetween, extractMetricInput, DEFAULT_SCHEDULE, parseTicketDate } from "./tk-metrics.ts";
+import { ticketTiempoEvidenciasCompletas, tiempoEvidenciaCoverage } from "./tk-evidencias.ts";
 import { patchTkDocSeed } from "./tk-doc-seed-patch.ts";
 
-export type DotState = "complete" | "partial" | "warn" | "overdue" | "idle" | "none" | "info";
+export type DotState = "complete" | "partial" | "warn" | "overdue" | "magenta" | "idle" | "none" | "info";
 
 export const DOT_STATE_LABELS: Record<DotState, string> = {
   complete: "Revisado / ejecutado",
   partial: "Revisión parcial",
-  warn: "Más de 7 h hábiles sin cerrar",
-  overdue: "Más de 14 h hábiles sin cerrar",
+  warn: "Más de 4 h hábiles sin atender",
+  overdue: "Más de 10 h hábiles sin solución",
+  magenta: "Más de 4 h hábiles sin atender",
   idle: "Pendiente",
   none: "Sin revisar",
   info: "En progreso",
@@ -22,11 +23,11 @@ export function dotStateLabel(state: DotState | null | undefined): string {
 
 /** Tooltips del dot en listado / chip de ticket (evidencias + aging). */
 export const TICKET_DOT_STATE_LABELS: Partial<Record<DotState, string>> = {
-  complete: "Ticket cerrado / documentado",
-  idle: "Sin cierre documentado",
-  none: "Sin cierre documentado",
-  warn: "Diligencia demorada (>7 h hábiles)",
-  overdue: "Diligencia muy demorada (>14 h hábiles)",
+  complete: "Evidencias de apertura, atención y cierre",
+  idle: "Sin atención registrada (dentro de plazo)",
+  none: "Sin atención registrada",
+  magenta: "Sin atender (>4 h hábiles)",
+  overdue: "Sin solución (>10 h hábiles)",
 };
 
 export function ticketDotStateLabel(state: DotState | null | undefined): string {
@@ -46,8 +47,8 @@ export function aggregateDotState(keys: string[], map: Record<string, boolean>):
 
 export function ticketRevisadoKey(iticket: string): string { return "tickets." + iticket; }
 
-const TK_WARN_HOURS = 7;
-const TK_OVERDUE_HOURS = 14;
+const TK_ATTEND_HOURS = 4;
+const TK_SOLVE_HOURS = 10;
 
 /** Pendientes conocidas cuando la BD aún no trae meta.metricas.documentacion.tareasPendientes. */
 const FALLBACK_PENDING_TASKS: Record<string, string[]> = {
@@ -179,7 +180,55 @@ export function ticketEstadoDotState(tk: Record<string, unknown>): DotState {
   return "idle";
 }
 
-/** Dot en listado TK: verde con cierre documentado; gris sin él; rojo/naranja si la diligencia abierta se demora. */
+function ticketWasAttended(tk: Record<string, unknown>, input: ReturnType<typeof extractMetricInput>): boolean {
+  if (input.horaInicioAtencion) return true;
+  return tiempoEvidenciaCoverage(tk).atencion;
+}
+
+function metricFechaCierre(tk: Record<string, unknown>): string | null {
+  for (const raw of [tk.detallesExtra, tk.meta, tk]) {
+    const root = parseRecord(raw);
+    const metricas = parseRecord(root.metricas);
+    if (!Object.keys(metricas).length) continue;
+    const cierre = parseTicketDate(
+      metricas.fechaCierre || metricas.fechaSolucion || metricas.horaCierre || metricas.cierre,
+    );
+    if (cierre) return cierre;
+  }
+  return null;
+}
+
+/** Solución documentada o cierre InSoft — entrega parcial no cuenta como solución. */
+function ticketIsSolvedForDot(tk: Record<string, unknown>, _input: ReturnType<typeof extractMetricInput>): boolean {
+  if (ticketTiempoEvidenciasCompletas(tk)) return true;
+  if (metricFechaCierre(tk)) return true;
+
+  const cierreEmp = cierreEmpresaText(tk);
+  if (/cerrado|solucionado/.test(cierreEmp)) return true;
+
+  const norm = parseRecord(tk.normativa);
+  for (const v of [norm.cierre, norm.cierreEmpresa, norm.estadoSolicitud]) {
+    const s = String(v || "").toLowerCase();
+    if (s.includes("cerrado") || s.includes("solucionado")) return true;
+  }
+
+  const direct = String(tk.estado || tk.ESTADO || "").toLowerCase().trim();
+  if (direct === "cerrado" || direct.includes("solucionado")) return true;
+
+  return false;
+}
+
+function businessHoursSinceCreation(
+  tk: Record<string, unknown>,
+  input: ReturnType<typeof extractMetricInput>,
+): number | null {
+  const cre = input.fechaCreacion;
+  if (!cre) return null;
+  const mins = businessMinutesBetween(cre, new Date().toISOString(), input, DEFAULT_SCHEDULE);
+  return mins == null ? null : mins / 60;
+}
+
+/** Dot en listado TK: verde con evidencias; gris pendiente; magenta sin atender; rojo sin solución demorada. */
 export function ticketListDotState(
   tk: Record<string, unknown>,
   _revisadoMap?: Record<string, boolean>,
@@ -189,21 +238,12 @@ export function ticketListDotState(
   if (ticketIsCerradoDocumentado(bag)) return "complete";
 
   const input = extractMetricInput(bag);
-  const closed =
-    resolveTicketEstado(bag) === "cerrado" ||
-    !!input.fechaCierre ||
-    !!(bag.fechaEntrega || bag.FECHAENTREGA);
+  if (ticketIsSolvedForDot(bag, input)) return "complete";
 
-  if (!closed) {
-    const cre = input.fechaCreacion;
-    if (cre) {
-      const mins = businessMinutesBetween(cre, new Date().toISOString(), input, DEFAULT_SCHEDULE);
-      if (mins != null) {
-        const hours = mins / 60;
-        if (hours > TK_OVERDUE_HOURS) return "overdue";
-        if (hours > TK_WARN_HOURS) return "warn";
-      }
-    }
+  const hours = businessHoursSinceCreation(bag, input);
+  if (hours != null) {
+    if (hours > TK_SOLVE_HOURS) return "overdue";
+    if (!ticketWasAttended(bag, input) && hours > TK_ATTEND_HOURS) return "magenta";
   }
 
   return "idle";

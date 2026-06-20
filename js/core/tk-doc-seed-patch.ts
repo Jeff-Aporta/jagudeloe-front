@@ -1,8 +1,14 @@
 /**
  * Parche de commits/tiempos/contenido cuando la API aún no refleja el seed de BD.
- * Fuente canónica: backend-tks/scripts/lib/tk-content-1439155.mjs
+ * Fuente canónica: backend-tks/scripts/lib/tk-content-*.mjs
  */
 
+import {
+  mergeTk1437191Content,
+  needsTk1437191ContentPatch,
+  TK1437191_COMMITS,
+  TK1437191_TIEMPOS,
+} from "./tk-doc-content-1437191.ts";
 import {
   mergeTk1439155Content,
   needsTk1439155ContentPatch,
@@ -160,6 +166,10 @@ const TK1439155_TIEMPOS: TkTiempoSeed[] = [
 ];
 
 const DOC_SEED_OVERRIDES: Record<string, TkDocSeedOverride> = {
+  "TK-1437191": {
+    commits: [...TK1437191_COMMITS],
+    tiempos: [...TK1437191_TIEMPOS],
+  },
   "TK-1439155": { commits: TK1439155_COMMITS, tiempos: TK1439155_TIEMPOS },
 };
 
@@ -198,6 +208,33 @@ const TK1439155_METRICAS_PATCH = {
     cierreEmpresa: "Solucionado",
     imagenesR2Subidas: TK1439155_R2_SUBIDAS,
     evidenciasTiempo: [...TK1439155_EVIDENCIAS_TIEMPO],
+    evidenciasSubidas: true,
+  },
+};
+
+const TK1437191_R2_SUBIDAS = [
+  "patyia/diligencias/tk1437191-problemafecha-insoft.png",
+  "patyia/diligencias/tk1437191-problemaireferencia-insoft.png",
+  "patyia/diligencias/tk1437191-metricas-insoft.png",
+];
+
+const TK1437191_EVIDENCIAS_TIEMPO = [
+  {
+    key: "patyia/diligencias/tk1437191-metricas-insoft.png",
+    rol: "metricas",
+    hitos: ["apertura", "atencion", "cierre"],
+  },
+] as const;
+
+const TK1437191_METRICAS_PATCH = {
+  horaInicioAtencion: "12/jun./2026 12:31:00 pm",
+  fechaCierre: "19/jun./2026 09:26:00 pm",
+  fechaSolucion: "19/jun./2026 09:26:00 pm",
+  documentacion: {
+    cierreEmpresa: "Solucionado",
+    diligenciaMinutos: { investigacion: 35, commits: 111, ticket: 54, total: 200 },
+    imagenesR2Subidas: TK1437191_R2_SUBIDAS,
+    evidenciasTiempo: [...TK1437191_EVIDENCIAS_TIEMPO],
     evidenciasSubidas: true,
   },
 };
@@ -340,6 +377,55 @@ function patchTk1439155Metricas(tk: Record<string, unknown>): Record<string, unk
   return { ...tk, detallesExtra, meta, content };
 }
 
+function needsTk1437191MetricasPatch(tk: Record<string, unknown>): boolean {
+  if (needsTk1437191ContentPatch((tk.content as unknown[]) ?? [])) return true;
+  if (Number(tk.diligenciaMinutos ?? 0) !== 200) return true;
+  if (Number(tk.tiempoTotalMinutos ?? 0) !== 200) return true;
+  const doc = metricasDocBag(tk);
+  const subidas = Array.isArray(doc.imagenesR2Subidas) ? doc.imagenesR2Subidas : [];
+  if (!subidas.some((k) => String(k).toLowerCase().includes("1437191-metricas"))) return true;
+  const detMet = ((tk.detallesExtra as Record<string, unknown> | undefined)?.metricas || {}) as Record<
+    string,
+    unknown
+  >;
+  if (!detMet.horaInicioAtencion || !detMet.fechaCierre) return true;
+  return false;
+}
+
+function patchTk1437191Metricas(tk: Record<string, unknown>): Record<string, unknown> {
+  if (!needsTk1437191MetricasPatch(tk)) return tk;
+
+  const detallesExtra = { ...((tk.detallesExtra as Record<string, unknown>) || {}) };
+  detallesExtra.metricas = mergeMetricasRoot(
+    detallesExtra.metricas as Record<string, unknown> | undefined,
+    TK1437191_METRICAS_PATCH,
+  );
+
+  let meta = tk.meta;
+  if (meta && typeof meta === "object") {
+    meta = {
+      ...(meta as Record<string, unknown>),
+      metricas: mergeMetricasRoot(
+        (meta as Record<string, unknown>).metricas as Record<string, unknown> | undefined,
+        TK1437191_METRICAS_PATCH,
+      ),
+    };
+  }
+
+  const content = mergeTk1437191Content((tk.content as unknown[]) ?? []);
+
+  return {
+    ...tk,
+    detallesExtra,
+    meta,
+    content,
+    tiempos: [...TK1437191_TIEMPOS],
+    diligenciaMinutos: 200,
+    tiempoTotalMinutos: 200,
+    estado: tk.estado ?? "cerrado",
+  };
+}
+
 /** Sustituye commits/tiempos/contenido del ticket si la API aún no coincide con el seed. */
 export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unknown> {
   const iticket = normIticket(tk.iticket);
@@ -371,12 +457,20 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
   }
 
   const content = (out.content as unknown[]) ?? [];
+  if (iticket === "TK-1437191" && needsTk1437191ContentPatch(content)) {
+    out = { ...out, content: mergeTk1437191Content(content) };
+  }
+
   if (iticket === "TK-1439155" && needsTk1439155ContentPatch(content)) {
     out = { ...out, content: mergeTk1439155Content(content) };
   }
 
   if (iticket === "TK-1439155") {
     out = patchTk1439155Metricas(out);
+  }
+
+  if (iticket === "TK-1437191") {
+    out = patchTk1437191Metricas(out);
   }
 
   if (iticket === "TK-1437976") {

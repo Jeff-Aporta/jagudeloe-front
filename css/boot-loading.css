@@ -153,7 +153,7 @@ html[data-mui-color-scheme="light"] .isa-app-boot__bar {
   width: min(100px, 16vw);
   height: auto;
   opacity: 0.16;
-  filter: grayscale(1) brightness(1.15);
+  filter: invert(0.5);
   pointer-events: none;
   user-select: none;
   z-index: 0;
@@ -176,10 +176,98 @@ html[data-mui-color-scheme="light"] .isa-app-boot-watermark {
   min-height: 100vh;
 }
 
-.isa-layout-body > .isa-app-boot,
-.isa-layout-scroll > .isa-app-boot,
-.isa-scroll-panel > .isa-app-boot {
-  min-height: 100%;
+.isa-app-boot.isa-app-boot--inline {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0.75rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: transparent;
+}
+
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__mesh,
+.isa-app-boot.isa-app-boot--inline .isa-app-boot-watermark {
+  display: none;
+}
+
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__card {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.85rem;
+  min-width: 0;
+  max-width: none;
+  border-radius: 999px;
+}
+
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__icon-wrap {
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  border-radius: 999px;
+}
+
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__title,
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__bar {
+  display: none;
+}
+
+.isa-app-boot.isa-app-boot--inline .isa-app-boot__label {
+  margin: 0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* Panel: llena el contenedor de vista (bitácora/tickets) con tarjeta centrada. */
+.isa-app-boot.isa-app-boot--panel {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.isa-app-boot.isa-app-boot--panel .isa-app-boot__mesh {
+  display: block;
+}
+
+.isa-app-boot.isa-app-boot--panel .isa-app-boot__title,
+.isa-app-boot.isa-app-boot--panel .isa-app-boot__bar {
+  display: block;
+}
+
+.isa-layout-body .isa-app-boot--inline,
+.isa-layout-scroll .isa-app-boot--inline,
+.isa-scroll-panel .isa-app-boot--inline,
+.isa-view-frame .isa-app-boot--inline,
+.isa-view-shell .isa-app-boot--inline {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  height: auto;
+}
+
+.isa-layout-body .isa-app-boot--panel,
+.isa-layout-scroll .isa-app-boot--panel,
+.isa-scroll-panel .isa-app-boot--panel,
+.isa-view-frame .isa-app-boot--panel,
+.isa-view-shell .isa-app-boot--panel,
+.isa-view-split__main .isa-app-boot--panel {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

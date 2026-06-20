@@ -20,6 +20,7 @@ import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReport
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
 const ABBR = { ene: "01", feb: "02", mar: "03", abr: "04", may: "05", jun: "06", jul: "07", ago: "08", sep: "09", oct: "10", nov: "11", dic: "12" };
+const navPanelSx = { width: 260, borderRight: 1, borderColor: "divider", bgcolor: "background.paper" };
 
 function ticketId(t) { return String(t.code || t.iticket || t.id || ""); }
 
@@ -37,6 +38,19 @@ function dateOf(t) {
 function revisadoKeyOf(tk, iticket) {
   const ctx = (tk.contexts || [])[0] || {};
   return String(tk.revisadoKey || tk.REVISADOKEY || ctx.revisadoKey || ctx.REVISADOKEY || ("tickets." + iticket));
+}
+
+function ticketTotalMinutos(tk) {
+  const direct = Number(tk?.tiempoTotalMinutos);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  const dil = Number(tk?.diligenciaMinutos);
+  if (Number.isFinite(dil) && dil > 0) return dil;
+  const rows = tk?.tiempos;
+  if (Array.isArray(rows) && rows.length) {
+    const sum = rows.reduce((n, r) => n + Number(r?.minutos || 0), 0);
+    if (sum > 0) return sum;
+  }
+  return null;
 }
 
 function CopyDocLinkButton({ space, iticket, driver, titulo }) {
@@ -133,7 +147,15 @@ function TicketDetail(props) {
     refreshTkCodeThemes(htmlRef.current, theme.palette.mode);
   }, [driver, state.loading, state.tk, theme.palette.mode]);
 
-  if (state.loading) return Loading ? <Loading label="Cargando ticket…" viewport={false} /> : <CircularProgress />;
+  if (state.loading) {
+    return Loading
+      ? <Loading label="Cargando ticket…" panel watermark={false} />
+      : (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 3, color: "text.secondary" }}>
+          <CircularProgress size={20} />
+        </Box>
+      );
+  }
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
 
   const tk = state.tk || {};
@@ -144,7 +166,14 @@ function TicketDetail(props) {
 
   return (
     <Stack spacing={0} sx={{ height: "100%", minHeight: 0 }}>
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        flexWrap="wrap"
+        className="tk-detail-toolbar"
+        sx={{ px: 2, py: 0.75, minHeight: 48, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}
+      >
         <RevisadoCheck project={tkSpace} revisadoKey={rKey} reloadKey={props.reloadKey} label={props.iticket} showLabel={false} hint="Marcar ticket como revisado y ejecutado" />
         <Chip
           size="small"
@@ -157,7 +186,9 @@ function TicketDetail(props) {
           sx={{ bgcolor: "#fff", color: "#111", fontWeight: 700 }}
         />
         <Chip size="small" variant="outlined" label={tkSpace} />
-        {tk.tiempoTotalMinutos != null && <Chip size="small" variant="outlined" label={"Total " + String(tk.tiempoTotalMinutos) + " min"} />}
+        {ticketTotalMinutos(tk) != null && (
+          <Chip size="small" variant="outlined" label={"Total " + String(ticketTotalMinutos(tk)) + " min"} />
+        )}
         <Box sx={{ flex: 1 }} />
         <TkReportSwitch mode={reportView} onToggle={toggleReport} />
         {reportView === "diligencia" && (
@@ -261,7 +292,15 @@ export function TicketsDiligenciaView(props) {
   const rows = state.rows.slice().sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
   useEffect(() => { if (rows.length && !selected) setSelected(ticketId(rows[0])); }, [state.rows]);
 
-  if (state.loading) return Loading ? <Loading label="Cargando tickets…" viewport={false} /> : <CircularProgress />;
+  if (state.loading) {
+    return Loading
+      ? <Loading label="Cargando tickets…" panel watermark={false} />
+      : (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 3, color: "text.secondary" }}>
+          <CircularProgress size={20} />
+        </Box>
+      );
+  }
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
   if (!rows.length) return <Alert severity="info">{"Sin tickets en " + props.project + "."}</Alert>;
 
@@ -281,11 +320,11 @@ export function TicketsDiligenciaView(props) {
   void ageTick;
 
   return (
-    <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
-      <Box sx={{ width: 260, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
+    <Box className="isa-view-split">
+      <Box className="isa-view-split__nav" sx={navPanelSx}>
         <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="items" />
       </Box>
-      <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <Box className="isa-view-split__main">
         {selected ? (
           <TicketDetail
             project={props.project}

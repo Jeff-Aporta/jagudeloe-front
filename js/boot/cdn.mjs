@@ -22,7 +22,7 @@ export const asset = (p) =>
 
 /* @isa-lightbox-boot:start */
 /** @jeff-aporta/lightbox-zoom — pin: sync-component-refs.mjs */
-export const LIGHTBOX_ZOOM_REF = "1d8119f";
+export const LIGHTBOX_ZOOM_REF = "f4fba38";
 
 export function lightboxZoomBase() {
   const base = document.querySelector("base")?.href || location.href;

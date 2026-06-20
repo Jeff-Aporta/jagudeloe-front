@@ -1,10 +1,42 @@
 /* AppShell jagudeloe — tabs y nav con glow neon. */
 
-/* AppBar — sesión, chips y acciones centrados en el toolbar */
+/* Viewport lock — CssBaseline de MUI resetea #root tras montar React. */
+html,
+body {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
 
-/* Dots de navegación (bitácora / tickets) — colores explícitos, sin MUI bgcolor */
+html body #root {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
 
-/* Barra detalle ticket — corrige chips desalineados (theme global: height auto + py en label) */
+/* No participar en flex: tags de estilo (Emotion/MUI) si quedan en #root. */
+#root > style {
+  display: none !important;
+  flex: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#root > .isa-layout-root {
+  flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 .header-session-btn {
   display: inline-flex;
@@ -16,6 +48,65 @@
   display: inline-flex;
   align-items: center;
   align-self: center;
+}
+
+/* Cadena flex AppShell → vista (loading inline llena el panel). */
+.isa-layout-root {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden;
+  & > .isa-layout-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  & > .isa-layout-body > .isa-view-shell {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+/* Bitácora / tickets: nav lateral + detalle a la derecha (no apilar en columna). */
+.isa-view-shell > .isa-view-split {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+
+.isa-view-split__nav {
+  flex: 0 0 auto;
+  min-height: 0;
+  align-self: stretch;
+  overflow: auto;
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .isa-view-split__nav {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.isa-view-split__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .isa-layout-root {
@@ -101,46 +192,71 @@
   flex-shrink: 0;
   display: inline-block;
   vertical-align: middle;
-  &--complete {
-    background-color: #2e9e5b;
-    box-shadow: 0 0 6px rgba(46, 158, 91, 0.55);
-  }
-  &--idle {
-    background-color: rgba(158, 158, 158, 0.65);
-  }
-  &--info {
-    background-color: #0288d1;
-    box-shadow: 0 0 6px rgba(2, 136, 209, 0.45);
-  }
-  &--none {
-    background-color: rgba(158, 158, 158, 0.65);
-  }
-  &--overdue {
-    background-color: #d32f2f;
-    box-shadow: 0 0 6px rgba(211, 47, 47, 0.45);
-  }
-  &--partial {
-    background-color: #ed6c02;
-    box-shadow: 0 0 6px rgba(237, 108, 2, 0.45);
-  }
-  &--placeholder {
-    background-color: rgba(158, 158, 158, 0.6);
-  }
-  &--warn {
-    background-color: #ed6c02;
-    box-shadow: 0 0 6px rgba(237, 108, 2, 0.45);
-  }
+}
+
+.nav-status-dot--complete {
+  background-color: #2e9e5b;
+  box-shadow: 0 0 6px rgba(46, 158, 91, 0.55);
+}
+
+.nav-status-dot--idle {
+  background-color: rgba(158, 158, 158, 0.65);
+}
+
+.nav-status-dot--info {
+  background-color: #0288d1;
+  box-shadow: 0 0 6px rgba(2, 136, 209, 0.45);
+}
+
+.nav-status-dot--none {
+  background-color: rgba(158, 158, 158, 0.65);
+}
+
+.nav-status-dot--overdue {
+  background-color: #d32f2f;
+  box-shadow: 0 0 6px rgba(211, 47, 47, 0.45);
+}
+
+.nav-status-dot--magenta {
+  background-color: #e040fb;
+  box-shadow: 0 0 6px rgba(224, 64, 251, 0.5);
+}
+
+.nav-status-dot--partial {
+  background-color: #ed6c02;
+  box-shadow: 0 0 6px rgba(237, 108, 2, 0.45);
+}
+
+.nav-status-dot--placeholder {
+  background-color: rgba(158, 158, 158, 0.6);
+}
+
+.nav-status-dot--warn {
+  background-color: #ed6c02;
+  box-shadow: 0 0 6px rgba(237, 108, 2, 0.45);
 }
 
 .tk-detail-toolbar {
+  display: flex;
   align-items: center;
+  align-content: center;
+  min-height: 48px;
+  row-gap: 8px;
+
+  & > * {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
   & .MuiChip-sizeSmall {
-    height: 26px;
-    min-height: 26px;
+    height: 32px;
+    min-height: 32px;
     padding-top: 0;
     padding-bottom: 0;
     box-sizing: border-box;
   }
+
   & .MuiChip-sizeSmall .MuiChip-label {
     display: inline-flex;
     align-items: center;
@@ -149,11 +265,62 @@
     padding-top: 0;
     padding-bottom: 0;
   }
+
+  & .MuiCheckbox-root {
+    padding: 4px;
+  }
+
+  & .MuiToggleButtonGroup-root {
+    height: 32px;
+  }
+
+  & .MuiToggleButtonGroup-root .MuiToggleButton-root {
+    min-height: 32px;
+    height: 32px;
+    line-height: 1;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  & .MuiIconButton-sizeSmall {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
   & .nav-status-dot {
     display: inline-block;
     vertical-align: middle;
     margin-top: 0;
   }
+}
+
+/* Portales en #root (toasts, procesos): no estirar en la columna flex. */
+#root > .isa-toast-stack,
+#root > .isa-process-anchor {
+  flex: none !important;
+  height: auto !important;
+  width: auto !important;
+  max-height: none !important;
+  align-self: auto !important;
+}
+
+/* Toolbar derecho — sesión + tema en fila horizontal (pill). */
+.isa-layout-root > header.MuiAppBar-root .MuiToolbar-root > .MuiStack-root {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  align-self: center !important;
+  height: auto !important;
+  max-height: none !important;
+  width: auto !important;
+}
+
+.header-session-wrap,
+.header-session-btn {
+  flex-direction: row !important;
+  height: auto !important;
+  max-height: none !important;
 }
 
 /* nest-css-max:processed */

@@ -31,7 +31,7 @@ export function CheckDot(props) {
   const tip = props.title ?? dotStateLabel(state);
   return (
     <Tooltip title={tip}>
-      <span className={"nav-status-dot nav-status-dot--" + state} aria-hidden />
+      <span className={"nav-status-dot nav-status-dot--" + state} aria-label={tip} role="img" />
     </Tooltip>
   );
 }
@@ -167,10 +167,9 @@ export function DateTree(props) {
     return (
       <Tooltip key={it.id} title={tip} placement="right" enterDelay={400}>
         <ListItemButton selected={props.selectedId === it.id} onClick={() => props.onSelect(it.id)} sx={{ pl: 1 + depth * 1.5, py: 0.35, ...NAV_BTN, minHeight: 36, maxHeight: 36 }} aria-label={line}>
-          <Box sx={{ mr: 0.75, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
+          <Box sx={{ mr: 1, display: "flex", alignItems: "center", flexShrink: 0, width: 8, justifyContent: "center" }}>
             <NavStatusDot state={it.dotState} title={it.dotTitle} />
           </Box>
-          <Icon icon="mdi:file-document-outline" size={15} style={{ opacity: 0.7, flexShrink: 0 }} />
           <ListItemText primary={line} sx={NAV_TEXT} primaryTypographyProps={{ variant: "body2", sx: NAV_LINE1 }} />
         </ListItemButton>
       </Tooltip>

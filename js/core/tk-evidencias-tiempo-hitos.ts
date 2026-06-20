@@ -11,7 +11,7 @@ export interface EvidenciaTiempo {
 
 const PATYIA_TK = new Set([
   1429262, 1432903, 1433179, 1433943, 1433968, 1434846, 1435136, 1435328,
-  1435713, 1436238, 1436248, 1436259, 1437191, 1439155,
+  1435713, 1436238, 1436248, 1436259, 1437191, 1439155, 1439822,
 ]);
 
 const TIEMPO_ROLES = new Set(["solicitud", "atencion", "metricas", "cierre", "entrega"]);
@@ -42,8 +42,9 @@ const LOCAL_TIEMPO_ROLES: Record<number, string[]> = {
   1436238: ["solicitud"],
   1436248: ["solicitud"],
   1436259: ["entrega", "metricas"],
-  1437191: ["solicitud"],
+  1437191: ["solicitud", "metricas"],
   1439155: ["solicitud", "metricas"],
+  1439822: ["solicitud"],
 };
 
 const TIEMPO_HITOS_DEFAULT_BY_ROL: Record<string, TiempoHito[]> = {
@@ -60,6 +61,9 @@ const TIEMPO_HITOS_OVERRIDES: Record<number, Record<string, TiempoHito[]>> = {
     entrega: ["cierre"],
   },
   1439155: {
+    metricas: ["apertura", "atencion", "cierre"],
+  },
+  1437191: {
     metricas: ["apertura", "atencion", "cierre"],
   },
 };

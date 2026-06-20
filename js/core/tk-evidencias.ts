@@ -52,7 +52,7 @@ function codigoTkOf(tk: Record<string, unknown>): number | null {
 
 const PATYIA_TK = new Set([
   1429262, 1432903, 1433179, 1433943, 1433968, 1434846, 1435136, 1435328,
-  1435713, 1436238, 1436248, 1436259, 1437191, 1439155,
+  1435713, 1436238, 1436248, 1436259, 1437191, 1439155, 1439822,
 ]);
 
 /** Roles R2 de trazabilidad temporal InSoft (vista métricas). */

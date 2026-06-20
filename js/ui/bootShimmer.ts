@@ -31,8 +31,15 @@ export type BootShimmerHtmlOpts = {
   icon?: string;
   title?: string;
   viewport?: boolean;
+  panel?: boolean;
   watermark?: boolean;
 };
+
+function bootShimmerClassName(opts: { viewport?: boolean; panel?: boolean }): string {
+  if (opts.viewport === true) return "isa-app-boot isa-app-boot--viewport";
+  if (opts.panel === true) return "isa-app-boot isa-app-boot--panel";
+  return "isa-app-boot isa-app-boot--inline";
+}
 
 /** Markup estático (index.html, doc-viewer). */
 export function bootShimmerHtml(
@@ -42,9 +49,8 @@ export function bootShimmerHtml(
   const icon = escapeHtml(opts.icon || appBootIcon());
   const text = escapeHtml(label);
   const title = escapeHtml(opts.title || appBootName());
-  const viewport = opts.viewport !== false;
-  const className = viewport ? "isa-app-boot isa-app-boot--viewport" : "isa-app-boot";
-  const watermark = opts.watermark !== false
+  const className = bootShimmerClassName(opts);
+  const watermark = opts.watermark !== false && opts.viewport === true
     ? `<img class="isa-app-boot-watermark" src="${BOOT_WATERMARK_URL}" alt="" aria-hidden="true" decoding="async" />`
     : "";
 
@@ -69,6 +75,7 @@ export type BootShimmerProps = {
   title?: string;
   icon?: string;
   viewport?: boolean;
+  panel?: boolean;
   watermark?: boolean;
 };
 
@@ -77,9 +84,11 @@ export function createBootShimmer(React: typeof window.React) {
     const label = props.label || appBootLabel();
     const title = props.title || appBootName();
     const icon = props.icon || appBootIcon();
-    const viewport = props.viewport !== false;
-    const showWatermark = props.watermark !== false;
-    const className = viewport ? "isa-app-boot isa-app-boot--viewport" : "isa-app-boot";
+    const showWatermark = props.watermark !== false && props.viewport === true;
+    const className = bootShimmerClassName({
+      viewport: props.viewport === true,
+      panel: props.panel === true,
+    });
 
     return React.createElement(
       "div",

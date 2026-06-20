@@ -18,6 +18,7 @@ import { BitacoraTodoList } from "../ui/BitacoraTodoList.jsx";
 import { renderBitacoraMarkdown, stripTodoCheckboxesFromMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
+const navPanelSx = { width: 230, borderRight: 1, borderColor: "divider", bgcolor: "background.paper" };
 
 /** API legacy devuelve md/sql/video; el front espera segments. */
 function normalizeBitacoraData(data) {
@@ -236,7 +237,15 @@ export function BitacoraView(props) {
     });
   }, [days, selected]);
 
-  if (state.loading) return Loading ? <Loading label="Cargando bitácora…" /> : <CircularProgress />;
+  if (state.loading) {
+    return Loading
+      ? <Loading label="Cargando bitácora…" panel watermark={false} />
+      : (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 3, color: "text.secondary" }}>
+          <CircularProgress size={20} />
+        </Box>
+      );
+  }
   if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
   if (!days.length) {
     return <Alert severity="info">{isGeneralProject(props.project) ? "No hay entradas de bitácora en PatyIA ni Clientes." : "La bitácora de " + props.project + " está vacía."}</Alert>;
@@ -252,8 +261,8 @@ export function BitacoraView(props) {
   }));
 
   return (
-    <Box sx={{ display: "flex", height: "100%", minHeight: 0 }}>
-      <Box sx={{ width: 230, flexShrink: 0, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflow: "auto", display: { xs: "none", md: "block" } }}>
+    <Box className="isa-view-split">
+      <Box className="isa-view-split__nav" sx={navPanelSx}>
         <DateTree
           items={treeItems}
           selectedId={selected}
@@ -262,7 +271,7 @@ export function BitacoraView(props) {
           storageKey={"jagudeloe:nav-folders:bitacora:" + props.project}
         />
       </Box>
-      <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Box className="isa-view-split__main">
         <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
           <Icon icon="mdi:calendar-text-outline" size={22} style={{ flexShrink: 0, marginTop: 2 }} />
           <Typography variant="h6" sx={clamp2}>{current.title}</Typography>

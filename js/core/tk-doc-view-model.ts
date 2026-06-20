@@ -94,7 +94,7 @@ function buildSectionDots(
       key === "commits" && "titleCerrado" in meta && presence.commits
         ? commitsTitle
         : meta.title;
-    const notApplicable = key === "evidencias" && sinEvidenciaProblema;
+    const notApplicable = key === "evidencias" && sinEvidenciaProblema && !presence.evidencias;
     return {
       key,
       title,
