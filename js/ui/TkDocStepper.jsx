@@ -92,7 +92,7 @@ export function TkDocStepper({ payload }) {
       <Paper
         variant="outlined"
         elevation={0}
-        className={`tk-doc-stepper-neon${dark ? " is-dark" : ""}`}
+        className={`tk-doc-stepper-neon${dark ? " is-dark" : ""}${vertical ? " tk-doc-stepper-neon--vertical" : ""}`}
         sx={{
           borderRadius: TK_DOC_RADIUS,
           overflow: "hidden",
@@ -129,6 +129,7 @@ export function TkDocStepper({ payload }) {
           alternativeLabel={!vertical && spec.alternativeLabel}
           nonLinear={!spec.linear}
           activeStep={spec.steps.length}
+          connector={vertical ? null : undefined}
           sx={{
             p: 2,
             pr: vertical ? 2.5 : 2,
@@ -140,24 +141,27 @@ export function TkDocStepper({ payload }) {
               flexShrink: 0,
               justifyContent: "center",
             },
-            "& .MuiStepConnector-root": {
-              marginLeft: `calc(${STEP_ICON_PX}px / 2 - 1px)`,
-            },
-            "& .MuiStepConnector-line": {
-              minHeight: vertical ? 18 : undefined,
-              borderColor: dark ? "rgba(56,189,248,0.35)" : "rgba(30,144,255,0.28)",
-            },
-            "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line": {
-              borderColor: dark ? "rgba(56,189,248,0.55)" : "rgba(30,144,255,0.45)",
-            },
+            ...(vertical
+              ? {}
+              : {
+                "& .MuiStepConnector-root": {
+                  marginLeft: `calc(${STEP_ICON_PX}px / 2 - 1px)`,
+                },
+                "& .MuiStepConnector-line": {
+                  borderColor: dark ? "rgba(56,189,248,0.35)" : "rgba(30,144,255,0.28)",
+                },
+                "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line": {
+                  borderColor: dark ? "rgba(56,189,248,0.55)" : "rgba(30,144,255,0.45)",
+                },
+              }),
             "& .MuiStepContent-root": {
               borderLeft: vertical ? "1px solid" : "none",
-              borderColor: c.border,
-              marginLeft: `calc(${STEP_ICON_PX}px / 2 - 1px)`,
+              borderColor: dark ? "rgba(56,189,248,0.35)" : "rgba(30,144,255,0.28)",
+              marginLeft: `calc(${STEP_ICON_PX}px / 2 - 0.5px)`,
               paddingLeft: 2,
             },
             "& .MuiStep-root": {
-              "&:last-of-type .MuiStepContent-root": { pb: 0 },
+              "&:last-of-type .MuiStepContent-root": { pb: 0, borderLeftColor: "transparent" },
             },
           }}
         >

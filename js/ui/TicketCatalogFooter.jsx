@@ -73,20 +73,32 @@ export function TicketCatalogFooter({ space, currentIticket, onSelectTicket }) {
 
   useEffect(() => {
     let alive = true;
-    getTickets(project)
-      .then((d) => {
-        const list = (d && !Array.isArray(d) && (d.rows || d.tickets || d.items)) || (Array.isArray(d) ? d : []);
-        if (!alive) return;
-        setRows(
-          list
-            .filter((t) => ticketId(t))
-            .sort((a, b) => String(b.fechaSolicitud ?? "").localeCompare(String(a.fechaSolicitud ?? ""))),
-        );
-      })
-      .catch(() => {
-        if (alive) setRows([]);
-      });
-    return () => { alive = false; };
+    const load = () => {
+      getTickets(project)
+        .then((d) => {
+          const list = (d && !Array.isArray(d) && (d.rows || d.tickets || d.items)) || (Array.isArray(d) ? d : []);
+          if (!alive) return;
+          setRows(
+            list
+              .filter((t) => ticketId(t))
+              .sort((a, b) => String(b.fechaSolicitud ?? "").localeCompare(String(a.fechaSolicitud ?? ""))),
+          );
+        })
+        .catch(() => {
+          if (alive) setRows([]);
+        });
+    };
+    const idleId = typeof requestIdleCallback === "function"
+      ? requestIdleCallback(load, { timeout: 1500 })
+      : setTimeout(load, 80);
+    return () => {
+      alive = false;
+      if (typeof cancelIdleCallback === "function" && typeof idleId === "number") {
+        cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId);
+      }
+    };
   }, [project, current]);
 
   if (!rows.length) return null;

@@ -97,9 +97,9 @@ async function compileModule(file, Babel, compiling) {
 }
 
 /** @param {string} entry p.ej. js/main.jsx */
-export async function importAppEntry(entry, Babel) {
+export async function importAppEntry(entry, Babel, { reset = false } = {}) {
   if (!Babel?.transform) throw new Error("Babel standalone no cargó");
-  blobUrls.clear();
+  if (reset) blobUrls.clear();
   const url = await compileModule(entry, Babel, new Set());
   return import(url);
 }

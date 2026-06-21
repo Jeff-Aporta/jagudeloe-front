@@ -8,7 +8,7 @@ import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/platform.ts";
-import { DateTree, RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
+import { RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
 import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
@@ -16,7 +16,7 @@ import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { TicketMetricsDocument } from "./TicketMetricsView.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReportLinkButton.jsx";
-import { tkToolbarSoftChipSx } from "../core/tk-table.ts";
+import { tkToolbarSoftChipSx, roundTkMinutosTo5 } from "../core/tk-table.ts";
 import { tkSpaceChipTone } from "../core/tk-spaces.ts";
 
 const TICKET_SPACES = ["patyia", "clientesis"];
@@ -43,15 +43,17 @@ function revisadoKeyOf(tk, iticket) {
 }
 
 function ticketTotalMinutos(tk) {
+  const rows = tk?.tiempos;
+  if (Array.isArray(rows) && rows.length) {
+    const sum = rows.reduce((n, r) => n + roundTkMinutosTo5(Number(r?.minutos || 0)), 0);
+    if (sum > 0) return sum;
+  }
+  const estim = Number(tk?.tiempoEstimacionMinutos);
+  if (Number.isFinite(estim) && estim > 0) return estim;
   const direct = Number(tk?.tiempoTotalMinutos);
   if (Number.isFinite(direct) && direct > 0) return direct;
   const dil = Number(tk?.diligenciaMinutos);
   if (Number.isFinite(dil) && dil > 0) return dil;
-  const rows = tk?.tiempos;
-  if (Array.isArray(rows) && rows.length) {
-    const sum = rows.reduce((n, r) => n + Number(r?.minutos || 0), 0);
-    if (sum > 0) return sum;
-  }
   return null;
 }
 
@@ -234,46 +236,160 @@ function TicketDetail(props) {
   );
 }
 
+const PAGE_SIZE = 50;
+
+/** Fila de la lista plana (stack) de tickets. */
+function FlatTicketRow({ tk, selected, revisadoMap, onSelect }) {
+  const { ListItemButton, ListItemText, Box, Tooltip } = getMaterialUI();
+  const id = ticketId(tk);
+  const rKey = revisadoKeyOf(tk, id);
+  const dotState = ticketListDotState(tk, revisadoMap, rKey);
+  const title = String(tk.titulo || tk.title || "").trim();
+  const minutos = ticketTotalMinutos(tk);
+  const minLabel = minutos != null ? `${minutos} min` : null;
+  const ellipsisSx = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" };
+  const row = (
+    <ListItemButton
+      selected={selected}
+      onClick={() => onSelect(id)}
+      sx={{ alignItems: "center", py: 0.75, gap: 1, overflow: "hidden", minWidth: 0, width: "100%" }}
+    >
+      <Box sx={{ flexShrink: 0 }}>
+        <NavStatusDot state={dotState} title={ticketDotStateLabel(dotState)} />
+      </Box>
+      <ListItemText
+        primary={(
+          <Box component="span" sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
+            <Box component="span" sx={{ ...ellipsisSx, fontSize: 13, fontWeight: 600 }}>{id}</Box>
+            {minLabel && (
+              <Box component="span" sx={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: "text.secondary", letterSpacing: 0.15 }}>
+                {minLabel}
+              </Box>
+            )}
+          </Box>
+        )}
+        secondary={title || undefined}
+        sx={{
+          minWidth: 0, my: 0, overflow: "hidden", flex: 1,
+          "& .MuiListItemText-secondary": ellipsisSx,
+        }}
+        secondaryTypographyProps={{ fontSize: 11, ...ellipsisSx }}
+      />
+    </ListItemButton>
+  );
+  const tip = [title, minLabel].filter(Boolean).join(" · ");
+  return tip ? (
+    <Tooltip title={tip} placement="right" enterDelay={400}>
+      <Box component="div" sx={{ display: "block", minWidth: 0, overflow: "hidden" }}>
+        {row}
+      </Box>
+    </Tooltip>
+  ) : (
+    row
+  );
+}
+
 export function TicketsDiligenciaView(props) {
-  const { useState, useEffect, useRef } = getReact();
-  const { Box, Typography, Alert, CircularProgress } = getMaterialUI();
-  const { Loading, ErrorBox } = UI;
-  const [state, setState] = useState({ loading: true, error: null, rows: [] });
-  // Selección inicial desde la URL (?s → sel): al recargar con F5 se conserva el TK abierto.
-  const bootSelRef = useRef(typeof boot.sel === "string" && boot.sel ? boot.sel : null);
+  const { useState, useEffect, useRef, useCallback } = getReact();
+  const { Box, Typography, Alert, CircularProgress, List, TextField, InputAdornment } = getMaterialUI();
+  const { Loading, ErrorBox, Icon } = UI;
+
+  const bootSelRef = useRef(
+    typeof boot.sel === "string" && boot.sel && !/^TK-XXXX\d+$/i.test(boot.sel) ? boot.sel : null,
+  );
+  const [rows, setRows] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [status, setStatus] = useState({ loading: true, loadingMore: false, error: null });
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(bootSelRef.current);
   const [revisadoMap, setRevisadoMap] = useState({});
   const [ageTick, setAgeTick] = useState(0);
+
+  const scrollRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const loadingRef = useRef(false);
+  const reqRef = useRef(0);
+  const spacesKey = spacesFor(props.project).join("|");
 
   useEffect(() => {
     const id = window.setInterval(() => setAgeTick((n) => n + 1), 60000);
     return () => window.clearInterval(id);
   }, []);
 
+  // Debounce del buscador.
   useEffect(() => {
-    let alive = true;
-    setState({ loading: true, error: null, rows: [] });
-    setSelected(bootSelRef.current);
-    const spaces = spacesFor(props.project);
-    Promise.all(spaces.map((s) =>
-      getTickets(s).then((d) => {
-        const rows = (d && !Array.isArray(d) && (d.rows || d.tickets || d.items)) || (Array.isArray(d) ? d : []);
-        // Filtro estricto: solo tickets cuyo space coincide con el tab.
-        return rows.filter((t) => String(t.space || s).toLowerCase() === s);
-      }).catch(() => null),
-    ))
-      .then((lists) => {
-        if (!alive) return;
-        if (lists.every((l) => l === null)) { setState({ loading: false, error: "No se pudo cargar los tickets.", rows: [] }); return; }
-        const all = lists.filter(Boolean).flat();
-        // El sel de la URL solo se respeta si existe en este space; si no, cae al primero.
-        const pref = bootSelRef.current;
-        bootSelRef.current = null;
-        if (pref && !all.some((t) => ticketId(t) === pref)) setSelected(null);
-        setState({ loading: false, error: null, rows: all });
+    const id = setTimeout(() => setSearch(searchInput.trim()), 350);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
+  const loadPage = useCallback(
+    (off, reset = false) => {
+      if (loadingRef.current && !reset) return;
+      loadingRef.current = true;
+      const req = ++reqRef.current; // invalida respuestas en vuelo
+      const first = off === 0;
+      setStatus((s) => ({ loading: first, loadingMore: !first, error: first ? null : s.error }));
+      const spaces = spacesFor(props.project);
+      Promise.all(
+        spaces.map((s) =>
+          getTickets(s, { limit: PAGE_SIZE, offset: off, search: search || undefined })
+            .then((d) => {
+              const r = (d && (d.rows || d.tickets || d.items)) || (Array.isArray(d) ? d : []);
+              return { rows: r.filter((t) => {
+                const id = String(t.code || t.iticket || t.id || "");
+                return String(t.space || s).toLowerCase() === s && !/^TK-XXXX\d+$/i.test(id);
+              }), hasMore: !!d?.hasMore };
+            })
+            .catch(() => null),
+        ),
+      ).then((results) => {
+        if (req !== reqRef.current) return; // respuesta obsoleta
+        loadingRef.current = false;
+        if (results.every((x) => x === null)) {
+          setStatus({ loading: false, loadingMore: false, error: "No se pudo cargar los tickets." });
+          return;
+        }
+        const page = results.filter(Boolean).flatMap((x) => x.rows);
+        const more = results.filter(Boolean).some((x) => x.hasMore);
+        setRows((prev) => {
+          const base = first ? [] : prev;
+          const seen = new Set(base.map(ticketId));
+          const merged = base.concat(page.filter((t) => !seen.has(ticketId(t))));
+          merged.sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
+          return merged;
+        });
+        setOffset(off + PAGE_SIZE);
+        setHasMore(more);
+        setStatus({ loading: false, loadingMore: false, error: null });
       });
-    return () => { alive = false; };
-  }, [props.project, props.reloadKey]);
+    },
+    [props.project, search],
+  );
+
+  // Carga inicial / reset por proyecto, búsqueda o reload.
+  useEffect(() => {
+    setRows([]);
+    setOffset(0);
+    setHasMore(false);
+    loadPage(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spacesKey, search, props.reloadKey]);
+
+  // Scroll infinito: carga la siguiente página al acercarse al final.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingRef.current) loadPage(offset);
+      },
+      { root: scrollRef.current, rootMargin: "240px" },
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [hasMore, offset, loadPage]);
 
   function loadRevisado(force) {
     return Promise.all(spacesFor(props.project).map((s) => getRevisadoMap(s, force).catch(() => ({}))))
@@ -295,40 +411,84 @@ export function TicketsDiligenciaView(props) {
     return () => { window.removeEventListener("isaj:checks-sync", refresh); window.removeEventListener(REALTIME_EVENT, onRealtime); };
   }, [props.project]);
 
-  const rows = state.rows.slice().sort((a, b) => (dateOf(a) < dateOf(b) ? 1 : -1));
-  useEffect(() => { if (rows.length && !selected) setSelected(ticketId(rows[0])); }, [state.rows]);
+  // Selección por defecto (primer ticket) cuando no hay sel válido.
+  useEffect(() => {
+    if (!rows.length) return;
+    const pref = bootSelRef.current;
+    if (pref) {
+      bootSelRef.current = null;
+      if (rows.some((t) => ticketId(t) === pref)) { setSelected(pref); return; }
+    }
+    if (!selected || !rows.some((t) => ticketId(t) === selected) || /^TK-XXXX\d+$/i.test(selected)) {
+      setSelected(ticketId(rows[0]));
+    }
+  }, [rows]);
 
-  if (state.loading) {
-    return Loading
-      ? <Loading label="Cargando tickets…" panel watermark={false} />
-      : (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 3, color: "text.secondary" }}>
-          <CircularProgress size={20} />
-        </Box>
-      );
-  }
-  if (state.error) return ErrorBox ? <ErrorBox message={state.error} /> : <Alert severity="error">{state.error}</Alert>;
-  if (!rows.length) return <Alert severity="info">{"Sin tickets en " + props.project + "."}</Alert>;
-
-  const treeItems = rows.map((t) => {
-    const id = ticketId(t);
-    const rKey = revisadoKeyOf(t, id);
-    const dotState = ticketListDotState(t, revisadoMap, rKey);
-    return {
-      id,
-      date: dateOf(t),
-      label: id,
-      secondary: String(t.titulo || t.title || ""),
-      dotState,
-      dotTitle: ticketDotStateLabel(dotState),
-    };
-  });
   void ageTick;
+
+  // Filtro client-side (red de seguridad mientras el worker despliega el filtro server-side).
+  const q = search.trim().toLowerCase();
+  const displayRows = q
+    ? rows.filter((t) => {
+        const id = ticketId(t).toLowerCase();
+        const ti = String(t.titulo || t.title || "").toLowerCase();
+        return id.includes(q) || ti.includes(q);
+      })
+    : rows;
+
+  const navBody = status.loading ? (
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 3, color: "text.secondary" }}>
+      <CircularProgress size={20} />
+    </Box>
+  ) : status.error ? (
+    <Box sx={{ p: 1.5 }}>{ErrorBox ? <ErrorBox message={status.error} /> : <Alert severity="error">{status.error}</Alert>}</Box>
+  ) : !displayRows.length ? (
+    <Typography color="text.secondary" sx={{ p: 2, fontSize: 13 }}>
+      {search ? "Sin coincidencias." : "Sin tickets en " + props.project + "."}
+    </Typography>
+  ) : (
+    <List dense disablePadding>
+      {displayRows.map((t) => {
+        const id = ticketId(t);
+        return (
+          <FlatTicketRow
+            key={id}
+            tk={t}
+            selected={selected === id}
+            revisadoMap={revisadoMap}
+            onSelect={(sid) => { setSelected(sid); merge({ sel: sid }); }}
+          />
+        );
+      })}
+      <Box ref={sentinelRef} sx={{ height: 1 }} />
+      {status.loadingMore && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+          <CircularProgress size={18} />
+        </Box>
+      )}
+    </List>
+  );
 
   return (
     <Box className="isa-view-split">
-      <Box className="isa-view-split__nav" sx={navPanelSx}>
-        <DateTree items={treeItems} selectedId={selected} onSelect={(id) => { setSelected(id); merge({ sel: id }); }} mode="items" />
+      <Box className="isa-view-split__nav" sx={{ ...navPanelSx, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Box sx={{ p: 1, flexShrink: 0 }}>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="Buscar TK o título…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            InputProps={
+              Icon
+                ? { startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" size={18} /></InputAdornment> }
+                : undefined
+            }
+          />
+        </Box>
+        <Box ref={scrollRef} sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+          {navBody}
+        </Box>
       </Box>
       <Box className="isa-view-split__main">
         {selected ? (

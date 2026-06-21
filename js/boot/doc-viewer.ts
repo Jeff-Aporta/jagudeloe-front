@@ -56,6 +56,15 @@ function ticketApiBases(): string[] {
 }
 
 async function fetchTicket(space: string, iticket: string): Promise<Record<string, unknown> | null> {
+  const w = window as { __TK_DOC_PREFETCH__?: Promise<{ ok?: boolean; ticket?: Record<string, unknown> } | null> };
+  const pref = w.__TK_DOC_PREFETCH__;
+  if (pref) {
+    w.__TK_DOC_PREFETCH__ = undefined;
+    try {
+      const data = await pref;
+      if (data?.ok && data.ticket) return data.ticket as Record<string, unknown>;
+    } catch { /* fallback */ }
+  }
   const bases = ticketApiBases();
   for (const base of bases) {
     const ticket = await fetchTicketFrom(base, space, iticket);
@@ -95,36 +104,53 @@ function runHtmlDriver(root: HTMLElement, tk: Record<string, unknown>): void {
   mountHtmlToolbar(tk);
 }
 
-function appAssetUrl(path: string): string {
-  const p = path.replace(/^\.\//, "");
-  const base = document.querySelector("base")?.href ?? new URL(".", window.location.href).href;
-  return new URL(p, base).href;
-}
-
 function bootHelperUrl(): string {
   const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
   if (isLocalDev) {
-    return appAssetUrl("../../components/front-shared/cdn/boot-helper.mjs");
+    return new URL("../../components/front-shared/cdn/boot-helper.mjs", import.meta.url).href;
   }
   return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a5a6597/cdn/boot-helper.mjs?v=a87602c";
+}
+
+const isDist = !!(globalThis as { __ISA_DIST__?: boolean }).__ISA_DIST__
+  && !new URLSearchParams(location.search).has("src");
+
+async function warmJsxStackShared(): Promise<void> {
+  const [cdnMod, bootHelper] = await Promise.all([
+    import("./cdn.mjs"),
+    import(bootHelperUrl()),
+  ]);
+  const { importShared, assertStack, loadIsaFront } = bootHelper;
+  const w = globalThis as { __TK_STACK_PREFETCH__?: Promise<{ stackReady: Promise<unknown> }> };
+  const stackPref = w.__TK_STACK_PREFETCH__;
+  if (stackPref) w.__TK_STACK_PREFETCH__ = undefined;
+  const stackMod = stackPref ? await stackPref : await importShared("stack.mjs");
+  await stackMod.stackReady;
+  assertStack();
+  await Promise.all([loadIsaFront(), cdnMod.ensureLightboxZoom()]);
+}
+
+async function warmJsxStackForDoc() {
+  await warmJsxStackShared();
+  const graphMod = await import("./module-graph.mjs");
+  return graphMod.importAppEntry;
 }
 
 async function runJsxDriver(
   tk: Record<string, unknown>,
   opts: { space: string; iticket: string; reportView?: string },
+  importAppEntry?: (entry: string, babel: typeof Babel, opts?: { reset?: boolean }) => Promise<Record<string, unknown>>,
 ): Promise<void> {
-  const cdnMod = await import(appAssetUrl("js/boot/cdn.mjs"));
-  const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(bootHelperUrl());
-  const { importAppEntry } = await import(appAssetUrl("js/boot/module-graph.mjs"));
-
-  const stackMod = await importShared("stack.mjs");
-  await stackMod.stackReady;
-  assertStack();
-  await loadIsaFront();
-  await loadSharedUi(Babel);
-  await cdnMod.ensureLightboxZoom();
-  await importAppEntry("js/core/isa-setup.ts", Babel);
-  const mod = await importAppEntry("js/boot/doc-viewer-web.jsx", Babel);
+  if (isDist) {
+    const mod = await import("./doc-viewer-web.js");
+    mod.mountDocWebView(tk, {
+      space: opts.space,
+      iticket: opts.iticket,
+      reportView: opts.reportView,
+    });
+    return;
+  }
+  const mod = await importAppEntry!("js/boot/doc-viewer-web.jsx", Babel);
   mod.mountDocWebView(tk, {
     space: opts.space,
     iticket: opts.iticket,
@@ -151,7 +177,10 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
 
   if (boot.bootHold || isDocLoadHold()) return;
 
-  const raw = await fetchTicket(space, iticket);
+  const [raw, importAppEntry] = await Promise.all([
+    fetchTicket(space, iticket),
+    driver === "jsx" && !isDist ? warmJsxStackForDoc() : driver === "jsx" ? warmJsxStackShared().then(() => null) : Promise.resolve(null),
+  ]);
   if (!raw) {
     const tried = ticketApiBases().join(" → ");
     showError(root, `No se pudo cargar el ticket. API probada: ${tried}`);
@@ -163,7 +192,7 @@ export async function runDocViewer(boot: { space: string; sel: string; driver?: 
   document.title = title;
 
   if (driver === "jsx") {
-    await runJsxDriver(tk, { space, iticket, reportView: boot.reportView });
+    await runJsxDriver(tk, { space, iticket, reportView: boot.reportView }, importAppEntry ?? undefined);
     return;
   }
   runHtmlDriver(root, tk);

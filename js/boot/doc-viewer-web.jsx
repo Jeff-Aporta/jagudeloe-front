@@ -1,9 +1,9 @@
 /**
  * Vista documento full-page — driver JSX (MUI + tema dodger ISAJ, igual que la app).
  */
+import "../core/isa-setup.ts";
 import { getReact, getReactDOM, getMaterialUI } from "../core/platform.ts";
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
-import { TicketMetricsDocument } from "../views/TicketMetricsView.jsx";
 import { TicketCatalogFooter } from "../ui/TicketCatalogFooter.jsx";
 import { TkReportSwitch } from "../ui/TkReportSwitch.jsx";
 import { CopyReportLinkButton, CopyReportLinkHtmlButton } from "../ui/CopyReportLinkButton.jsx";
@@ -11,6 +11,11 @@ import { tkDocPageSx } from "../ui/tkDocSurface.ts";
 import { getTicket } from "../api/client.ts";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 import { parseDocReportView, writeDocReportView, parseDocSel, writeDocSel } from "../boot/url-s.mjs";
+
+const { lazy, Suspense } = getReact();
+const TicketMetricsDocument = lazy(() =>
+  import("../views/TicketMetricsView.jsx").then((m) => ({ default: m.TicketMetricsDocument })),
+);
 
 function normIticket(raw) {
   const t = String(raw ?? "").trim().toUpperCase();
@@ -125,7 +130,9 @@ function DocWebPage({ tk: initialTk, space, iticket: initialIticket, initialRepo
         <Box sx={{ position: "relative", opacity: loading ? 0.55 : 1, transition: "opacity 0.2s ease" }}>
           {reportView === "metricas" ? (
             <Box className="tk-doc-markdown" sx={{ maxWidth: 920, mx: "auto", width: "100%" }}>
-              <TicketMetricsDocument tk={tk} iticket={ticketId} project={project} />
+              <Suspense fallback={<CircularProgress size={28} sx={{ display: "block", mx: "auto", my: 4 }} />}>
+                <TicketMetricsDocument tk={tk} iticket={ticketId} project={project} />
+              </Suspense>
             </Box>
           ) : (
             <TicketDocWebView

@@ -732,6 +732,9 @@ body[data-mui-color-scheme="dark"] #root.tk-doc-html .isa-cm-panel__copy:hover {
       min-width: 32px;
       justify-content: center;
     }
+    &--vertical .MuiStepConnector-root {
+      display: none;
+    }
     &.is-dark .tk-doc-stepper-icon {
       filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.35));
     }

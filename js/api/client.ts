@@ -180,17 +180,27 @@ function encodeTkQueryQ(bag: Record<string, unknown>): string {
     .replace(/=+$/, "");
 }
 
-export function getTickets(project: string, opts?: { estado?: string; limit?: number }) {
-  const bag: Record<string, unknown> = { limit: opts?.limit ?? 100 };
+export function getTickets(
+  project: string,
+  opts?: { estado?: string; search?: string; limit?: number; offset?: number },
+) {
+  const bag: Record<string, unknown> = { limit: opts?.limit ?? 50, offset: opts?.offset ?? 0 };
   if (opts?.estado === "inactivo") bag.activo = false;
   else if (opts?.estado === "activo") bag.activo = true;
-  else if (opts?.estado) bag.activo = opts.estado;
+  else if (opts?.estado) bag.estado = opts.estado;
+  if (opts?.search?.trim()) bag.search = opts.search.trim();
   const qs = "?q=" + encodeURIComponent(encodeTkQueryQ(bag));
   return labFetch("/api/tk/" + project + "/tickets" + qs);
 }
 
 export const getTicket = (project: string, iticket: string) =>
   labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
+
+/** Placeholders TK-XXXXN con commits en espera de ticket real. */
+export const getPendientes = (project: string) => labFetch("/api/tk/" + project + "/pendientes");
+
+export const getPendiente = (project: string, iticket: string) =>
+  labFetch("/api/tk/" + project + "/pendientes/" + encodeURIComponent(iticket));
 
 /** PATCH TK_DOC — edición manual de content[] / blocks (no toca commits ni tiempos). */
 export function patchTicketDoc(project: string, iticket: string, content: unknown[]) {

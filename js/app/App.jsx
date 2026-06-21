@@ -4,8 +4,17 @@ import { UI, Toast, Session } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { invalidateRevisadoCache } from "../api/client.ts";
 import { useRealtimeNotifications } from "../ui/realtime.ts";
-import { BitacoraView } from "../views/BitacoraView.jsx";
-import { TicketsView } from "../views/TicketsView.jsx";
+
+const { lazy, Suspense } = getReact();
+
+/** Vistas con export nombrado (esbuild no genera default en _dist). */
+function lazyNamed(loader, name) {
+  return lazy(() => loader().then((m) => ({ default: m[name] })));
+}
+
+const BitacoraView = lazyNamed(() => import("../views/BitacoraView.jsx"), "BitacoraView");
+const TicketsView = lazyNamed(() => import("../views/TicketsView.jsx"), "TicketsView");
+const PendientesView = lazy(() => import("../views/PendientesView.jsx"));
 
 const SPACES = [
   { id: "general", label: "General", icon: "mdi:view-grid-outline" },
@@ -15,6 +24,7 @@ const SPACES = [
 const SUBSPACES = [
   { id: "bitacora", label: "Bitácora", icon: "mdi:notebook-outline" },
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
+  { id: "pendientes", label: "Pendientes", icon: "mdi:clock-outline" },
 ];
 
 const TAB_LABEL_SX = { display: "inline-flex", alignItems: "center", gap: "10px" };
@@ -50,7 +60,7 @@ function LegacyNav(props) {
 
 export function App() {
   const { useState, useEffect, useRef } = getReact();
-  const { Box } = getMaterialUI();
+  const { Box, CircularProgress } = getMaterialUI();
   const { LoginButton } = UI;
   const { show: toastShow } = Toast;
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
@@ -104,13 +114,37 @@ export function App() {
 
   function renderView() {
     const props = { project: space, reloadKey };
-    if (sub === "bitacora") return <BitacoraView {...props} />;
-    if (sub === "tickets") return <TicketsView {...props} />;
+    const fallback = (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, py: 6 }}>
+        <CircularProgress size={28} />
+      </Box>
+    );
+    if (sub === "bitacora") {
+      return (
+        <Suspense fallback={fallback}>
+          <BitacoraView {...props} />
+        </Suspense>
+      );
+    }
+    if (sub === "tickets") {
+      return (
+        <Suspense fallback={fallback}>
+          <TicketsView {...props} />
+        </Suspense>
+      );
+    }
+    if (sub === "pendientes") {
+      return (
+        <Suspense fallback={fallback}>
+          <PendientesView {...props} />
+        </Suspense>
+      );
+    }
     return null;
   }
 
   const Shell = window.ISAFront?.Layout?.AppShell;
-  if (!Shell) throw new Error("AppShell no cargado — revisar loader.ts y front-shared");
+  if (!Shell) throw new Error("AppShell no cargado — revisar loader y front-shared");
 
   const hasNavShell = !!window.ISAFront?.Layout?.NavTabRow;
 

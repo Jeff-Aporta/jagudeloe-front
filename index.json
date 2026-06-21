@@ -13,9 +13,10 @@
     "imageAlt": "JAGUDELOE — bitácora y tickets"
   },
   "frontSharedPin": "9b5af5c",
+  "useDist": true,
   "fonts": true,
   "importMap": true,
-  "loader": "ts-babel",
+  "loader": "mjs-module",
   "themeInit": true,
   "appMeta": true,
   "preconnect": [
@@ -23,7 +24,8 @@
     "https://cdnjs.cloudflare.com",
     "https://esm.sh",
     "https://unpkg.com",
-    "https://code.iconify.design"
+    "https://code.iconify.design",
+    "https://jagudeloe-tks.jeffaporta.workers.dev"
   ],
   "styles": [
     "shared-base",
@@ -38,7 +40,10 @@
     "photoswipe-caption",
     "local:css/code.css"
   ],
-  "libs": [],
+  "libs": [
+    "iconify",
+    "loader-mjs"
+  ],
   "ui": {
     "lightbox": {
       "thumbSize": 100,

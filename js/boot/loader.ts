@@ -18,12 +18,8 @@
   async function boot() {
     if (new URLSearchParams(location.search).has("isa_boot_hold")) return;
 
-    const { bootHelperUrl, asset, ensureLightboxZoom } = await import("./js/boot/cdn.mjs");
-    const { importAppEntry } = await import(MODULE_LOADER);
-    const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel);
-    manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
-
     const { docBootFromSearch, diagramBootFromSearch } = await import("./js/boot/url-s.mjs");
+    const { importAppEntry } = await import(MODULE_LOADER);
 
     const diagramBoot = diagramBootFromSearch();
     if (diagramBoot) {
@@ -39,6 +35,10 @@
       await mod.runDocViewer(docBoot);
       return;
     }
+
+    const { bootHelperUrl, asset, ensureLightboxZoom } = await import("./js/boot/cdn.mjs");
+    const manifestMod = await importAppEntry("js/core/app-manifest.ts", Babel, { reset: true });
+    manifestMod.installAppManifest(await manifestMod.fetchAppManifest());
 
     const { importShared, assertStack, loadIsaFront, loadSharedUi } = await import(bootHelperUrl);
 

@@ -183,6 +183,13 @@ export function isMetricasInsoftEvidencia(ev: TicketEvidencia): boolean {
   return INSOFT_METRICAS_URL_RE.test(u);
 }
 
+/** Bloque timeline de métricas — solo en vista «Ver métricas del ticket». */
+export function isMetricasTimelineBlock(block: unknown): boolean {
+  if (!block || typeof block !== "object") return false;
+  const kind = String((block as Record<string, unknown>).kind || "").toLowerCase();
+  return kind === "timeline" || kind === "metrics-timeline";
+}
+
 /** Bloque content.image de apertura/atención/cierre InSoft — excluir de vista diligencia. */
 export function isInsoftMetricasImageBlock(block: unknown): boolean {
   if (!block || typeof block !== "object") return false;
@@ -196,9 +203,9 @@ export function isInsoftMetricasImageBlock(block: unknown): boolean {
   return isMetricasInsoftEvidencia({ url: url ? toUrl(url) : "", label: caption || alt });
 }
 
-/** Quita pantallazos InSoft del contenido mostrado en diligencia (raíz y contextos). */
+/** Quita pantallazos InSoft y timeline de métricas del contenido mostrado en diligencia. */
 export function filterDocViewContentBlocks<T>(blocks: T[]): T[] {
-  return blocks.filter((b) => !isInsoftMetricasImageBlock(b));
+  return blocks.filter((b) => !isInsoftMetricasImageBlock(b) && !isMetricasTimelineBlock(b));
 }
 
 function insoftEvidenciasFromContent(tk: Record<string, unknown>): TicketEvidencia[] {

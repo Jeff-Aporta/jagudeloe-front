@@ -42,44 +42,27 @@
       document.documentElement.style.colorScheme = m;
     })();
   </script>
+  <script>window.__ISA_DIST__=true;</script>
   <script src="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/js/core/app-meta.js"></script>
+  <script>AppMeta.initFromDocument();</script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
   <link rel="preconnect" href="https://esm.sh" crossorigin />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
   <link rel="preconnect" href="https://code.iconify.design" crossorigin />
+  <link rel="preconnect" href="https://jagudeloe-tks.jeffaporta.workers.dev" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/css/base.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@9b5af5c/cdn/isa/css/feedback.css" />
-  <link rel="stylesheet" href="css/theme.css" />
-  <link rel="stylesheet" href="css/markdown.css" />
-  <link rel="stylesheet" href="css/app-shell.css" />
-  <link rel="stylesheet" href="css/boot-loading.css" />
-  <link rel="stylesheet" href="css/doc-view.css" />
-  <link rel="stylesheet" href="css/tk-lightbox.css" />
+  <link rel="stylesheet" href="_dist/css/theme.css" />
+  <link rel="stylesheet" href="_dist/css/markdown.css" />
+  <link rel="stylesheet" href="_dist/css/app-shell.css" />
+  <link rel="stylesheet" href="_dist/css/boot-loading.css" />
+  <link rel="stylesheet" href="_dist/css/doc-view.css" />
+  <link rel="stylesheet" href="_dist/css/tk-lightbox.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe-dynamic-caption-plugin@1.2.7/photoswipe-dynamic-caption-plugin.css" />
-  <link rel="stylesheet" href="css/code.css" />
-  <style id="isa-boot-critical">
-    html {
-      color-scheme: dark;
-      background: #0b1220;
-    }
-    html[data-mui-color-scheme="light"] {
-      color-scheme: light;
-      background: #f0f6ff;
-    }
-    body {
-      margin: 0;
-      height: 100%;
-      background: inherit;
-    }
-    html,
-    body,
-    #root {
-      height: 100%;
-    }
-  </style>
+  <link rel="stylesheet" href="_dist/css/code.css" />
   <script type="importmap">
 {
   "imports": {
@@ -96,40 +79,204 @@
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.9/babel.min.js"></script>
   <script defer src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-  <script defer>
-    try {
-      if (window.AppMeta && typeof AppMeta.initFromDocument === "function") AppMeta.initFromDocument();
-    } catch (e) { console.warn("AppMeta.initFromDocument:", e); }
-    (async function () {
-      try {
-        function waitBabel(maxMs) {
-          return new Promise(function (resolve, reject) {
-            var t0 = Date.now();
-            (function poll() {
-              if (window.Babel && typeof Babel.transform === "function") return resolve(Babel);
-              if (Date.now() - t0 > maxMs) {
-                return reject(new Error("Babel no cargó (red/CDN bloqueado o script defer falló)."));
-              }
-              setTimeout(poll, 40);
-            })();
-          });
-        }
-        await waitBabel(20000);
-        if (new URLSearchParams(location.search).has("isa_boot_hold")) return;
-        var res = await fetch("js/boot/loader.ts", { cache: "no-store" });
-        if (!res.ok) throw new Error("No se pudo cargar el loader (" + res.status + ")");
-        var out = Babel.transform(await res.text(), { presets: ["typescript"], filename: "loader.ts" }).code;
-        eval(out);
-      } catch (e) {
-        document.getElementById("root").innerHTML =
-          '<pre style="color:#ff8a80;padding:24px;font-family:monospace">Bootstrap error:\n' + (e && e.stack ? e.stack : e) + "</pre>";
-      }
-    })();
-  </script>
+  <script type="module" src="_dist/js/boot/loader.mjs"></script>
 </head>
 
 <body>
   <div id="root">
+    <style>
+      html {
+        color-scheme: dark;
+        background: #0b1220;
+      }
+
+      html[data-mui-color-scheme="light"] {
+        color-scheme: light;
+        background: #f0f6ff;
+      }
+
+      body {
+        margin: 0;
+        height: 100%;
+        background: inherit;
+      }
+
+      #root {
+        height: 100%;
+        min-height: 100vh;
+      }
+
+      .isa-app-boot {
+        height: 100%;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        background: #0b1220;
+        color: #94a3b8;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot {
+        background: #f0f6ff;
+        color: #64748b;
+      }
+
+      .isa-app-boot__mesh {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 90% 55% at 15% -8%, rgba(99, 102, 241, 0.22), transparent 52%),
+          radial-gradient(ellipse 70% 45% at 92% 5%, rgba(0, 229, 255, 0.1), transparent 48%),
+          radial-gradient(ellipse 50% 30% at 50% 100%, rgba(30, 144, 255, 0.08), transparent 55%);
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__mesh {
+        background:
+          radial-gradient(ellipse 90% 55% at 15% -8%, rgba(30, 144, 255, 0.14), transparent 52%),
+          radial-gradient(ellipse 70% 45% at 92% 5%, rgba(99, 102, 241, 0.08), transparent 48%);
+      }
+
+      .isa-app-boot__card {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 1.65rem 2rem 1.45rem;
+        min-width: min(17.5rem, 88vw);
+        max-width: 22rem;
+        border-radius: 14px;
+        border: 1px solid rgba(0, 229, 255, 0.24);
+        background: linear-gradient(165deg, rgba(11, 18, 32, 0.94), rgba(15, 23, 42, 0.82));
+        box-shadow:
+          0 0 0 1px rgba(30, 144, 255, 0.08),
+          0 10px 36px rgba(30, 144, 255, 0.14),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        text-align: center;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__card {
+        border-color: rgba(30, 144, 255, 0.2);
+        background: linear-gradient(165deg, rgba(255, 255, 255, 0.98), rgba(240, 247, 255, 0.92));
+        box-shadow: 0 8px 28px rgba(30, 144, 255, 0.1);
+      }
+
+      .isa-app-boot__icon-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.1rem;
+        height: 3.1rem;
+        margin-bottom: 0.15rem;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 229, 255, 0.38);
+        background: rgba(14, 165, 233, 0.12);
+        box-shadow: 0 0 18px rgba(0, 229, 255, 0.16);
+        color: #7dd3fc;
+        animation: isa-boot-icon-pulse 2.4s ease-in-out infinite;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__icon-wrap {
+        border-color: rgba(30, 144, 255, 0.28);
+        background: rgba(224, 242, 254, 0.95);
+        color: #0369a1;
+        box-shadow: 0 0 14px rgba(30, 144, 255, 0.12);
+      }
+
+      .isa-app-boot__title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: #e2e8f0;
+        line-height: 1.25;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__title {
+        color: #0f172a;
+      }
+
+      .isa-app-boot__label {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #94a3b8;
+        line-height: 1.35;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__label {
+        color: #64748b;
+      }
+
+      .isa-app-boot__bar {
+        width: 100%;
+        height: 3px;
+        margin-top: 0.45rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.2);
+        overflow: hidden;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot__bar {
+        background: rgba(148, 163, 184, 0.28);
+      }
+
+      .isa-app-boot__bar-fill {
+        display: block;
+        height: 100%;
+        width: 36%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #1e90ff, #6366f1, #00e5ff);
+        box-shadow: 0 0 10px rgba(30, 144, 255, 0.4);
+        animation: isa-boot-bar-slide 1.75s ease-in-out infinite;
+      }
+
+      .isa-app-boot-watermark {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        width: min(100px, 16vw);
+        height: auto;
+        opacity: 0.16;
+        filter: grayscale(1) brightness(1.15);
+        pointer-events: none;
+        user-select: none;
+        z-index: 0;
+      }
+
+      html[data-mui-color-scheme="light"] .isa-app-boot-watermark {
+        opacity: 0.12;
+        filter: grayscale(1) brightness(0.85);
+      }
+
+      @keyframes isa-boot-icon-pulse {
+        0%, 100% {
+          transform: translateY(0);
+          box-shadow: 0 0 18px rgba(0, 229, 255, 0.16);
+        }
+        50% {
+          transform: translateY(-2px);
+          box-shadow: 0 0 26px rgba(0, 229, 255, 0.28);
+        }
+      }
+
+      @keyframes isa-boot-bar-slide {
+        0% { transform: translateX(-130%); }
+        100% { transform: translateX(330%); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .isa-app-boot__icon-wrap,
+        .isa-app-boot__bar-fill {
+          animation: none !important;
+        }
+      }
+    </style>
     <div class="isa-app-boot">
       <div class="isa-app-boot__mesh" aria-hidden="true"></div>
       <div class="isa-app-boot__card" role="status" aria-live="polite" aria-busy="true">
