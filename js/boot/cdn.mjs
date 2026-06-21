@@ -1,5 +1,5 @@
 /** Pin jsDelivr front-shared — alinear con front-shared/cdn/versions.json (origin/main). */
-export const PIN = "1aa8445";
+export const PIN = "846b658";
 
 const isDevHost =
   typeof location !== "undefined" && /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
@@ -22,7 +22,7 @@ export const asset = (p) =>
 
 /* @isa-lightbox-boot:start */
 /** @jeff-aporta/lightbox-zoom — pin: sync-component-refs.mjs */
-export const LIGHTBOX_ZOOM_REF = "f4fba38";
+export const LIGHTBOX_ZOOM_REF = "bf5eca6";
 
 export function lightboxZoomBase() {
   const base = document.querySelector("base")?.href || location.href;

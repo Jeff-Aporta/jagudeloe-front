@@ -14,13 +14,11 @@ window.ISAFront.registerApp({
   widgets: { targetStyle: "chip" },
   api: ORCH,
   session: true,
-  realtime: true,
   auth: false,
-  loginButton: {
-    showPasswordToggle: true,
-    showExpiryInTooltip: true,
-    showIntroText: true,
-  },
+    loginButton: {
+      showPasswordToggle: true,
+      showExpiryInTooltip: true,
+    },
 });
 
 patchJagudeloeThemeRadius();
@@ -55,9 +53,6 @@ if (!window.ISAJ?.Session) {
 }
 if (!window.ISAJ.Session.isLoggedIn()) {
   window.ISAJ.Config.setLocal(false);
-}
-if (!window.ISAJ?.Realtime && window.ISAFront.registerRealtime) {
-  window.ISAFront.registerRealtime("ISAJ", {});
 }
 if (window.ISAFront?.registerCodeMirror && window.React && window.MaterialUI) {
   window.ISAFront.registerCodeMirror(window.React, window.MaterialUI);

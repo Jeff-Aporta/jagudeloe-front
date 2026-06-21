@@ -19,6 +19,7 @@ import {
   mergeTk1439155Content,
   needsTk1439155ContentPatch,
 } from "./tk-doc-content-1439155.ts";
+import { readBlockDocLane } from "./tk-doc-lanes.ts";
 
 type TkCommitSeed = {
   hash: string;
@@ -268,6 +269,50 @@ const TK1439822_METRICAS_PATCH = {
     evidenciasSubidas: true,
   },
 };
+
+const TK1439822_SOLICITUD =
+  "**Culminado y entregado.** PQR Ajuste del sistema — Viviana Restrepo reportó que el título de conversación en Paty IA se generaba solo con el primer mensaje; si el usuario iniciaba con «hola» o «buenos días», el título no reflejaba la consulta real. Se difirió la generación del título: provisional al crear el hilo («Nueva conversación» si es saludo) y definitivo tras el primer turno completo (mensaje del usuario + respuesta del asistente), evitando títulos pobres.";
+
+const TK1439822_MD_KIND = new Set(["markdown", "md", "text"]);
+
+function needsTk1439822SolicitudPatch(tk: Record<string, unknown>): boolean {
+  const resumen = String(tk.resumen ?? "").trim();
+  if (resumen.startsWith("Se difirió la generación")) return true;
+  const content = (tk.content as Record<string, unknown>[]) ?? [];
+  let solicitudMd = 0;
+  for (const block of content) {
+    if (!TK1439822_MD_KIND.has(String(block.kind ?? "").toLowerCase())) continue;
+    if (readBlockDocLane(block) === "solicitud") solicitudMd += 1;
+  }
+  return solicitudMd > 1;
+}
+
+function patchTk1439822Content(tk: Record<string, unknown>): Record<string, unknown> {
+  if (!needsTk1439822SolicitudPatch(tk)) return tk;
+  const content = [...((tk.content as Record<string, unknown>[]) ?? [])];
+  let keptSolicitud = false;
+  const nextContent = content
+    .filter((block) => {
+      if (!TK1439822_MD_KIND.has(String(block.kind ?? "").toLowerCase())) return true;
+      if (readBlockDocLane(block) !== "solicitud") return true;
+      if (!keptSolicitud) {
+        keptSolicitud = true;
+        return true;
+      }
+      return false;
+    })
+    .map((block) => {
+      if (!TK1439822_MD_KIND.has(String(block.kind ?? "").toLowerCase())) return block;
+      if (readBlockDocLane(block) !== "solicitud") return block;
+      const payload = (block.payload || {}) as Record<string, unknown>;
+      const { title: _title, ...restPayload } = payload;
+      return {
+        ...block,
+        payload: { ...restPayload, text: TK1439822_SOLICITUD },
+      };
+    });
+  return { ...tk, resumen: TK1439822_SOLICITUD, content: nextContent };
+}
 
 const TK1439155_METRICAS_IMAGE = {
   kind: "image",
@@ -554,6 +599,7 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
 
   if (iticket === "TK-1439822") {
     out = patchTk1439822Metricas(out);
+    out = patchTk1439822Content(out);
   }
 
   if (iticket === "TK-1437976") {

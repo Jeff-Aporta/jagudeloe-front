@@ -59,7 +59,7 @@ export const Feedback = {
 };
 
 export const Realtime = {
-  getStatus: () => bridge().Realtime.getStatus(),
+  getStatus: () => bridge().Realtime?.getStatus?.() || "disconnected",
 };
 
 export const Config = {
@@ -116,17 +116,21 @@ export const LightboxZoom = {
   get LightboxZoomDialog() { return lightboxApi().LightboxZoomDialog; },
   get LightboxZoomImage() { return lightboxApi().LightboxZoomImage; },
   get LightboxZoomInline() { return lightboxApi().LightboxZoomInline; },
+  get LightboxZoomStage() { return lightboxApi().LightboxZoomStage; },
   get useLightboxZoom() { return lightboxApi().useLightboxZoom; },
+  get useStageTransform() { return lightboxApi().useStageTransform; },
   get svgElementToDataUrl() { return lightboxApi().svgElementToDataUrl; },
   get openLightboxInline() { return lightboxApi().openLightboxInline; },
 };
 
 /** Alias legacy (migración desde ISAFront.Lightbox). */
 export const Lightbox = {
+  get LightboxZoomDialog() { return lightboxApi().LightboxZoomDialog; },
   get ImageLightboxDialog() { return lightboxApi().LightboxZoomDialog; },
   get LightboxImage() { return lightboxApi().LightboxZoomImage; },
   get LightboxZoomInline() { return lightboxApi().LightboxZoomInline; },
   get useImageLightboxZoom() { return lightboxApi().useLightboxZoom; },
+  get useStageTransform() { return lightboxApi().useStageTransform; },
   get svgElementToDataUrl() { return lightboxApi().svgElementToDataUrl; },
   get openLightboxInline() { return lightboxApi().openLightboxInline; },
 };

@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-06-21T21:09:27.817Z",
-  "files": 141,
-  "bytesIn": 888246,
-  "bytesOut": 492755,
-  "ratio": 0.555,
-  "hash": "c238b16f51ee",
+  "builtAt": "2026-06-21T23:06:00.687Z",
+  "files": 140,
+  "bytesIn": 876471,
+  "bytesOut": 487094,
+  "ratio": 0.556,
+  "hash": "2448e22a4f65",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -63,7 +63,7 @@
     {
       "src": "js/boot/cdn.mjs",
       "dist": "_dist/js/boot/cdn.mjs",
-      "bytesIn": 2874,
+      "bytesIn": 2820,
       "bytesOut": 1802
     },
     {
@@ -147,8 +147,8 @@
     {
       "src": "js/core/isa-setup.ts",
       "dist": "_dist/js/core/isa-setup.js",
-      "bytesIn": 1995,
-      "bytesOut": 1398
+      "bytesIn": 1839,
+      "bytesOut": 1267
     },
     {
       "src": "js/core/jagudeloe-theme-radius.ts",
@@ -165,8 +165,8 @@
     {
       "src": "js/core/platform.ts",
       "dist": "_dist/js/core/platform.js",
-      "bytesIn": 5785,
-      "bytesOut": 3674
+      "bytesIn": 6096,
+      "bytesOut": 3911
     },
     {
       "src": "js/core/storage.ts",
@@ -309,8 +309,8 @@
     {
       "src": "js/core/tk-doc-seed-patch.ts",
       "dist": "_dist/js/core/tk-doc-seed-patch.js",
-      "bytesIn": 22847,
-      "bytesOut": 12132
+      "bytesIn": 25128,
+      "bytesOut": 13352
     },
     {
       "src": "js/core/tk-doc-solution.ts",
@@ -513,8 +513,8 @@
     {
       "src": "js/ui/DiagramLightbox.jsx",
       "dist": "_dist/js/ui/DiagramLightbox.js",
-      "bytesIn": 16282,
-      "bytesOut": 9179
+      "bytesIn": 7786,
+      "bytesOut": 4823
     },
     {
       "src": "js/ui/EmpresaComparativoReport.jsx",
@@ -821,12 +821,6 @@
       "dist": "_dist/js/ui/tkHtml.js",
       "bytesIn": 35116,
       "bytesOut": 22297
-    },
-    {
-      "src": "js/ui/useStageTransform.js",
-      "dist": "_dist/js/ui/useStageTransform.js",
-      "bytesIn": 5661,
-      "bytesOut": 2631
     },
     {
       "src": "js/views/BitacoraView.jsx",
