@@ -1,5 +1,5 @@
 /** Pin jsDelivr front-shared — alinear con front-shared/cdn/versions.json (origin/main). */
-export const PIN = "a5a6597";
+export const PIN = "1aa8445";
 
 const isDevHost =
   typeof location !== "undefined" && /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
@@ -27,7 +27,7 @@ export const LIGHTBOX_ZOOM_REF = "f4fba38";
 export function lightboxZoomBase() {
   const base = document.querySelector("base")?.href || location.href;
   if (isDevHost) {
-    return new URL("../../../components/lightbox/cdn/", base).href.replace(/\/?$/, "/");
+    return new URL("../../components/lightbox/cdn/", base).href.replace(/\/?$/, "/");
   }
   return `https://cdn.jsdelivr.net/gh/Jeff-Aporta/lightbox-zoom@${LIGHTBOX_ZOOM_REF}/cdn/`;
 }

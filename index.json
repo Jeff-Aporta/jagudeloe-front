@@ -49,5 +49,16 @@
       "thumbSize": 100,
       "evidenciasLabelMax": 160
     }
+  },
+  "readme": {
+    "tagline": "bitácora, tickets y revisión para PatyIA y ClientesIS.",
+    "badges": ["github-pages", "react", "marked"],
+    "features": [
+      "**PatyIA y ClientesIS**: dos espacios de trabajo en la misma pantalla",
+      "**Bitácora**: notas del día con texto y consultas SQL",
+      "**Tickets**: listado y detalle por estado",
+      "**Revisión**: marcar contenido como revisado",
+      "**Tema** claro/oscuro"
+    ]
   }
 }

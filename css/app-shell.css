@@ -109,6 +109,23 @@ html body #root {
   overflow: hidden;
 }
 
+.isa-app-nav,
+.isa-layout-root > header.MuiAppBar-root > .MuiTabs-root,
+.isa-layout-root > header.MuiAppBar-root .isa-nav-row--secondary {
+  flex-shrink: 0;
+  html[data-mui-color-scheme="dark"] & {
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0.6), rgba(15, 28, 48, 0.35));
+    border-bottom: 1px solid rgba(30, 144, 255, 0.15);
+    & .MuiTab-root.Mui-selected {
+      color: #63b3ff;
+      text-shadow: 0 0 12px rgba(30, 144, 255, 0.45);
+    }
+  }
+  html[data-mui-color-scheme="light"] & {
+    border-bottom: 1px solid rgba(30, 144, 255, 0.12);
+  }
+}
+
 .isa-layout-root {
   & > header.MuiAppBar-root .MuiToolbar-root {
     align-items: center;

@@ -66,6 +66,9 @@ const TIEMPO_HITOS_OVERRIDES: Record<number, Record<string, TiempoHito[]>> = {
   1437191: {
     metricas: ["apertura", "atencion", "cierre"],
   },
+  1439822: {
+    solicitud: ["apertura", "atencion", "cierre"],
+  },
 };
 
 const ROL_FROM_KEY_RE = /^tk\d+-([a-z]+)-insoft\.(png|jpe?g|webp|gif)$/i;

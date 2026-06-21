@@ -1,5 +1,9 @@
+<!--
+  Generado por gen-front-readme.mjs — editar frontend/index.json (bloque readme).
+-->
+
 <p align="center">
-  <img src="https://api.iconify.design/mdi/notebook-outline.svg?color=%2337474f&width=96&height=96" width="96" height="96" alt="JAGUDELOE" />
+  <img src="https://api.iconify.design/mdi/notebook-outline.svg?color=%231e90ff&width=96&height=96" width="96" height="96" alt="JAGUDELOE" />
 </p>
 
 <h1 align="center">jagudeloe-front</h1>
@@ -13,10 +17,6 @@
 ## Demo
 
 **https://jeff-aporta.github.io/jagudeloe-front/**
-
-## Vista previa
-
-![Spaces PatyIA · bitácora JAGUDELOE](./docs/gh-pages.png)
 
 ## Qué hace
 

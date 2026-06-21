@@ -109,7 +109,7 @@ function bootHelperUrl(): string {
   if (isLocalDev) {
     return new URL("../../components/front-shared/cdn/boot-helper.mjs", import.meta.url).href;
   }
-  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@a5a6597/cdn/boot-helper.mjs?v=a87602c";
+  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@1aa8445/cdn/boot-helper.mjs?v=1aa8445";
 }
 
 const isDist = !!(globalThis as { __ISA_DIST__?: boolean }).__ISA_DIST__

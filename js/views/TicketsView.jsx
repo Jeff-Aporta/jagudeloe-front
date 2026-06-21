@@ -8,7 +8,7 @@ import { getTickets, getTicket, getRevisadoMap } from "../api/client.ts";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 import { ticketListDotState, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/platform.ts";
-import { RevisadoCheck, NavStatusDot } from "../ui/parts.jsx";
+import { NavStatusDot } from "../ui/parts.jsx";
 import { renderTicketViewHtml, renderTicketEmailHtml } from "../ui/tkHtml.ts";
 import { hydrateTkCodeBlocks, refreshTkCodeThemes } from "../ui/tkCodeHydrate.ts";
 import { TicketDocWebView } from "../ui/TicketDocWebView.jsx";
@@ -178,7 +178,6 @@ function TicketDetail(props) {
         className="tk-detail-toolbar"
         sx={{ px: 2, py: 0.75, minHeight: 48, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}
       >
-        <RevisadoCheck project={tkSpace} revisadoKey={rKey} reloadKey={props.reloadKey} label={props.iticket} showLabel={false} hint="Marcar ticket como revisado y ejecutado" />
         <Chip
           size="small"
           label={

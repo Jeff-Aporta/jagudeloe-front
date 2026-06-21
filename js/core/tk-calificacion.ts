@@ -96,6 +96,11 @@ function parseCoberturaPct(raw: unknown): number | null {
   return Number(m[1].replace(",", "."));
 }
 
+/** Solo mostrar KPI cobertura cuando normativa trae un % evaluable (p. ej. 1%, 100%). */
+function coberturaEsEvaluable(raw: unknown): boolean {
+  return parseCoberturaPct(raw) != null;
+}
+
 function fmtDesfaseMin(min: number | null, invert = false): string {
   if (min == null || Number.isNaN(min)) return "—";
   if (min === 0) return "0 min";
@@ -119,7 +124,6 @@ export function evaluateTkCalificacion(
   const registradoSolucion = metrics.minutosTotalSolucion;
   const registradoAtencion = metrics.minutosHastaAtencion;
   const coberturaRaw = normativaBag(tk).coberturaEstimada;
-  const coberturaPct = parseCoberturaPct(coberturaRaw);
   const tipoApertura = extractTipoSolicitudApertura(tk);
 
   // Cumplimiento: estimación InSoft vs diligencia registrada
@@ -149,21 +153,17 @@ export function evaluateTkCalificacion(
     solucionCumple = registradoSolucion <= TK_CALIFICACION_SOLUCION_MAX_MIN;
   }
 
-  // Cobertura
+  // Cobertura — solo cuando normativa trae % evaluable
   let coberturaCumple: boolean | null = null;
-  let coberturaEstado: TkCalificacionEstado = "pendiente";
   const cobStr = String(coberturaRaw ?? "").trim();
-  if (/no aplica|n\/a/i.test(cobStr)) {
-    coberturaCumple = true;
-    coberturaEstado = "no_aplica";
-  } else if (coberturaPct != null) {
+  const muestraCobertura = coberturaEsEvaluable(coberturaRaw);
+  const coberturaPct = muestraCobertura ? parseCoberturaPct(coberturaRaw) : null;
+  if (coberturaPct != null) {
     if (coberturaPct >= 100) {
       coberturaCumple = true;
     } else {
       coberturaCumple = coberturaPct <= 5;
     }
-  } else if (cobStr) {
-    coberturaCumple = null;
   }
 
   const filas: TkCalificacionFila[] = [
@@ -218,26 +218,27 @@ export function evaluateTkCalificacion(
             ? "Superó 16 h hábiles totales."
             : "Pendiente hito cierre / solución.",
     },
-    {
+  ];
+
+  if (muestraCobertura) {
+    filas.push({
       key: "cobertura",
       label: "Cobertura",
       peso: 30,
       meta: "Impacto mínimo",
-      estimado: "≤ 5% · No aplica · 100%",
+      estimado: "≤ 5% · 100%",
       registrado: cobStr || "—",
       desfase: "—",
       desfaseMinutos: null,
-      estado: coberturaEstado === "no_aplica" ? "no_aplica" : estadoFromCumple(coberturaCumple),
+      estado: estadoFromCumple(coberturaCumple),
       detalle:
-        coberturaEstado === "no_aplica"
-          ? "Cobertura no aplica a este tipo de TK."
-          : coberturaCumple === true
-            ? "Impacto acotado según cobertura estimada."
-            : coberturaCumple === false
-              ? "Cobertura estimada indica impacto elevado."
-              : "Sin coberturaEstimada en normativa.",
-    },
-  ];
+        coberturaCumple === true
+          ? "Impacto acotado según cobertura estimada."
+          : coberturaCumple === false
+            ? "Cobertura estimada indica impacto elevado."
+            : "Sin coberturaEstimada en normativa.",
+    });
+  }
 
   const evaluables = filas.filter((f) => f.estado !== "pendiente" && f.estado !== "no_aplica");
   const cumpleCount = filas.filter((f) => f.estado === "cumple" || f.estado === "no_aplica").length;

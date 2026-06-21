@@ -245,6 +245,30 @@ const TK1437191_METRICAS_PATCH = {
   },
 };
 
+const TK1439822_R2_SUBIDAS = ["patyia/diligencias/tk1439822-solicitud-insoft.png"];
+
+const TK1439822_EVIDENCIAS_TIEMPO = [
+  {
+    key: "patyia/diligencias/tk1439822-solicitud-insoft.png",
+    rol: "solicitud",
+    hitos: ["apertura", "atencion", "cierre"],
+  },
+] as const;
+
+const TK1439822_METRICAS_PATCH = {
+  horaInicioAtencion: "19/jun./2026 05:46:29 pm",
+  fechaCierre: "21/jun./2026 11:48:54 am",
+  fechaSolucion: "21/jun./2026 11:48:54 am",
+  documentacion: {
+    cierreEmpresa: "Solucionado",
+    medioAtencion: "Teams",
+    imagenesR2: TK1439822_R2_SUBIDAS,
+    imagenesR2Subidas: TK1439822_R2_SUBIDAS,
+    evidenciasTiempo: [...TK1439822_EVIDENCIAS_TIEMPO],
+    evidenciasSubidas: true,
+  },
+};
+
 const TK1439155_METRICAS_IMAGE = {
   kind: "image",
   sortKey: 3.5,
@@ -335,6 +359,12 @@ function mergeMetricasRoot(
     ...patch.documentacion,
   };
   return { ...base, ...patch, documentacion: doc };
+}
+
+function stripEvidenciasPendientes(metricas: Record<string, unknown>): Record<string, unknown> {
+  const doc = { ...((metricas.documentacion as Record<string, unknown>) || {}) };
+  if (doc.evidenciasSubidas === true) delete doc.imagenesR2Pendientes;
+  return { ...metricas, documentacion: doc };
 }
 
 function ensureMetricasImageInContent(content: unknown[]): unknown[] {
@@ -430,6 +460,49 @@ function patchTk1437191Metricas(tk: Record<string, unknown>): Record<string, unk
   };
 }
 
+function needsTk1439822MetricasPatch(tk: Record<string, unknown>): boolean {
+  const doc = metricasDocBag(tk);
+  const subidas = Array.isArray(doc.imagenesR2Subidas) ? doc.imagenesR2Subidas : [];
+  if (doc.evidenciasSubidas !== true || !subidas.some((k) => String(k).includes("tk1439822-solicitud"))) {
+    return true;
+  }
+  const ev = doc.evidenciasTiempo;
+  if (!Array.isArray(ev) || !ev.length) return true;
+  const hitos = new Set<string>();
+  for (const row of ev) {
+    if (!row || typeof row !== "object") continue;
+    for (const h of (row as { hitos?: string[] }).hitos ?? []) hitos.add(String(h));
+  }
+  return !hitos.has("apertura") || !hitos.has("atencion") || !hitos.has("cierre");
+}
+
+function patchTk1439822Metricas(tk: Record<string, unknown>): Record<string, unknown> {
+  if (!needsTk1439822MetricasPatch(tk)) return tk;
+
+  const detallesExtra = { ...((tk.detallesExtra as Record<string, unknown>) || {}) };
+  detallesExtra.metricas = stripEvidenciasPendientes(
+    mergeMetricasRoot(
+      detallesExtra.metricas as Record<string, unknown> | undefined,
+      TK1439822_METRICAS_PATCH,
+    ),
+  );
+
+  let meta = tk.meta;
+  if (meta && typeof meta === "object") {
+    meta = {
+      ...(meta as Record<string, unknown>),
+      metricas: stripEvidenciasPendientes(
+        mergeMetricasRoot(
+          (meta as Record<string, unknown>).metricas as Record<string, unknown> | undefined,
+          TK1439822_METRICAS_PATCH,
+        ),
+      ),
+    };
+  }
+
+  return { ...tk, detallesExtra, meta };
+}
+
 /** Sustituye commits/tiempos/contenido del ticket si la API aún no coincide con el seed. */
 export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unknown> {
   const iticket = normIticket(tk.iticket);
@@ -477,6 +550,10 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
 
   if (iticket === "TK-1437191" && tkDocLocalContentPatchEnabled()) {
     out = patchTk1437191Metricas(out);
+  }
+
+  if (iticket === "TK-1439822") {
+    out = patchTk1439822Metricas(out);
   }
 
   if (iticket === "TK-1437976") {

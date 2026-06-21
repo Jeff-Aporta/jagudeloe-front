@@ -1,16 +1,16 @@
 {
-  "builtAt": "2026-06-21T18:25:19.844Z",
+  "builtAt": "2026-06-21T21:09:27.817Z",
   "files": 141,
-  "bytesIn": 887987,
-  "bytesOut": 493158,
+  "bytesIn": 888246,
+  "bytesOut": 492755,
   "ratio": 0.555,
-  "hash": "311a1fea2181",
+  "hash": "c238b16f51ee",
   "entries": [
     {
       "src": "css/app-shell.css",
       "dist": "_dist/css/app-shell.css",
-      "bytesIn": 7131,
-      "bytesOut": 5293
+      "bytesIn": 7696,
+      "bytesOut": 5764
     },
     {
       "src": "css/boot-loading.css",
@@ -57,14 +57,14 @@
     {
       "src": "js/app/App.jsx",
       "dist": "_dist/js/app/App.js",
-      "bytesIn": 7043,
-      "bytesOut": 4355
+      "bytesIn": 5357,
+      "bytesOut": 3200
     },
     {
       "src": "js/boot/cdn.mjs",
       "dist": "_dist/js/boot/cdn.mjs",
-      "bytesIn": 2823,
-      "bytesOut": 1805
+      "bytesIn": 2874,
+      "bytesOut": 1802
     },
     {
       "src": "js/boot/diagram-viewer-web.jsx",
@@ -177,8 +177,8 @@
     {
       "src": "js/core/tk-calificacion.ts",
       "dist": "_dist/js/core/tk-calificacion.js",
-      "bytesIn": 10561,
-      "bytesOut": 4986
+      "bytesIn": 10540,
+      "bytesOut": 4879
     },
     {
       "src": "js/core/tk-catalog.ts",
@@ -309,8 +309,8 @@
     {
       "src": "js/core/tk-doc-seed-patch.ts",
       "dist": "_dist/js/core/tk-doc-seed-patch.js",
-      "bytesIn": 20174,
-      "bytesOut": 10900
+      "bytesIn": 22847,
+      "bytesOut": 12132
     },
     {
       "src": "js/core/tk-doc-solution.ts",
@@ -345,8 +345,8 @@
     {
       "src": "js/core/tk-doc.ts",
       "dist": "_dist/js/core/tk-doc.js",
-      "bytesIn": 10408,
-      "bytesOut": 5648
+      "bytesIn": 9207,
+      "bytesOut": 4922
     },
     {
       "src": "js/core/tk-empresa-comparativo.ts",
@@ -363,8 +363,8 @@
     {
       "src": "js/core/tk-evidencias-tiempo-hitos.ts",
       "dist": "_dist/js/core/tk-evidencias-tiempo-hitos.js",
-      "bytesIn": 4353,
-      "bytesOut": 2394
+      "bytesIn": 4425,
+      "bytesOut": 2447
     },
     {
       "src": "js/core/tk-evidencias.ts",
@@ -849,8 +849,8 @@
     {
       "src": "js/views/TicketsView.jsx",
       "dist": "_dist/js/views/TicketsView.js",
-      "bytesIn": 21087,
-      "bytesOut": 12739
+      "bytesIn": 20893,
+      "bytesOut": 12571
     }
   ]
 }

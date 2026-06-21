@@ -64,10 +64,6 @@ function normIticketLabel(raw: unknown): string {
   return t.startsWith("TK-") ? t : `TK-${t}`;
 }
 
-function docShareReportLabel(report: "diligencia" | "metricas"): string {
-  return report === "metricas" ? "Documentación y métricas" : "Documentación y diligencias";
-}
-
 export type DocShareSnippetOpts = {
   url: string;
   report?: "diligencia" | "metricas";
@@ -78,13 +74,10 @@ export type DocShareSnippetOpts = {
 
 /** Texto plano de respaldo al copiar el snippet (correo sin HTML). */
 export function buildDocSharePlainText(opts: DocShareSnippetOpts): string {
-  const report = opts.report ?? "diligencia";
   const href = String(opts.url ?? "").trim();
   const id = normIticketLabel(opts.iticket);
-  const titulo = String(opts.titulo ?? "").trim();
-  const lines = [docShareReportLabel(report)];
+  const lines: string[] = [];
   if (id) lines.push(id);
-  if (titulo) lines.push(titulo);
   if (href) lines.push(href);
   return lines.join("\n");
 }
@@ -93,21 +86,11 @@ const DOC_SHARE_FONT = "font-family:Tahoma,Arial,Helvetica,sans-serif;";
 
 /** Fragmento HTML con CSS inline — pegar en InSoft, correo o chat (estilo email TK). */
 export function buildDocShareHtmlSnippet(opts: DocShareSnippetOpts): string {
-  const report = opts.report ?? "diligencia";
   const href = String(opts.url ?? "").trim();
   const safeHref = escHtml(href);
-  const reportLabel = escHtml(docShareReportLabel(report));
   const id = normIticketLabel(opts.iticket);
-  const titulo = String(opts.titulo ?? "").trim();
-  const space = String(opts.space ?? "").trim().toUpperCase();
   const tkBadge = id
-    ? `<span style="${DOC_SHARE_FONT}display:inline-block;font-size:11px;font-weight:700;color:#111111;background:#ffffff;border-radius:4px;padding:3px 10px;margin:0 0 8px 0;letter-spacing:0.3px;">${escHtml(id)}</span>`
-    : "";
-  const tituloHtml = titulo
-    ? `<div style="${DOC_SHARE_FONT}font-size:16px;color:#ffffff;font-weight:bold;margin-top:4px;line-height:1.35;">${escHtml(titulo)}</div>`
-    : "";
-  const spaceHtml = space
-    ? `<div style="${DOC_SHARE_FONT}font-size:11px;color:#7fb4e6;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${escHtml(space)}</div>`
+    ? `<span style="${DOC_SHARE_FONT}display:inline-block;font-size:11px;font-weight:700;color:#111111;background:#ffffff;border-radius:4px;padding:3px 10px;margin:0;letter-spacing:0.3px;">${escHtml(id)}</span>`
     : "";
 
   return (
@@ -118,12 +101,8 @@ export function buildDocShareHtmlSnippet(opts: DocShareSnippetOpts): string {
     `style="border-collapse:collapse;width:100%;max-width:680px;background:#ffffff;border-radius:8px;overflow:hidden;">` +
     `<tr><td style="padding:18px 20px;background:#0b2e4e;vertical-align:top;">` +
     `${tkBadge}` +
-    `${spaceHtml}` +
-    `<div style="${DOC_SHARE_FONT}font-size:13px;color:#cfe4fa;font-weight:600;margin-top:6px;">${reportLabel}</div>` +
-    `${tituloHtml}` +
     `</td></tr>` +
     `<tr><td style="padding:18px 20px;vertical-align:top;">` +
-    `<p style="margin:0 0 12px 0;font-size:13px;color:#6b7785;">Abre el visor web del ticket:</p>` +
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td ` +
     `style="border-radius:6px;background:#1e90ff;">` +
     `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" ` +
