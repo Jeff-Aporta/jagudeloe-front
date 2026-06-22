@@ -13,24 +13,14 @@ export function applyDiagramPageLayout(): void {
   if (root) root.classList.add("tk-doc-view", "tk-doc-web", "tk-diagram-view");
 }
 
-function bootHelperUrl(): string {
-  const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
-  if (isLocalDev) {
-    return new URL("../../components/front-shared/cdn/boot-helper.mjs", import.meta.url).href;
-  }
-  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@846b658/cdn/boot-helper.mjs?v=1aa8445";
-}
-
 function syncBootTheme(): void {
   const t = (window as { ThemeInit?: { readMode?: () => string; applyThemeMode?: (m: string) => string } }).ThemeInit;
   if (t?.readMode && t?.applyThemeMode) t.applyThemeMode(t.readMode());
 }
 
 async function warmDiagramStack(): Promise<void> {
-  const [cdnMod, bootHelper] = await Promise.all([
-    import("./cdn.mjs"),
-    import(bootHelperUrl()),
-  ]);
+  const cdnMod = await import("./cdn.mjs");
+  const bootHelper = await import(cdnMod.bootHelperUrl);
   const { importShared, assertStack, loadIsaFront } = bootHelper;
   const stackMod = await importShared("stack.mjs");
   await stackMod.stackReady;

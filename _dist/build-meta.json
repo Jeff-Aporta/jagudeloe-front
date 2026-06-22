@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-06-21T23:07:47.371Z",
+  "builtAt": "2026-06-22T15:28:08.481Z",
   "files": 140,
-  "bytesIn": 876471,
-  "bytesOut": 487094,
-  "ratio": 0.556,
-  "hash": "2448e22a4f65",
+  "bytesIn": 875652,
+  "bytesOut": 486414,
+  "ratio": 0.555,
+  "hash": "5431899feb44",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -63,8 +63,8 @@
     {
       "src": "js/boot/cdn.mjs",
       "dist": "_dist/js/boot/cdn.mjs",
-      "bytesIn": 2820,
-      "bytesOut": 1802
+      "bytesIn": 2596,
+      "bytesOut": 1600
     },
     {
       "src": "js/boot/diagram-viewer-web.jsx",
@@ -75,8 +75,8 @@
     {
       "src": "js/boot/diagram-viewer.ts",
       "dist": "_dist/js/boot/diagram-viewer.js",
-      "bytesIn": 2432,
-      "bytesOut": 1571
+      "bytesIn": 2083,
+      "bytesOut": 1322
     },
     {
       "src": "js/boot/doc-viewer-web.jsx",
@@ -87,14 +87,14 @@
     {
       "src": "js/boot/doc-viewer.ts",
       "dist": "_dist/js/boot/doc-viewer.js",
-      "bytesIn": 7917,
-      "bytesOut": 4338
+      "bytesIn": 7558,
+      "bytesOut": 4089
     },
     {
       "src": "js/boot/loader.mjs",
       "dist": "_dist/js/boot/loader.mjs",
-      "bytesIn": 4977,
-      "bytesOut": 3072
+      "bytesIn": 5090,
+      "bytesOut": 3092
     },
     {
       "src": "js/boot/loader.ts",

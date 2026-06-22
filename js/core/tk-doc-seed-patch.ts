@@ -2,7 +2,7 @@
  * Parche de commits/tiempos/contenido cuando la API local aún no refleja el seed de BD.
  * Fuente canónica: backend-tks/scripts/lib/tk-content-*.mjs + BD_ISADOC.TK_CONTENT.
  * Solo en localhost (prod GitHub Pages no aplica). Desactivar: ?tkPatch=0 o localStorage tkDocLocalPatch=0.
- * Preferir BD remota (misma que prod): client.ts consulta jagudeloe-tks antes que 127.0.0.1:8786.
+ * Preferir BD remota (misma que prod): client.ts consulta jagudeloe-tks antes que 127.0.0.1:8796.
  */
 
 import {

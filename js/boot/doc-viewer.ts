@@ -8,9 +8,9 @@ import { bootShimmerHtml } from "../ui/bootShimmer.ts";
 import { isDocLoadHold } from "./url-s.mjs";
 import { patchTkDocSeed } from "../core/tk-doc-seed-patch.ts";
 
-/** API tickets — misma fuente BD que prod. Local 8786 solo con tkApi:local=1. */
+/** API tickets — misma fuente BD que prod. Local 8796 solo con tkApi:local=1. */
 const TK_API_REMOTE = "https://jagudeloe-tks.jeffaporta.workers.dev";
-const TK_API_LOCAL = "http://127.0.0.1:8786";
+const TK_API_LOCAL = "http://127.0.0.1:8796";
 
 function showError(root: HTMLElement, message: string) {
   root.innerHTML = `<p style="margin:0;padding:24px;font-family:Tahoma,Arial,sans-serif;color:#c62828">${message}</p>`;
@@ -104,22 +104,12 @@ function runHtmlDriver(root: HTMLElement, tk: Record<string, unknown>): void {
   mountHtmlToolbar(tk);
 }
 
-function bootHelperUrl(): string {
-  const isLocalDev = /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
-  if (isLocalDev) {
-    return new URL("../../components/front-shared/cdn/boot-helper.mjs", import.meta.url).href;
-  }
-  return "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@846b658/cdn/boot-helper.mjs?v=1aa8445";
-}
-
 const isDist = !!(globalThis as { __ISA_DIST__?: boolean }).__ISA_DIST__
   && !new URLSearchParams(location.search).has("src");
 
 async function warmJsxStackShared(): Promise<void> {
-  const [cdnMod, bootHelper] = await Promise.all([
-    import("./cdn.mjs"),
-    import(bootHelperUrl()),
-  ]);
+  const cdnMod = await import("./cdn.mjs");
+  const bootHelper = await import(cdnMod.bootHelperUrl);
   const { importShared, assertStack, loadIsaFront } = bootHelper;
   const w = globalThis as { __TK_STACK_PREFETCH__?: Promise<{ stackReady: Promise<unknown> }> };
   const stackPref = w.__TK_STACK_PREFETCH__;

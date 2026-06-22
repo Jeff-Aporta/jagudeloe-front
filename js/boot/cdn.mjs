@@ -1,28 +1,19 @@
 /** Pin jsDelivr front-shared — alinear con front-shared/cdn/versions.json (origin/main). */
-export const PIN = "846b658";
+export const PIN = "13629aa";
 
 const isDevHost =
   typeof location !== "undefined" && /localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname);
 
-function devCdnBase() {
-  const base = document.querySelector("base")?.href || location.href;
-  return new URL("../../components/front-shared/cdn/", base).href.replace(/\/?$/, "/");
-}
+/** Siempre jsDelivr — isa/js/index.js (fuentes .jsx) no arranca en Live Server. */
+export const CDN = `https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@${PIN}/cdn`;
 
-export const CDN = isDevHost
-  ? devCdnBase()
-  : `https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@${PIN}/cdn`;
+export const bootHelperUrl = `${CDN}/boot-helper.mjs?v=${PIN}`;
 
-export const bootHelperUrl = isDevHost
-  ? `${CDN}boot-helper.mjs`
-  : `${CDN}/boot-helper.mjs?v=${PIN}`;
-
-export const asset = (p) =>
-  isDevHost ? `${CDN}${p}` : `${CDN}/${p}?v=${PIN}`;
+export const asset = (p) => `${CDN}/${p}?v=${PIN}`;
 
 /* @isa-lightbox-boot:start */
 /** @jeff-aporta/lightbox-zoom — pin: sync-component-refs.mjs */
-export const LIGHTBOX_ZOOM_REF = "8e19b71";
+export const LIGHTBOX_ZOOM_REF = "eb1db1e";
 
 export function lightboxZoomBase() {
   const base = document.querySelector("base")?.href || location.href;

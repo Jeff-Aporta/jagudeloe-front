@@ -10,9 +10,9 @@ interface FetchOpts {
   body?: unknown;
 }
 
-/** Misma BD que prod (GitHub Pages). Local 8786 solo con localStorage tkApi:local=1. */
+/** Misma BD que prod (GitHub Pages). Local 8796 solo con localStorage tkApi:local=1. */
 const TK_API_REMOTE = "https://jagudeloe-tks.jeffaporta.workers.dev";
-const TK_API_LOCAL = "http://127.0.0.1:8786";
+const TK_API_LOCAL = "http://127.0.0.1:8796";
 
 function isDevHost(): boolean {
   const h = typeof location !== "undefined" ? location.hostname : "";
@@ -36,7 +36,7 @@ const LOCAL_DIRECT = [
     test: (p: string) =>
       p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
       || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
-    base: "http://127.0.0.1:8783",
+    base: "http://127.0.0.1:8793",
   },
 ];
 

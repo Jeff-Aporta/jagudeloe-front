@@ -25,20 +25,21 @@ function docPrefetch() {
       .catch(() => null);
     if (s.driver !== "html") {
       globalThis.__TK_STACK_PREFETCH__ = import(
-        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@846b658/cdn/stack.mjs?v=1aa8445",
+        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@13629aa/cdn/stack.mjs?v=1aa8445",
       );
     }
   } catch { /* ignore */ }
 }
 docPrefetch();
 
+/** Bundle _dist (esbuild). Fuente isa/js/index.js importa .jsx y falla en el navegador. */
 async function loadIsaFrontPinned(h) {
   if (isDist) {
-    await import(asset("isa/js/index.js"));
+    await import(asset("_dist/isa/js/index.min.js"));
   } else {
     await h.loadIsaFront();
     if (!globalThis.ISAFront?.ensureCodeMirrorLoaded) {
-      await import(asset("isa/js/index.js"));
+      await import(asset("_dist/isa/js/index.min.js"));
     }
   }
   if (!globalThis.ISAFront?.ensureCodeMirrorLoaded) {

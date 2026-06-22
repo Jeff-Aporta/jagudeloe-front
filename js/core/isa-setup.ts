@@ -3,7 +3,7 @@ import { registerBootShimmer } from "../ui/bootShimmer.ts";
 import { patchJagudeloeThemeRadius } from "./jagudeloe-theme-radius.ts";
 
 const ORCH = {
-  local: "http://localhost:8780",
+  local: "http://localhost:8790",
   online: "https://main-orchestrator.jeffaporta.workers.dev",
 };
 
