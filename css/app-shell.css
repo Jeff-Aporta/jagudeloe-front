@@ -89,14 +89,20 @@ html body #root {
   flex: 0 0 auto;
   min-height: 0;
   align-self: stretch;
-  overflow: auto;
   display: none;
 }
 
+.isa-split-view__panel.isa-view-split__nav {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 @media (min-width: 900px) {
-  .isa-view-split__nav {
+  .isa-view-split__nav:not(.isa-split-view__panel) {
     display: flex;
     flex-direction: column;
+    overflow: auto;
   }
 }
 

@@ -1,16 +1,16 @@
 {
-  "builtAt": "2026-06-22T15:28:08.481Z",
+  "builtAt": "2026-06-22T17:11:30.785Z",
   "files": 140,
-  "bytesIn": 875652,
-  "bytesOut": 486414,
-  "ratio": 0.555,
-  "hash": "5431899feb44",
+  "bytesIn": 877285,
+  "bytesOut": 487393,
+  "ratio": 0.556,
+  "hash": "9b9ae287f68e",
   "entries": [
     {
       "src": "css/app-shell.css",
       "dist": "_dist/css/app-shell.css",
-      "bytesIn": 7696,
-      "bytesOut": 5764
+      "bytesIn": 7837,
+      "bytesOut": 5886
     },
     {
       "src": "css/boot-loading.css",
@@ -63,8 +63,8 @@
     {
       "src": "js/boot/cdn.mjs",
       "dist": "_dist/js/boot/cdn.mjs",
-      "bytesIn": 2596,
-      "bytesOut": 1600
+      "bytesIn": 3013,
+      "bytesOut": 1875
     },
     {
       "src": "js/boot/diagram-viewer-web.jsx",
@@ -93,7 +93,7 @@
     {
       "src": "js/boot/loader.mjs",
       "dist": "_dist/js/boot/loader.mjs",
-      "bytesIn": 5090,
+      "bytesIn": 5094,
       "bytesOut": 3092
     },
     {
@@ -165,8 +165,8 @@
     {
       "src": "js/core/platform.ts",
       "dist": "_dist/js/core/platform.js",
-      "bytesIn": 6096,
-      "bytesOut": 3911
+      "bytesIn": 6401,
+      "bytesOut": 4094
     },
     {
       "src": "js/core/storage.ts",
@@ -825,14 +825,14 @@
     {
       "src": "js/views/BitacoraView.jsx",
       "dist": "_dist/js/views/BitacoraView.js",
-      "bytesIn": 12255,
-      "bytesOut": 7074
+      "bytesIn": 12555,
+      "bytesOut": 7259
     },
     {
       "src": "js/views/PendientesView.jsx",
       "dist": "_dist/js/views/PendientesView.js",
-      "bytesIn": 7666,
-      "bytesOut": 5241
+      "bytesIn": 7889,
+      "bytesOut": 5343
     },
     {
       "src": "js/views/TicketMetricsView.jsx",
@@ -843,8 +843,8 @@
     {
       "src": "js/views/TicketsView.jsx",
       "dist": "_dist/js/views/TicketsView.js",
-      "bytesIn": 20893,
-      "bytesOut": 12571
+      "bytesIn": 21136,
+      "bytesOut": 12683
     }
   ]
 }

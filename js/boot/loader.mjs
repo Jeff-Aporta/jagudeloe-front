@@ -2,7 +2,7 @@
  * Arranque jagudeloe — producción: _dist + __ISA_DIST__ (sin Babel en app).
  * Desarrollo: ?src=1 o sin __ISA_DIST__ → transpila js/ con module-graph + Babel.
  */
-import { asset, ensureLightboxZoom } from "./cdn.mjs";
+import { asset, bootLoaderUrl, ensureLightboxZoom } from "./cdn.mjs";
 
 const bootHold = new URLSearchParams(location.search).has("isa_boot_hold");
 const useSource = new URLSearchParams(location.search).has("src");
@@ -25,7 +25,7 @@ function docPrefetch() {
       .catch(() => null);
     if (s.driver !== "html") {
       globalThis.__TK_STACK_PREFETCH__ = import(
-        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@13629aa/cdn/stack.mjs?v=1aa8445",
+        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@37aa772/cdn/stack.mjs?v=1aa8445",
       );
     }
   } catch { /* ignore */ }
@@ -68,7 +68,7 @@ function showBootErr(err) {
   console.error(err);
 }
 
-import(asset("boot-loader.mjs")).then(({ mountBoot, getBabel, importBootHelper }) => {
+import(bootLoaderUrl).then(({ mountBoot, getBabel, importBootHelper }) => {
   mountBoot(async () => {
     if (bootHold) return;
 

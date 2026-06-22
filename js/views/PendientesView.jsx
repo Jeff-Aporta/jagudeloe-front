@@ -1,5 +1,5 @@
 /* views/PendientesView — commits ISS sin ticket real, agrupados en TK-XXXXN por dominio. */
-import { getReact, getMaterialUI } from "../core/platform.ts";
+import { getReact, getMaterialUI, getIsaSplitView } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import { merge, boot } from "../core/urlState.ts";
 import { getPendientes } from "../api/client.ts";
@@ -7,7 +7,6 @@ import { CommitsTable } from "../ui/tkDoc/CommitsTable.jsx";
 import { tkDocSurfaceSx } from "../ui/tkDocSurface.ts";
 import { roundTkMinutosTo5 } from "../core/tk-table.ts";
 
-const navPanelSx = { width: 280, borderRight: 1, borderColor: "divider", bgcolor: "background.paper" };
 const PENDIENTE_RE = /^TK-XXXX\d+$/i;
 
 function pendienteId(p) {
@@ -155,23 +154,34 @@ export function PendientesView(props) {
   );
 
   const active = rows.find((r) => pendienteId(r) === selected);
+  const IsaSplitView = getIsaSplitView();
 
   return (
-    <Box className="isa-view-split">
-      <Box className="isa-view-split__nav" sx={{ ...navPanelSx, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Box sx={{ px: 1.5, py: 1, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
-          <Typography variant="caption" color="text.secondary">
-            Dominios temporales (TK-XXXXN) — no aparecen en Tickets hasta asignar TK real.
-          </Typography>
+    <IsaSplitView
+      className="isa-view-split"
+      panelClassName="isa-view-split__nav"
+      mainClassName="isa-view-split__main"
+      hidePanelBelow="md"
+      storageKey="jagudeloe:pendientes-nav"
+      defaultWidth={280}
+      panelTitle="Pendientes"
+      panelIcon="mdi:clock-outline"
+      UI={UI}
+      panel={(
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", flex: 1, overflow: "hidden" }}>
+          <Box sx={{ px: 1.5, py: 1, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
+            <Typography variant="caption" color="text.secondary">
+              Dominios temporales (TK-XXXXN) — no aparecen en Tickets hasta asignar TK real.
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{navBody}</Box>
         </Box>
-        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{navBody}</Box>
-      </Box>
-      <Box className="isa-view-split__main">
-        {active ? <PendienteDetail row={active} /> : (
-          <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un dominio pendiente.</Typography>
-        )}
-      </Box>
-    </Box>
+      )}
+    >
+      {active ? <PendienteDetail row={active} /> : (
+        <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un dominio pendiente.</Typography>
+      )}
+    </IsaSplitView>
   );
 }
 

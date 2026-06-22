@@ -1,5 +1,5 @@
 /* views/BitacoraView — bitácora de un space (o General = PatyIA + Clientes consolidados). */
-import { getReact, getMaterialUI } from "../core/platform.ts";
+import { getReact, getMaterialUI, getIsaSplitView } from "../core/platform.ts";
 import { UI, Assets } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
 import { getBitacora, getRevisadoMap } from "../api/client.ts";
@@ -18,8 +18,6 @@ import { BitacoraTodoList } from "../ui/BitacoraTodoList.jsx";
 import { renderBitacoraMarkdown, stripTodoCheckboxesFromMarkdown } from "../core/bitacora-md.ts";
 
 const clamp2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3 };
-const navPanelSx = { width: 230, borderRight: 1, borderColor: "divider", bgcolor: "background.paper" };
-
 /** API legacy devuelve md/sql/video; el front espera segments. */
 function normalizeBitacoraData(data) {
   if (!data) return data;
@@ -260,31 +258,43 @@ export function BitacoraView(props) {
     dotState: aggregateDotState(collectSqlCheckKeys(d.children, segments), revisadoMap),
   }));
 
+  const IsaSplitView = getIsaSplitView();
+
   return (
-    <Box className="isa-view-split">
-      <Box className="isa-view-split__nav" sx={navPanelSx}>
-        <DateTree
-          items={treeItems}
-          selectedId={selected}
-          onSelect={(id) => { setSelected(id); merge({ sel: id }); }}
-          mode="day"
-          storageKey={"jagudeloe:nav-folders:bitacora:" + props.project}
-        />
-      </Box>
-      <Box className="isa-view-split__main">
-        <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
-          <Icon icon="mdi:calendar-text-outline" size={22} style={{ flexShrink: 0, marginTop: 2 }} />
-          <Typography variant="h6" sx={clamp2}>{current.title}</Typography>
-          {isGeneralProject(props.project) && current.spaces?.length > 1 && current.spaces.map((s) => (
-            <Chip key={s} size="small" variant="outlined" label={projectLabel(s)} />
-          ))}
-        </Stack>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: stretchVideo ? "hidden" : "auto", px: 2, pb: 2, display: "flex", flexDirection: "column" }}>
-          {current.children.length
-            ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey, stretchVideo, onSegmentTodos))
-            : <Typography color="text.secondary">Sin contenido para este día.</Typography>}
+    <IsaSplitView
+      className="isa-view-split"
+      panelClassName="isa-view-split__nav"
+      mainClassName="isa-view-split__main"
+      hidePanelBelow="md"
+      storageKey={`jagudeloe:bitacora-nav:${props.project}`}
+      defaultWidth={230}
+      panelTitle="Bitácora"
+      panelIcon="mdi:calendar-text-outline"
+      UI={UI}
+      panel={(
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", flex: 1, overflow: "hidden" }}>
+          <DateTree
+            items={treeItems}
+            selectedId={selected}
+            onSelect={(id) => { setSelected(id); merge({ sel: id }); }}
+            mode="day"
+            storageKey={"jagudeloe:nav-folders:bitacora:" + props.project}
+          />
         </Box>
+      )}
+    >
+      <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
+        <Icon icon="mdi:calendar-text-outline" size={22} style={{ flexShrink: 0, marginTop: 2 }} />
+        <Typography variant="h6" sx={clamp2}>{current.title}</Typography>
+        {isGeneralProject(props.project) && current.spaces?.length > 1 && current.spaces.map((s) => (
+          <Chip key={s} size="small" variant="outlined" label={projectLabel(s)} />
+        ))}
+      </Stack>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: stretchVideo ? "hidden" : "auto", px: 2, pb: 2, display: "flex", flexDirection: "column" }}>
+        {current.children.length
+          ? current.children.map((node, i) => renderNode(node, segments, props.project, current.id + "-" + i, 0, props.reloadKey, stretchVideo, onSegmentTodos))
+          : <Typography color="text.secondary">Sin contenido para este día.</Typography>}
       </Box>
-    </Box>
+    </IsaSplitView>
   );
 }

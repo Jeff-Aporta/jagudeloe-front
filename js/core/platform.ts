@@ -96,6 +96,15 @@ export const getReact = () => window.ISAFront.getReact();
 export const getReactDOM = () => window.ISAFront.getReactDOM();
 export const getMaterialUI = () => window.ISAFront.getMaterialUI();
 
+/** Layout panel izquierdo redimensionable + contenido (ISAFront.Layout.IsaSplitView). */
+export function getIsaSplitView() {
+  const C = window.ISAFront?.Layout?.IsaSplitView;
+  if (!C) {
+    throw new Error("IsaSplitView no cargado — recargue sin caché (Ctrl+Shift+R).");
+  }
+  return C;
+}
+
 /** Puente a ISAFront.CodeMirrorPanel (front-shared). */
 export function CodeMirrorPanel(props: Record<string, unknown>) {
   const Panel = window.ISAFront?.CodeMirrorPanel;

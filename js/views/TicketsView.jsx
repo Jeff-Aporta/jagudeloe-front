@@ -1,6 +1,6 @@
 /* views/TicketsView — tickets de un space. Navegador AÑO → MES → DÍA → ticket.
  * El HTML del ticket se genera en el front (ui/tkHtml.ts) a partir del JSON del backend. */
-import { getReact, getMaterialUI } from "../core/platform.ts";
+import { getReact, getMaterialUI, getIsaSplitView } from "../core/platform.ts";
 import { UI } from "../core/platform.ts";
 import { merge, boot, subscribe } from "../core/urlState.ts";
 import { resolveDocDriver } from "../core/tk-doc.ts";
@@ -22,8 +22,6 @@ import { tkSpaceChipTone } from "../core/tk-spaces.ts";
 const TICKET_SPACES = ["patyia", "clientesis"];
 function spacesFor(project) { return project === "general" ? TICKET_SPACES : [project]; }
 const ABBR = { ene: "01", feb: "02", mar: "03", abr: "04", may: "05", jun: "06", jul: "07", ago: "08", sep: "09", oct: "10", nov: "11", dic: "12" };
-const navPanelSx = { width: 260, borderRight: 1, borderColor: "divider", bgcolor: "background.paper" };
-
 function ticketId(t) { return String(t.code || t.iticket || t.id || ""); }
 
 function dateOf(t) {
@@ -468,41 +466,53 @@ export function TicketsDiligenciaView(props) {
     </List>
   );
 
+  const IsaSplitView = getIsaSplitView();
+
   return (
-    <Box className="isa-view-split">
-      <Box className="isa-view-split__nav" sx={{ ...navPanelSx, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <Box sx={{ p: 1, flexShrink: 0 }}>
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="Buscar TK o título…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={
-              Icon
-                ? { startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" size={18} /></InputAdornment> }
-                : undefined
-            }
-          />
+    <IsaSplitView
+      className="isa-view-split"
+      panelClassName="isa-view-split__nav"
+      mainClassName="isa-view-split__main"
+      hidePanelBelow="md"
+      storageKey={`jagudeloe:tickets-nav:${props.project}`}
+      defaultWidth={260}
+      panelTitle="Tickets"
+      panelIcon="mdi:ticket-outline"
+      UI={UI}
+      panel={(
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", flex: 1, overflow: "hidden" }}>
+          <Box sx={{ p: 1, flexShrink: 0 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Buscar TK o título…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              InputProps={
+                Icon
+                  ? { startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" size={18} /></InputAdornment> }
+                  : undefined
+              }
+            />
+          </Box>
+          <Box ref={scrollRef} sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+            {navBody}
+          </Box>
         </Box>
-        <Box ref={scrollRef} sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-          {navBody}
-        </Box>
-      </Box>
-      <Box className="isa-view-split__main">
-        {selected ? (
-          <TicketDetail
-            project={props.project}
-            iticket={selected}
-            reloadKey={props.reloadKey}
-            revisadoMap={revisadoMap}
-            ageTick={ageTick}
-          />
-        ) : (
-          <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>
-        )}
-      </Box>
-    </Box>
+      )}
+    >
+      {selected ? (
+        <TicketDetail
+          project={props.project}
+          iticket={selected}
+          reloadKey={props.reloadKey}
+          revisadoMap={revisadoMap}
+          ageTick={ageTick}
+        />
+      ) : (
+        <Typography color="text.secondary" sx={{ p: 2 }}>Selecciona un ticket en el navegador.</Typography>
+      )}
+    </IsaSplitView>
   );
 }
 
