@@ -69,6 +69,7 @@ export function partitionStandardSectionBlocks(blocks: TkDocEditableBlock[]): {
       }
 
       if (isEvidenciaTitle(title)) {
+        if (docLane && docLane !== "evidencias") continue;
         evidencias.push(b);
         continue;
       }

@@ -80,6 +80,35 @@ export function MdBody({ text }) {
       continue;
     }
 
+    if (block.type === "code") {
+      out.push(
+        <Box
+          key={out.length}
+          component="pre"
+          className="tk-doc-fenced-code"
+          sx={{
+            m: 0,
+            my: 1.25,
+            p: 1.5,
+            borderRadius: 1.5,
+            border: 1,
+            borderColor: "divider",
+            bgcolor: "action.hover",
+            fontFamily: "Consolas, Monaco, ui-monospace, monospace",
+            fontSize: "0.8125rem",
+            lineHeight: 1.55,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            overflowX: "auto",
+            color: "text.primary",
+          }}
+        >
+          {block.text}
+        </Box>,
+      );
+      continue;
+    }
+
     out.push(
       <Typography
         key={out.length}

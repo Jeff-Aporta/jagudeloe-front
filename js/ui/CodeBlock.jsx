@@ -12,12 +12,35 @@ function cmMode(lang) {
 export function CodeBlock(props) {
   const Panel = window.ISAFront?.CodeMirrorPanel;
   const { Box, Typography } = getMaterialUI();
-  const lang = (() => {
-    const l = String(props.language || "sql").toLowerCase();
-    return l === "json" ? "json" : "sql";
-  })();
-  const code = tkCodeForRender(props.code ?? "", lang);
+  const lang = tkCodeLanguageForRender(props.language || "sql");
+  const code = tkCodeForRender(props.code ?? "", lang === "text" ? "sql" : lang);
   const modeOpts = cmMode(lang);
+
+  if (lang === "text") {
+    return (
+      <Box
+        component="pre"
+        className="tk-doc-fenced-code"
+        sx={{
+          m: 0,
+          my: 1,
+          p: 1.5,
+          border: 1,
+          borderColor: "divider",
+          borderRadius: TK_DOC_RADIUS,
+          bgcolor: "action.hover",
+          fontFamily: "Consolas, Monaco, ui-monospace, monospace",
+          fontSize: "0.8125rem",
+          lineHeight: 1.55,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          overflowX: "auto",
+        }}
+      >
+        {code}
+      </Box>
+    );
+  }
 
   if (!Panel) {
     return (

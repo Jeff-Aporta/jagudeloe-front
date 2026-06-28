@@ -20,6 +20,7 @@ import {
   textPartsHaveContent,
 } from "./tk-doc-blocks.ts";
 import { finalizeSolutionLane } from "./tk-doc-solution.ts";
+import { TK_CODE_OMITTED_NOTE } from "./tk-code-policy.ts";
 import {
   TK_DOC_SECTION_ORDER,
   TK_DOC_STANDARD,
@@ -81,6 +82,31 @@ function otrosRenderable(blocks: TkDocBlock[]): TkDocBlock[] {
     const title = blockPayloadTitle(b);
     return !(title && isStandardMappedTitle(title));
   });
+}
+
+function stripMdInline(text: string): string {
+  return text.replace(/\*\*|__|`/g, "").trim();
+}
+
+function isOmittedOnlyEvidenciaIntro(intro: string): boolean {
+  const note = stripMdInline(TK_CODE_OMITTED_NOTE);
+  const t = stripMdInline(intro);
+  if (!t) return false;
+  if (t === note) return true;
+  const body = t.replace(/^[^\n]+\n+/, "").trim();
+  return body === note;
+}
+
+function evidenciasSectionHasContent(
+  intro: string,
+  docEvidencias: ReturnType<typeof extractTicketDocEvidencias>,
+  sinEvidenciaProblema: boolean,
+): boolean {
+  if (docEvidencias.length > 0) return true;
+  if (sinEvidenciaProblema) return false;
+  const t = intro.trim();
+  if (!t || isOmittedOnlyEvidenciaIntro(t)) return false;
+  return true;
 }
 
 function buildSectionDots(
@@ -189,6 +215,7 @@ export function buildTkDocViewModel(
     .filter((t) => t.name && t.minutos > 0);
 
   const introText = String(evidenciaIntro ?? "").trim();
+  const sinEvidenciaProblema = isTicketSinEvidenciaProblema(tk);
   const commitsTitle =
     estadoCierre === "cerrado"
       ? TK_DOC_STANDARD.commits.titleCerrado
@@ -196,7 +223,7 @@ export function buildTkDocViewModel(
 
   const sectionPresence: Record<TkDocSectionKey, boolean> = {
     solicitud: textPartsHaveContent(solicitudParts),
-    evidencias: !!introText || docEvidencias.length > 0,
+    evidencias: evidenciasSectionHasContent(introText, docEvidencias, sinEvidenciaProblema),
     causa: laneHasContent(lanes.causa),
     verificacion: laneHasContent(lanes.verificacion),
     solucion: laneHasContent(lanes.solucion),
@@ -217,7 +244,7 @@ export function buildTkDocViewModel(
     sectionDots: buildSectionDots(
       sectionPresence,
       commitsTitle,
-      isTicketSinEvidenciaProblema(tk),
+      sinEvidenciaProblema,
     ),
     commitsTitle,
   };

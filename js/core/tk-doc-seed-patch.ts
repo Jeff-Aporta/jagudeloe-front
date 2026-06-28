@@ -20,6 +20,13 @@ import {
   needsTk1439155ContentPatch,
 } from "./tk-doc-content-1439155.ts";
 import { readBlockDocLane } from "./tk-doc-lanes.ts";
+import { patchPantallazoJun25Evidencias } from "./tk-pantallazo-jun25-evidencias.ts";
+import { PANTALLAZO_JUN25_TIEMPOS, TK1441245_COMMITS, TK1441246_COMMITS, TK1441252_COMMITS, TK1442417_COMMITS } from "./tk-doc-pantallazo-jun25-tiempos.ts";
+import {
+  mergePantallazoJun25Content,
+  needsPantallazoJun25ContentPatch,
+  patchPantallazoJun25Meta,
+} from "./tk-doc-content-pantallazo-jun25.ts";
 
 type TkCommitSeed = {
   hash: string;
@@ -178,6 +185,10 @@ const DOC_SEED_OVERRIDES: Record<string, TkDocSeedOverride> = {
     tiempos: [...TK1437191_TIEMPOS],
   },
   "TK-1439155": { commits: TK1439155_COMMITS, tiempos: TK1439155_TIEMPOS },
+  "TK-1441245": { commits: TK1441245_COMMITS, tiempos: [...PANTALLAZO_JUN25_TIEMPOS["TK-1441245"]] },
+  "TK-1441246": { commits: [...TK1441246_COMMITS], tiempos: [...PANTALLAZO_JUN25_TIEMPOS["TK-1441246"]] },
+  "TK-1441252": { commits: [...TK1441252_COMMITS], tiempos: [...PANTALLAZO_JUN25_TIEMPOS["TK-1441252"]] },
+  "TK-1442417": { commits: [...TK1442417_COMMITS], tiempos: [...PANTALLAZO_JUN25_TIEMPOS["TK-1442417"]] },
 };
 
 const R2_PUBLIC = "https://pub-1c290cc606c8478899f5764899278571.r2.dev";
@@ -587,6 +598,10 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
     if (iticket === "TK-1439155" && needsTk1439155ContentPatch(content)) {
       out = normalizeTkDocument({ ...out, content: mergeTk1439155Content(content) });
     }
+
+    if (needsPantallazoJun25ContentPatch(content, iticket)) {
+      out = normalizeTkDocument({ ...out, content: mergePantallazoJun25Content(content, iticket) });
+    }
   }
 
   if (iticket === "TK-1439155") {
@@ -606,7 +621,9 @@ export function patchTkDocSeed(tk: Record<string, unknown>): Record<string, unkn
     out = patchTk1437976Content(out);
   }
 
-  return normalizeTkDocument(out);
+  return patchPantallazoJun25Evidencias(
+    patchPantallazoJun25Meta(normalizeTkDocument(out)),
+  );
 }
 
 const TK1437976_SOLICITUD =

@@ -195,7 +195,10 @@ export function tkCodeBlockIntro(payload: Record<string, unknown> | undefined): 
   return String(p.intro ?? p.context ?? p.lead ?? "").trim();
 }
 
-/** Lenguaje seguro para CodeBlock / codeBlock HTML (solo sql | json). */
-export function tkCodeLanguageForRender(lang: unknown): "sql" | "json" {
-  return String(lang ?? "sql").toLowerCase() === "json" ? "json" : "sql";
+/** Lenguaje seguro para CodeBlock / codeBlock HTML (sql | json | text plano). */
+export function tkCodeLanguageForRender(lang: unknown): "sql" | "json" | "text" {
+  const l = String(lang ?? "sql").toLowerCase();
+  if (l === "json") return "json";
+  if (l === "text" || l === "plain" || l === "txt") return "text";
+  return "sql";
 }

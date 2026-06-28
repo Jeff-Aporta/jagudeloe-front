@@ -1,0 +1,21 @@
+# Tests de TK / utilería local (no parte del producto)
+**/*.test.ts
+**/*.spec.ts
+**/*.test.mjs
+**/*.spec.mjs
+**/*.test.jsx
+**/*.test.js
+
+# Secretos / entorno local
+.env
+.env.*
+local.settings.json
+!.local.settings.json.example
+!local.settings.json.example
+
+# Dependencias
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo

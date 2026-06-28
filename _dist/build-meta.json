@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-06-22T18:48:47.458Z",
-  "files": 140,
-  "bytesIn": 877285,
-  "bytesOut": 487393,
-  "ratio": 0.556,
-  "hash": "9b9ae287f68e",
+  "builtAt": "2026-06-28T03:17:59.224Z",
+  "files": 144,
+  "bytesIn": 921477,
+  "bytesOut": 519031,
+  "ratio": 0.563,
+  "hash": "e37d8233bb92",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -195,8 +195,8 @@
     {
       "src": "js/core/tk-code-policy.ts",
       "dist": "_dist/js/core/tk-code-policy.js",
-      "bytesIn": 7791,
-      "bytesOut": 3538
+      "bytesIn": 7904,
+      "bytesOut": 3590
     },
     {
       "src": "js/core/tk-color.ts",
@@ -253,6 +253,12 @@
       "bytesOut": 10728
     },
     {
+      "src": "js/core/tk-doc-content-pantallazo-jun25.ts",
+      "dist": "_dist/js/core/tk-doc-content-pantallazo-jun25.js",
+      "bytesIn": 10236,
+      "bytesOut": 7718
+    },
+    {
       "src": "js/core/tk-doc-interpreter.ts",
       "dist": "_dist/js/core/tk-doc-interpreter.js",
       "bytesIn": 7550,
@@ -273,14 +279,20 @@
     {
       "src": "js/core/tk-doc-layout.ts",
       "dist": "_dist/js/core/tk-doc-layout.js",
-      "bytesIn": 7851,
-      "bytesOut": 3355
+      "bytesIn": 7966,
+      "bytesOut": 3398
     },
     {
       "src": "js/core/tk-doc-normalize.ts",
       "dist": "_dist/js/core/tk-doc-normalize.js",
       "bytesIn": 4713,
       "bytesOut": 1955
+    },
+    {
+      "src": "js/core/tk-doc-pantallazo-jun25-tiempos.ts",
+      "dist": "_dist/js/core/tk-doc-pantallazo-jun25-tiempos.js",
+      "bytesIn": 19004,
+      "bytesOut": 16876
     },
     {
       "src": "js/core/tk-doc-persist.ts",
@@ -297,8 +309,8 @@
     {
       "src": "js/core/tk-doc-section-blocks.ts",
       "dist": "_dist/js/core/tk-doc-section-blocks.js",
-      "bytesIn": 2683,
-      "bytesOut": 1059
+      "bytesIn": 2743,
+      "bytesOut": 1091
     },
     {
       "src": "js/core/tk-doc-sections.ts",
@@ -309,8 +321,8 @@
     {
       "src": "js/core/tk-doc-seed-patch.ts",
       "dist": "_dist/js/core/tk-doc-seed-patch.js",
-      "bytesIn": 25128,
-      "bytesOut": 13352
+      "bytesIn": 26199,
+      "bytesOut": 14052
     },
     {
       "src": "js/core/tk-doc-solution.ts",
@@ -339,8 +351,8 @@
     {
       "src": "js/core/tk-doc-view-model.ts",
       "dist": "_dist/js/core/tk-doc-view-model.js",
-      "bytesIn": 7960,
-      "bytesOut": 3139
+      "bytesIn": 8870,
+      "bytesOut": 3437
     },
     {
       "src": "js/core/tk-doc.ts",
@@ -405,8 +417,8 @@
     {
       "src": "js/core/tk-markdown.ts",
       "dist": "_dist/js/core/tk-markdown.js",
-      "bytesIn": 7261,
-      "bytesOut": 3200
+      "bytesIn": 8369,
+      "bytesOut": 3657
     },
     {
       "src": "js/core/tk-metrics.ts",
@@ -419,6 +431,18 @@
       "dist": "_dist/js/core/tk-normativa.js",
       "bytesIn": 4183,
       "bytesOut": 1840
+    },
+    {
+      "src": "js/core/tk-pantallazo-jun25-evidencias.test.ts",
+      "dist": "_dist/js/core/tk-pantallazo-jun25-evidencias.test.js",
+      "bytesIn": 6371,
+      "bytesOut": 2996
+    },
+    {
+      "src": "js/core/tk-pantallazo-jun25-evidencias.ts",
+      "dist": "_dist/js/core/tk-pantallazo-jun25-evidencias.js",
+      "bytesIn": 4622,
+      "bytesOut": 2196
     },
     {
       "src": "js/core/tk-rich-text.ts",
@@ -501,8 +525,8 @@
     {
       "src": "js/ui/CodeBlock.jsx",
       "dist": "_dist/js/ui/CodeBlock.js",
-      "bytesIn": 1962,
-      "bytesOut": 1233
+      "bytesIn": 2532,
+      "bytesOut": 1566
     },
     {
       "src": "js/ui/CopyReportLinkButton.jsx",
@@ -735,8 +759,8 @@
     {
       "src": "js/ui/tkDoc/MdBody.jsx",
       "dist": "_dist/js/ui/tkDoc/MdBody.js",
-      "bytesIn": 2835,
-      "bytesOut": 1910
+      "bytesIn": 3590,
+      "bytesOut": 2308
     },
     {
       "src": "js/ui/tkDoc/MdList.jsx",
@@ -813,8 +837,8 @@
     {
       "src": "js/ui/tkHeroAuthors.ts",
       "dist": "_dist/js/ui/tkHeroAuthors.js",
-      "bytesIn": 4894,
-      "bytesOut": 2331
+      "bytesIn": 4151,
+      "bytesOut": 1870
     },
     {
       "src": "js/ui/tkHtml.ts",

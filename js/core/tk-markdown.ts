@@ -8,7 +8,8 @@ export type MdBlock =
   | { type: "heading"; text: string }
   | { type: "bullet"; text: string }
   | { type: "ordered-list"; items: string[] }
-  | { type: "table"; table: MdTable };
+  | { type: "table"; table: MdTable }
+  | { type: "code"; text: string; language?: string };
 
 const MD_TABLE_ROW = /^\|.+\|$/;
 /** Filas pegadas en una sola línea: `| A | B | | C | D |` */
@@ -119,6 +120,33 @@ function recoverBlocks(blocks: MdBlock[]): MdBlock[] {
 }
 
 const ORDERED_ITEM_RX = /^\d+\.\s+(.*)$/;
+const FENCE_OPEN_RX = /^```(\w*)$/;
+
+function parseFencedCodeBlock(lines: string[], start: number): { block: MdBlock; next: number } | null {
+  const open = lines[start]?.trim() ?? "";
+  const openMatch = open.match(FENCE_OPEN_RX);
+  if (!openMatch) return null;
+
+  const language = openMatch[1]?.trim() || undefined;
+  const body: string[] = [];
+  let j = start + 1;
+  while (j < lines.length) {
+    const raw = lines[j];
+    if (raw.trim() === "```") {
+      return {
+        block: { type: "code", text: body.join("\n").replace(/\s+$/, ""), ...(language ? { language } : {}) },
+        next: j + 1,
+      };
+    }
+    body.push(raw);
+    j += 1;
+  }
+
+  return {
+    block: { type: "code", text: body.join("\n").replace(/\s+$/, ""), ...(language ? { language } : {}) },
+    next: j,
+  };
+}
 
 function parseOrderedListLines(lines: string[], start: number): { items: string[]; next: number } {
   const items: string[] = [];
@@ -157,6 +185,16 @@ export function splitMarkdownBlocks(text: unknown): MdBlock[] {
       flushPara();
       out.push({ type: "heading", text: line.replace(/^#+\s*/, "") });
       continue;
+    }
+
+    if (FENCE_OPEN_RX.test(line)) {
+      flushPara();
+      const fenced = parseFencedCodeBlock(lines, li);
+      if (fenced) {
+        out.push(fenced.block);
+        li = fenced.next - 1;
+        continue;
+      }
     }
 
     if (/^[-*]\s+/.test(line)) {

@@ -217,6 +217,10 @@ export function partitionTkDocStandard(
       }
 
       if (!evidenciaIntro && isEvidenciaTitle(title)) {
+        if (docLane && docLane !== "evidencias") {
+          bodyBlocks.push(b);
+          continue;
+        }
         evidenciaIntro = text;
         continue;
       }
