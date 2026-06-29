@@ -25,7 +25,7 @@ function docPrefetch() {
       .catch(() => null);
     if (s.driver !== "html") {
       globalThis.__TK_STACK_PREFETCH__ = import(
-        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@c97330e/cdn/stack.mjs?v=1aa8445",
+        "https://cdn.jsdelivr.net/gh/Jeff-Aporta/front-shared@ba55d76/cdn/stack.mjs?v=1aa8445",
       );
     }
   } catch { /* ignore */ }
