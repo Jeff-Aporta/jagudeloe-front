@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-06-30T13:20:24.754Z",
+  "builtAt": "2026-06-30T13:36:48.504Z",
   "files": 144,
-  "bytesIn": 921499,
-  "bytesOut": 519053,
+  "bytesIn": 921477,
+  "bytesOut": 519031,
   "ratio": 0.563,
-  "hash": "d2cd48d49238",
+  "hash": "e37d8233bb92",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -63,8 +63,8 @@
     {
       "src": "js/boot/cdn.mjs",
       "dist": "_dist/js/boot/cdn.mjs",
-      "bytesIn": 3035,
-      "bytesOut": 1897
+      "bytesIn": 3013,
+      "bytesOut": 1875
     },
     {
       "src": "js/boot/diagram-viewer-web.jsx",
