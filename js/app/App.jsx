@@ -1,4 +1,4 @@
-/* app/App — raíz jagudeloe. Spaces → tickets. Shell compartido front-shared. */
+/* app/App — raíz jagudeloe. Spaces → tickets/isp-svelte. Shell compartido front-shared. */
 import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI, Toast, Session } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
@@ -13,11 +13,13 @@ function lazyNamed(loader, name) {
 }
 
 const TicketsView = lazyNamed(() => import("../views/TicketsView.jsx"), "TicketsView");
+const IspSvelteView = lazyNamed(() => import("../views/IspSvelteView.jsx"), "IspSvelteView");
 
 const SPACES = [
   { id: "general", label: "General", icon: "mdi:view-grid-outline" },
   { id: "patyia", label: "PatyIA", icon: "mdi:robot-happy-outline" },
   { id: "clientesis", label: "Clientes", icon: "mdi:account-group-outline" },
+  { id: "isp-svelte", label: "ISP-Svelte", icon: "mdi:package-variant-closed" },
 ];
 const SUBSPACES = [
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
@@ -89,6 +91,13 @@ export function App() {
         <CircularProgress size={28} />
       </Box>
     );
+    if (space === "isp-svelte") {
+      return (
+        <Suspense fallback={fallback}>
+          <IspSvelteView {...props} />
+        </Suspense>
+      );
+    }
     if (sub === "tickets") {
       return (
         <Suspense fallback={fallback}>

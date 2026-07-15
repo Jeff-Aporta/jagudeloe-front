@@ -2,7 +2,7 @@
   "meta": {
     "title": "JAGUDELOE — Jeff-Aporta",
     "applicationName": "JAGUDELOE",
-    "description": "Tickets PatyIA / ClientesIS — Jeff-Aporta.",
+    "description": "Tickets PatyIA / ClientesIS / ISP-Svelte — Jeff-Aporta.",
     "keywords": "jagudeloe, tickets, PatyIA, ClientesIS, Jeff-Aporta",
     "themeColor": "#1e90ff",
     "themeLsKey": "jagudeloe:theme",
@@ -51,11 +51,12 @@
     }
   },
   "readme": {
-    "tagline": "tickets para PatyIA y ClientesIS.",
+    "tagline": "tickets para PatyIA, ClientesIS e ISP-Svelte.",
     "badges": ["github-pages", "react", "marked"],
     "features": [
-      "**PatyIA y ClientesIS**: dos espacios de trabajo en la misma pantalla",
+      "**PatyIA, ClientesIS e ISP-Svelte**: tres espacios de trabajo en la misma pantalla",
       "**Tickets**: listado y detalle por estado",
+      "**ISP-Svelte**: pestaña dedicada al paquete `@ingenieria_insoft/ispsveltecomponents-cli-is`",
       "**Revisión**: marcar tickets como revisados",
       "**Tema** claro/oscuro"
     ]

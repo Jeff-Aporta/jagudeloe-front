@@ -163,6 +163,14 @@ export function getTickets(
 export const getTicket = (project: string, iticket: string) =>
   labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
 
+/** Lista plana de TKs ISP-Svelte (master + relacionados). */
+export const getIspSvelteTickets = () =>
+  labFetch("/api/tk/isp-svelte/tickets");
+
+/** Detalle de un TK ISP-Svelte (consulta el espacio real del ticket). */
+export const getIspSvelteTicket = (iticket: string, fallbackSpace = "clientesis") =>
+  labFetch("/api/tk/" + fallbackSpace + "/tickets/" + encodeURIComponent(iticket));
+
 /** PATCH TK_DOC — edición manual de content[] / blocks (no toca commits ni tiempos). */
 export function patchTicketDoc(project: string, iticket: string, content: unknown[]) {
   return labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket) + "/doc", {

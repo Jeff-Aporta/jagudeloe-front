@@ -1,10 +1,10 @@
 {
-  "builtAt": "2026-07-15T19:13:08.018Z",
-  "files": 140,
-  "bytesIn": 885652,
-  "bytesOut": 498711,
-  "ratio": 0.563,
-  "hash": "2386abb05698",
+  "builtAt": "2026-07-15T19:28:54.484Z",
+  "files": 141,
+  "bytesIn": 896661,
+  "bytesOut": 505580,
+  "ratio": 0.564,
+  "hash": "736516157914",
   "entries": [
     {
       "src": "css/app-shell.css",
@@ -51,14 +51,14 @@
     {
       "src": "js/api/client.ts",
       "dist": "_dist/js/api/client.js",
-      "bytesIn": 8223,
-      "bytesOut": 3947
+      "bytesIn": 8613,
+      "bytesOut": 4106
     },
     {
       "src": "js/app/App.jsx",
       "dist": "_dist/js/app/App.js",
-      "bytesIn": 4842,
-      "bytesOut": 2844
+      "bytesIn": 5199,
+      "bytesOut": 3059
     },
     {
       "src": "js/boot/cdn.mjs",
@@ -833,6 +833,12 @@
       "dist": "_dist/js/ui/tkHtml.js",
       "bytesIn": 35116,
       "bytesOut": 22297
+    },
+    {
+      "src": "js/views/IspSvelteView.jsx",
+      "dist": "_dist/js/views/IspSvelteView.js",
+      "bytesIn": 10262,
+      "bytesOut": 6495
     },
     {
       "src": "js/views/TicketMetricsView.jsx",
