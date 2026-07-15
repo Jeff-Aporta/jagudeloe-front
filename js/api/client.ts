@@ -34,7 +34,7 @@ const LOCAL_DIRECT = [
   },
   {
     test: (p: string) =>
-      p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
+      p.startsWith("/api/isa") || p.startsWith("/api/catalog")
       || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
     base: "http://127.0.0.1:8793",
   },
@@ -44,7 +44,7 @@ const REMOTE_DIRECT = [
   { test: (p: string) => p.startsWith("/api/tk"), base: TK_API_REMOTE },
   {
     test: (p: string) =>
-      p.startsWith("/api/isa") || p.startsWith("/api/bitacora") || p.startsWith("/api/catalog")
+      p.startsWith("/api/isa") || p.startsWith("/api/catalog")
       || p.startsWith("/api/entities") || p.startsWith("/api/revisado") || p.startsWith("/api/health"),
     base: "https://jagudeloe.jeffaporta.workers.dev",
   },
@@ -138,39 +138,6 @@ export function invalidateRevisadoCache(project?: string): void {
 
 export const getSpaces = () => labFetch("/api/isa/spaces");
 export const ping = () => getSpaces();
-export const getBitacora = (project: string) => labFetch("/api/isa/" + project + "/bitacora");
-
-export function getBitacoraTodos(project: string, segmentId: string) {
-  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
-    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId),
-  );
-}
-
-export function createBitacoraTodo(project: string, segmentId: string, text: string) {
-  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
-    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId),
-    { method: "POST", body: { text } },
-  );
-}
-
-export function updateBitacoraTodo(
-  project: string,
-  segmentId: string,
-  todoId: string,
-  patch: { text?: string; checked?: boolean },
-) {
-  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
-    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId) + "/" + encodeURIComponent(todoId),
-    { method: "PATCH", body: patch },
-  );
-}
-
-export function deleteBitacoraTodo(project: string, segmentId: string, todoId: string) {
-  return labFetch<{ ok: boolean; todos: { id: string; text: string; checked: boolean; sort: number }[] }>(
-    "/api/isa/" + project + "/bitacora/todos/" + encodeURIComponent(segmentId) + "/" + encodeURIComponent(todoId),
-    { method: "DELETE" },
-  );
-}
 
 function encodeTkQueryQ(bag: Record<string, unknown>): string {
   const json = JSON.stringify(bag);
@@ -195,12 +162,6 @@ export function getTickets(
 
 export const getTicket = (project: string, iticket: string) =>
   labFetch("/api/tk/" + project + "/tickets/" + encodeURIComponent(iticket));
-
-/** Placeholders TK-XXXXN con commits en espera de ticket real. */
-export const getPendientes = (project: string) => labFetch("/api/tk/" + project + "/pendientes");
-
-export const getPendiente = (project: string, iticket: string) =>
-  labFetch("/api/tk/" + project + "/pendientes/" + encodeURIComponent(iticket));
 
 /** PATCH TK_DOC — edición manual de content[] / blocks (no toca commits ni tiempos). */
 export function patchTicketDoc(project: string, iticket: string, content: unknown[]) {

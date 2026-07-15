@@ -5,7 +5,7 @@ import { useSession } from "../core/useSession.ts";
 import { getRevisadoMap, setCheck, execSql } from "../api/client.ts";
 import { dotStateLabel, ticketDotStateLabel } from "../core/checks.ts";
 import { getRealtimeConstants } from "../core/platform.ts";
-import { renderBitacoraMarkdown } from "../core/bitacora-md.ts";
+import { renderSafeMarkdown } from "../core/md-safe.ts";
 
 const CLAMP1 = { display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.25, minWidth: 0 };
 const CLAMP2 = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "normal", lineHeight: 1.25 };
@@ -293,7 +293,7 @@ export function VideoBlock(props) {
   const hasTranscript = segments.length > 0 || !!(transcript.plainText && String(transcript.plainText).trim());
   const meta = v.metadata || {};
   const [tab, setTab] = useState("resumen");
-  const summaryHtml = summaryMd ? renderBitacoraMarkdown(summaryMd) : "";
+  const summaryHtml = summaryMd ? renderSafeMarkdown(summaryMd) : "";
 
   useEffect(() => {
     if (!loggedIn && tab === "metadatos") setTab("resumen");
@@ -331,7 +331,7 @@ export function VideoBlock(props) {
         <Icon icon="mdi:video-outline" />
         <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 120 }}>{props.title || v.title || "Reunión grabada"}</Typography>
         {v.durationLabel && <Chip size="small" variant="outlined" label={v.durationLabel} />}
-        {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar video revisado (BITACORA_REVISADO)" showLabel />}
+        {props.checkKey && <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar video revisado" showLabel />}
       </Stack>
       <Tabs value={tab} onChange={(_e, val) => setTab(val)} variant="scrollable" sx={{ px: 1, minHeight: 40, flexShrink: 0, borderBottom: 1, borderColor: "divider" }}>
         <Tab value="resumen" label="Resumen" icon={<Icon icon="mdi:text-box-outline" size={18} />} iconPosition="start" sx={{ minHeight: 40, textTransform: "none" }} />
@@ -404,7 +404,7 @@ export function SqlBlock(props) {
       onExecute={(payload) => execSql(props.project, { ...payload, segmentId: props.segmentId })}
       Icon={Icon}
       extraToolbar={props.checkKey ? (
-        <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado (BITACORA_REVISADO)" showLabel />
+        <RevisadoCheck project={props.project} revisadoKey={props.checkKey} reloadKey={props.reloadKey} label="Revisado" hint="Marcar como revisado y ejecutado" showLabel />
       ) : null}
     />
   );

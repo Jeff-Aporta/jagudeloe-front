@@ -74,7 +74,7 @@ html body #root {
   }
 }
 
-/* Bitácora / tickets: nav lateral + detalle a la derecha (no apilar en columna). */
+/* Split view: nav lateral + detalle a la derecha (no apilar en columna). */
 .isa-view-shell > .isa-view-split {
   flex: 1 1 auto;
   min-height: 0;

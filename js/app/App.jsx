@@ -1,4 +1,4 @@
-/* app/App — raíz jagudeloe. Spaces → subspaces (bitácora/tickets). Shell compartido front-shared. */
+/* app/App — raíz jagudeloe. Spaces → tickets. Shell compartido front-shared. */
 import { getReact, getMaterialUI } from "../core/platform.ts";
 import { UI, Toast, Session } from "../core/platform.ts";
 import { merge, subscribe, boot } from "../core/urlState.ts";
@@ -12,9 +12,7 @@ function lazyNamed(loader, name) {
   return lazy(() => loader().then((m) => ({ default: m[name] })));
 }
 
-const BitacoraView = lazyNamed(() => import("../views/BitacoraView.jsx"), "BitacoraView");
 const TicketsView = lazyNamed(() => import("../views/TicketsView.jsx"), "TicketsView");
-const PendientesView = lazy(() => import("../views/PendientesView.jsx"));
 
 const SPACES = [
   { id: "general", label: "General", icon: "mdi:view-grid-outline" },
@@ -22,10 +20,14 @@ const SPACES = [
   { id: "clientesis", label: "Clientes", icon: "mdi:account-group-outline" },
 ];
 const SUBSPACES = [
-  { id: "bitacora", label: "Bitácora", icon: "mdi:notebook-outline" },
   { id: "tickets", label: "Tickets", icon: "mdi:ticket-confirmation-outline" },
-  { id: "pendientes", label: "Pendientes", icon: "mdi:clock-outline" },
 ];
+
+function normalizeSub(raw) {
+  if (raw === "metricas" || raw === "bitacora" || raw === "checks") return "tickets";
+  if (raw === "pendientes") return "tickets"; // legado 15-jul-2026: reasignados a TK reales
+  return raw;
+}
 
 export function App() {
   const { useState, useEffect, useRef } = getReact();
@@ -33,10 +35,9 @@ export function App() {
   const { LoginButton } = UI;
   const { show: toastShow } = Toast;
   const bootSpace = typeof boot.space === "string" ? boot.space : "";
-  const bootSubRaw = typeof boot.sub === "string" ? boot.sub : "";
-  const bootSub = bootSubRaw === "checks" ? "bitacora" : bootSubRaw === "metricas" ? "tickets" : bootSubRaw;
+  const bootSub = normalizeSub(typeof boot.sub === "string" ? boot.sub : "");
   const [space, setSpace] = useState(SPACES.some((s) => s.id === bootSpace) ? bootSpace : "patyia");
-  const [sub, setSub] = useState(SUBSPACES.some((s) => s.id === bootSub) ? bootSub : "bitacora");
+  const [sub, setSub] = useState(SUBSPACES.some((s) => s.id === bootSub) ? bootSub : "tickets");
   const [reloadKey, setReload] = useState(0);
   const skipToastRef = useRef({});
 
@@ -65,8 +66,8 @@ export function App() {
     return subscribe((s) => {
       if (typeof s.space === "string" && s.space !== space) setSpace(s.space);
       if (typeof s.sub === "string") {
-        const nextSub = s.sub === "metricas" ? "tickets" : s.sub;
-        if (nextSub !== sub) setSub(nextSub);
+        const nextSub = normalizeSub(s.sub);
+        if (SUBSPACES.some((x) => x.id === nextSub) && nextSub !== sub) setSub(nextSub);
       }
     });
   }, [space, sub]);
@@ -74,7 +75,7 @@ export function App() {
   useEffect(() => {
     function onBrandHome() {
       setSpace("patyia");
-      setSub("bitacora");
+      setSub("tickets");
       setReload((k) => k + 1);
     }
     window.addEventListener("isa:brand-home", onBrandHome);
@@ -88,24 +89,10 @@ export function App() {
         <CircularProgress size={28} />
       </Box>
     );
-    if (sub === "bitacora") {
-      return (
-        <Suspense fallback={fallback}>
-          <BitacoraView {...props} />
-        </Suspense>
-      );
-    }
     if (sub === "tickets") {
       return (
         <Suspense fallback={fallback}>
           <TicketsView {...props} />
-        </Suspense>
-      );
-    }
-    if (sub === "pendientes") {
-      return (
-        <Suspense fallback={fallback}>
-          <PendientesView {...props} />
         </Suspense>
       );
     }

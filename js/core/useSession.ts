@@ -34,7 +34,7 @@ export function useSession() {
     return Session.blockReason?.(capId) ?? "Inicia sesión para usar este servicio";
   }
 
-  /** Bitácora ISA — servicio exclusivo JAGUDELOE (sql.exec.isa). */
+  /** SQL ISA (capability sql.exec.isa). */
   function canExecSql(capId = "sql.exec.isa") {
     if (!loggedIn) return false;
     return can(capId);

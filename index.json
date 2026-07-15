@@ -2,15 +2,15 @@
   "meta": {
     "title": "JAGUDELOE — Jeff-Aporta",
     "applicationName": "JAGUDELOE",
-    "description": "Bitácora de PatyIA y ClientesIS, tickets y revisión de contenido.",
-    "keywords": "jagudeloe, bitácora, tickets, PatyIA, ClientesIS, Jeff-Aporta",
+    "description": "Tickets PatyIA / ClientesIS — Jeff-Aporta.",
+    "keywords": "jagudeloe, tickets, PatyIA, ClientesIS, Jeff-Aporta",
     "themeColor": "#1e90ff",
     "themeLsKey": "jagudeloe:theme",
-    "icon": "mdi:notebook-outline",
+    "icon": "mdi:ticket-confirmation-outline",
     "canonical": "https://jeff-aporta.github.io/jagudeloe-front/",
     "ogSiteName": "Jeff-Aporta — JAGUDELOE",
     "ogTitle": "JAGUDELOE — Jeff-Aporta",
-    "imageAlt": "JAGUDELOE — bitácora y tickets"
+    "imageAlt": "JAGUDELOE — tickets"
   },
   "frontSharedPin": "a13fc29",
   "useDist": true,
@@ -51,13 +51,12 @@
     }
   },
   "readme": {
-    "tagline": "bitácora, tickets y revisión para PatyIA y ClientesIS.",
+    "tagline": "tickets para PatyIA y ClientesIS.",
     "badges": ["github-pages", "react", "marked"],
     "features": [
       "**PatyIA y ClientesIS**: dos espacios de trabajo en la misma pantalla",
-      "**Bitácora**: notas del día con texto y consultas SQL",
       "**Tickets**: listado y detalle por estado",
-      "**Revisión**: marcar contenido como revisado",
+      "**Revisión**: marcar tickets como revisados",
       "**Tema** claro/oscuro"
     ]
   }

@@ -1,8 +1,8 @@
-/* css/code — bloques de código SQL de la bitácora. */
+/* css/code — bloques de código SQL. */
 
 /* Editor CodeMirror del SqlBlock: altura automática y tipografía monoespaciada. */
 
-/* SqlBlock bitácora: scroll interno cuando el SQL supera 70vh */
+/* SqlBlock: scroll interno cuando el SQL supera 70vh */
 
 pre.sql-body {
   margin: 0;

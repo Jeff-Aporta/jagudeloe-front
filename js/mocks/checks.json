@@ -1,8 +1,9 @@
-{
-  "_mock": true,
-  "rows": [
-    { "revisadoKey": "ejemplo:bitacora:2026-06-10", "checked": true, "fhUltAct": "2026-06-10" },
-    { "revisadoKey": "ejemplo:bitacora:2026-06-09", "checked": false },
-    { "revisadoKey": "ejemplo:ticket:TK-000001", "checked": true, "fhUltAct": "2026-06-10" }
-  ]
-}
+[
+  {
+    "project": "patyia",
+    "rows": [
+      { "revisadoKey": "tickets.TK-1447812", "checked": true, "fhUltAct": "2026-07-15" },
+      { "revisadoKey": "tickets.TK-1447467", "checked": false }
+    ]
+  }
+]

@@ -223,7 +223,7 @@ html[data-mui-color-scheme="light"] .isa-app-boot-watermark {
   white-space: nowrap;
 }
 
-/* Panel: llena el contenedor de vista (bitácora/tickets) con tarjeta centrada. */
+/* Panel: llena el contenedor de vista (tickets) con tarjeta centrada. */
 .isa-app-boot.isa-app-boot--panel {
   flex: 1 1 auto;
   align-self: stretch;
