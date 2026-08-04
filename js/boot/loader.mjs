@@ -1,6 +1,9 @@
 /**
  * Arranque jagudeloe — producción: dist + __ISA_DIST__ (sin Babel en app).
  * Desarrollo: ?src=1 o sin __ISA_DIST__ → transpila js/ con module-graph + Babel.
+ *
+ * ISAFront: siempre el bundle esbuild `dist/isa/js/index.min.js` (relativo al CDN
+ * vendor/front-shared/). La fuente isa/js/index.js importa .jsx y falla en el navegador.
  */
 import { asset, bootLoaderUrl, ensureLightboxZoom } from "./cdn.mjs";
 
