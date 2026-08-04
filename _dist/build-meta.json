@@ -1,856 +1,856 @@
 {
-  "builtAt": "2026-07-17T04:12:48.892Z",
+  "builtAt": "2026-07-30T11:24:53.627Z",
   "files": 141,
-  "bytesIn": 897134,
-  "bytesOut": 505813,
+  "bytesIn": 897101,
+  "bytesOut": 505786,
   "ratio": 0.564,
-  "hash": "05a5aac9a89d",
+  "hash": "711048264e08",
   "entries": [
     {
       "src": "css/app-shell.css",
-      "dist": "_dist/css/app-shell.css",
+      "dist": "dist/css/app-shell.css",
       "bytesIn": 7828,
       "bytesOut": 5886
     },
     {
       "src": "css/boot-loading.css",
-      "dist": "_dist/css/boot-loading.css",
+      "dist": "dist/css/boot-loading.css",
       "bytesIn": 6638,
       "bytesOut": 5499
     },
     {
       "src": "css/code.css",
-      "dist": "_dist/css/code.css",
+      "dist": "dist/css/code.css",
       "bytesIn": 1923,
       "bytesOut": 1307
     },
     {
       "src": "css/doc-view.css",
-      "dist": "_dist/css/doc-view.css",
+      "dist": "dist/css/doc-view.css",
       "bytesIn": 20267,
       "bytesOut": 15690
     },
     {
       "src": "css/markdown.css",
-      "dist": "_dist/css/markdown.css",
+      "dist": "dist/css/markdown.css",
       "bytesIn": 1079,
       "bytesOut": 833
     },
     {
       "src": "css/theme.css",
-      "dist": "_dist/css/theme.css",
+      "dist": "dist/css/theme.css",
       "bytesIn": 4493,
       "bytesOut": 3784
     },
     {
       "src": "css/tk-lightbox.css",
-      "dist": "_dist/css/tk-lightbox.css",
+      "dist": "dist/css/tk-lightbox.css",
       "bytesIn": 2226,
       "bytesOut": 1797
     },
     {
       "src": "js/api/client.ts",
-      "dist": "_dist/js/api/client.js",
+      "dist": "dist/js/api/client.js",
       "bytesIn": 8613,
       "bytesOut": 4106
     },
     {
       "src": "js/app/App.jsx",
-      "dist": "_dist/js/app/App.js",
-      "bytesIn": 5199,
+      "dist": "dist/js/app/App.js",
+      "bytesIn": 5198,
       "bytesOut": 3059
     },
     {
       "src": "js/boot/cdn.mjs",
-      "dist": "_dist/js/boot/cdn.mjs",
+      "dist": "dist/js/boot/cdn.mjs",
       "bytesIn": 3486,
       "bytesOut": 2108
     },
     {
       "src": "js/boot/diagram-viewer-web.jsx",
-      "dist": "_dist/js/boot/diagram-viewer-web.js",
+      "dist": "dist/js/boot/diagram-viewer-web.js",
       "bytesIn": 1469,
       "bytesOut": 965
     },
     {
       "src": "js/boot/diagram-viewer.ts",
-      "dist": "_dist/js/boot/diagram-viewer.js",
+      "dist": "dist/js/boot/diagram-viewer.js",
       "bytesIn": 2083,
       "bytesOut": 1322
     },
     {
       "src": "js/boot/doc-viewer-web.jsx",
-      "dist": "_dist/js/boot/doc-viewer-web.js",
+      "dist": "dist/js/boot/doc-viewer-web.js",
       "bytesIn": 6741,
       "bytesOut": 3790
     },
     {
       "src": "js/boot/doc-viewer.ts",
-      "dist": "_dist/js/boot/doc-viewer.js",
+      "dist": "dist/js/boot/doc-viewer.js",
       "bytesIn": 7558,
       "bytesOut": 4089
     },
     {
       "src": "js/boot/loader.mjs",
-      "dist": "_dist/js/boot/loader.mjs",
-      "bytesIn": 5094,
-      "bytesOut": 3092
+      "dist": "dist/js/boot/loader.mjs",
+      "bytesIn": 5090,
+      "bytesOut": 3090
     },
     {
       "src": "js/boot/loader.ts",
-      "dist": "_dist/js/boot/loader.js",
+      "dist": "dist/js/boot/loader.js",
       "bytesIn": 2656,
-      "bytesOut": 1591
+      "bytesOut": 1587
     },
     {
       "src": "js/boot/module-graph.mjs",
-      "dist": "_dist/js/boot/module-graph.mjs",
+      "dist": "dist/js/boot/module-graph.mjs",
       "bytesIn": 3885,
       "bytesOut": 2187
     },
     {
       "src": "js/boot/theme-init.mjs",
-      "dist": "_dist/js/boot/theme-init.mjs",
+      "dist": "dist/js/boot/theme-init.mjs",
       "bytesIn": 1294,
       "bytesOut": 779
     },
     {
       "src": "js/boot/url-s.mjs",
-      "dist": "_dist/js/boot/url-s.mjs",
+      "dist": "dist/js/boot/url-s.mjs",
       "bytesIn": 5069,
       "bytesOut": 2664
     },
     {
       "src": "js/core/app-manifest.ts",
-      "dist": "_dist/js/core/app-manifest.js",
+      "dist": "dist/js/core/app-manifest.js",
       "bytesIn": 1265,
       "bytesOut": 597
     },
     {
       "src": "js/core/checks.ts",
-      "dist": "_dist/js/core/checks.js",
+      "dist": "dist/js/core/checks.js",
       "bytesIn": 10636,
       "bytesOut": 5029
     },
     {
       "src": "js/core/isa-setup.ts",
-      "dist": "_dist/js/core/isa-setup.js",
+      "dist": "dist/js/core/isa-setup.js",
       "bytesIn": 1839,
       "bytesOut": 1267
     },
     {
       "src": "js/core/jagudeloe-theme-radius.ts",
-      "dist": "_dist/js/core/jagudeloe-theme-radius.js",
+      "dist": "dist/js/core/jagudeloe-theme-radius.js",
       "bytesIn": 2058,
       "bytesOut": 1145
     },
     {
       "src": "js/core/md-safe.ts",
-      "dist": "_dist/js/core/md-safe.js",
+      "dist": "dist/js/core/md-safe.js",
       "bytesIn": 989,
       "bytesOut": 608
     },
     {
       "src": "js/core/nav-folder-state.ts",
-      "dist": "_dist/js/core/nav-folder-state.js",
+      "dist": "dist/js/core/nav-folder-state.js",
       "bytesIn": 1651,
       "bytesOut": 700
     },
     {
       "src": "js/core/platform.ts",
-      "dist": "_dist/js/core/platform.js",
+      "dist": "dist/js/core/platform.js",
       "bytesIn": 6401,
       "bytesOut": 4094
     },
     {
       "src": "js/core/storage.ts",
-      "dist": "_dist/js/core/storage.js",
+      "dist": "dist/js/core/storage.js",
       "bytesIn": 2197,
       "bytesOut": 1155
     },
     {
       "src": "js/core/tk-calificacion.ts",
-      "dist": "_dist/js/core/tk-calificacion.js",
+      "dist": "dist/js/core/tk-calificacion.js",
       "bytesIn": 10540,
       "bytesOut": 4879
     },
     {
       "src": "js/core/tk-catalog.ts",
-      "dist": "_dist/js/core/tk-catalog.js",
+      "dist": "dist/js/core/tk-catalog.js",
       "bytesIn": 1699,
       "bytesOut": 857
     },
     {
       "src": "js/core/tk-chart.ts",
-      "dist": "_dist/js/core/tk-chart.js",
+      "dist": "dist/js/core/tk-chart.js",
       "bytesIn": 12253,
       "bytesOut": 5982
     },
     {
       "src": "js/core/tk-code-policy.ts",
-      "dist": "_dist/js/core/tk-code-policy.js",
+      "dist": "dist/js/core/tk-code-policy.js",
       "bytesIn": 7904,
       "bytesOut": 3590
     },
     {
       "src": "js/core/tk-color.ts",
-      "dist": "_dist/js/core/tk-color.js",
+      "dist": "dist/js/core/tk-color.js",
       "bytesIn": 2349,
       "bytesOut": 1106
     },
     {
       "src": "js/core/tk-content.ts",
-      "dist": "_dist/js/core/tk-content.js",
+      "dist": "dist/js/core/tk-content.js",
       "bytesIn": 1162,
       "bytesOut": 545
     },
     {
       "src": "js/core/tk-diagram-astar.ts",
-      "dist": "_dist/js/core/tk-diagram-astar.js",
+      "dist": "dist/js/core/tk-diagram-astar.js",
       "bytesIn": 7853,
       "bytesOut": 2992
     },
     {
       "src": "js/core/tk-diagram-grid.ts",
-      "dist": "_dist/js/core/tk-diagram-grid.js",
+      "dist": "dist/js/core/tk-diagram-grid.js",
       "bytesIn": 2890,
       "bytesOut": 1174
     },
     {
       "src": "js/core/tk-diagram.ts",
-      "dist": "_dist/js/core/tk-diagram.js",
+      "dist": "dist/js/core/tk-diagram.js",
       "bytesIn": 5454,
       "bytesOut": 3363
     },
     {
       "src": "js/core/tk-doc-blocks.ts",
-      "dist": "_dist/js/core/tk-doc-blocks.js",
+      "dist": "dist/js/core/tk-doc-blocks.js",
       "bytesIn": 745,
       "bytesOut": 336
     },
     {
       "src": "js/core/tk-doc-constants.ts",
-      "dist": "_dist/js/core/tk-doc-constants.js",
+      "dist": "dist/js/core/tk-doc-constants.js",
       "bytesIn": 1437,
       "bytesOut": 881
     },
     {
       "src": "js/core/tk-doc-content-1437191.ts",
-      "dist": "_dist/js/core/tk-doc-content-1437191.js",
+      "dist": "dist/js/core/tk-doc-content-1437191.js",
       "bytesIn": 16355,
       "bytesOut": 11191
     },
     {
       "src": "js/core/tk-doc-content-1439155.ts",
-      "dist": "_dist/js/core/tk-doc-content-1439155.js",
+      "dist": "dist/js/core/tk-doc-content-1439155.js",
       "bytesIn": 13450,
       "bytesOut": 10728
     },
     {
       "src": "js/core/tk-doc-content-pantallazo-jun25.ts",
-      "dist": "_dist/js/core/tk-doc-content-pantallazo-jun25.js",
+      "dist": "dist/js/core/tk-doc-content-pantallazo-jun25.js",
       "bytesIn": 10236,
       "bytesOut": 7718
     },
     {
       "src": "js/core/tk-doc-interpreter.ts",
-      "dist": "_dist/js/core/tk-doc-interpreter.js",
+      "dist": "dist/js/core/tk-doc-interpreter.js",
       "bytesIn": 7550,
       "bytesOut": 4067
     },
     {
       "src": "js/core/tk-doc-json-expand.ts",
-      "dist": "_dist/js/core/tk-doc-json-expand.js",
+      "dist": "dist/js/core/tk-doc-json-expand.js",
       "bytesIn": 4742,
       "bytesOut": 2100
     },
     {
       "src": "js/core/tk-doc-lanes.ts",
-      "dist": "_dist/js/core/tk-doc-lanes.js",
+      "dist": "dist/js/core/tk-doc-lanes.js",
       "bytesIn": 4305,
       "bytesOut": 2391
     },
     {
       "src": "js/core/tk-doc-layout.ts",
-      "dist": "_dist/js/core/tk-doc-layout.js",
+      "dist": "dist/js/core/tk-doc-layout.js",
       "bytesIn": 7966,
       "bytesOut": 3398
     },
     {
       "src": "js/core/tk-doc-normalize.ts",
-      "dist": "_dist/js/core/tk-doc-normalize.js",
+      "dist": "dist/js/core/tk-doc-normalize.js",
       "bytesIn": 4713,
       "bytesOut": 1955
     },
     {
       "src": "js/core/tk-doc-pantallazo-jun25-tiempos.ts",
-      "dist": "_dist/js/core/tk-doc-pantallazo-jun25-tiempos.js",
+      "dist": "dist/js/core/tk-doc-pantallazo-jun25-tiempos.js",
       "bytesIn": 19004,
       "bytesOut": 16876
     },
     {
       "src": "js/core/tk-doc-persist.ts",
-      "dist": "_dist/js/core/tk-doc-persist.js",
+      "dist": "dist/js/core/tk-doc-persist.js",
       "bytesIn": 4076,
       "bytesOut": 1708
     },
     {
       "src": "js/core/tk-doc-scroll.ts",
-      "dist": "_dist/js/core/tk-doc-scroll.js",
+      "dist": "dist/js/core/tk-doc-scroll.js",
       "bytesIn": 2386,
       "bytesOut": 1127
     },
     {
       "src": "js/core/tk-doc-section-blocks.ts",
-      "dist": "_dist/js/core/tk-doc-section-blocks.js",
+      "dist": "dist/js/core/tk-doc-section-blocks.js",
       "bytesIn": 2743,
       "bytesOut": 1091
     },
     {
       "src": "js/core/tk-doc-sections.ts",
-      "dist": "_dist/js/core/tk-doc-sections.js",
+      "dist": "dist/js/core/tk-doc-sections.js",
       "bytesIn": 3582,
       "bytesOut": 1431
     },
     {
       "src": "js/core/tk-doc-seed-patch.ts",
-      "dist": "_dist/js/core/tk-doc-seed-patch.js",
+      "dist": "dist/js/core/tk-doc-seed-patch.js",
       "bytesIn": 26199,
       "bytesOut": 14052
     },
     {
       "src": "js/core/tk-doc-solution.ts",
-      "dist": "_dist/js/core/tk-doc-solution.js",
+      "dist": "dist/js/core/tk-doc-solution.js",
       "bytesIn": 3270,
       "bytesOut": 1173
     },
     {
       "src": "js/core/tk-doc-steps.ts",
-      "dist": "_dist/js/core/tk-doc-steps.js",
+      "dist": "dist/js/core/tk-doc-steps.js",
       "bytesIn": 2629,
       "bytesOut": 1115
     },
     {
       "src": "js/core/tk-doc-table.ts",
-      "dist": "_dist/js/core/tk-doc-table.js",
+      "dist": "dist/js/core/tk-doc-table.js",
       "bytesIn": 6854,
       "bytesOut": 3081
     },
     {
       "src": "js/core/tk-doc-types.ts",
-      "dist": "_dist/js/core/tk-doc-types.js",
+      "dist": "dist/js/core/tk-doc-types.js",
       "bytesIn": 435,
       "bytesOut": 0
     },
     {
       "src": "js/core/tk-doc-view-model.ts",
-      "dist": "_dist/js/core/tk-doc-view-model.js",
+      "dist": "dist/js/core/tk-doc-view-model.js",
       "bytesIn": 8870,
       "bytesOut": 3437
     },
     {
       "src": "js/core/tk-doc.ts",
-      "dist": "_dist/js/core/tk-doc.js",
+      "dist": "dist/js/core/tk-doc.js",
       "bytesIn": 9207,
       "bytesOut": 4922
     },
     {
       "src": "js/core/tk-empresa-comparativo.ts",
-      "dist": "_dist/js/core/tk-empresa-comparativo.js",
+      "dist": "dist/js/core/tk-empresa-comparativo.js",
       "bytesIn": 8015,
       "bytesOut": 3244
     },
     {
       "src": "js/core/tk-empresa-report.ts",
-      "dist": "_dist/js/core/tk-empresa-report.js",
+      "dist": "dist/js/core/tk-empresa-report.js",
       "bytesIn": 8312,
       "bytesOut": 4745
     },
     {
       "src": "js/core/tk-evidencias-tiempo-hitos.ts",
-      "dist": "_dist/js/core/tk-evidencias-tiempo-hitos.js",
+      "dist": "dist/js/core/tk-evidencias-tiempo-hitos.js",
       "bytesIn": 4425,
       "bytesOut": 2447
     },
     {
       "src": "js/core/tk-evidencias.ts",
-      "dist": "_dist/js/core/tk-evidencias.js",
+      "dist": "dist/js/core/tk-evidencias.js",
       "bytesIn": 22825,
       "bytesOut": 9765
     },
     {
       "src": "js/core/tk-file-tree.ts",
-      "dist": "_dist/js/core/tk-file-tree.js",
+      "dist": "dist/js/core/tk-file-tree.js",
       "bytesIn": 6684,
       "bytesOut": 2901
     },
     {
       "src": "js/core/tk-flow.ts",
-      "dist": "_dist/js/core/tk-flow.js",
+      "dist": "dist/js/core/tk-flow.js",
       "bytesIn": 10763,
       "bytesOut": 4940
     },
     {
       "src": "js/core/tk-hue.ts",
-      "dist": "_dist/js/core/tk-hue.js",
+      "dist": "dist/js/core/tk-hue.js",
       "bytesIn": 1300,
       "bytesOut": 569
     },
     {
       "src": "js/core/tk-iconify-inline.ts",
-      "dist": "_dist/js/core/tk-iconify-inline.js",
+      "dist": "dist/js/core/tk-iconify-inline.js",
       "bytesIn": 8867,
       "bytesOut": 3588
     },
     {
       "src": "js/core/tk-lightbox.ts",
-      "dist": "_dist/js/core/tk-lightbox.js",
+      "dist": "dist/js/core/tk-lightbox.js",
       "bytesIn": 6319,
       "bytesOut": 3357
     },
     {
       "src": "js/core/tk-markdown.ts",
-      "dist": "_dist/js/core/tk-markdown.js",
+      "dist": "dist/js/core/tk-markdown.js",
       "bytesIn": 8369,
       "bytesOut": 3657
     },
     {
       "src": "js/core/tk-metrics.ts",
-      "dist": "_dist/js/core/tk-metrics.js",
+      "dist": "dist/js/core/tk-metrics.js",
       "bytesIn": 20521,
       "bytesOut": 10509
     },
     {
       "src": "js/core/tk-normativa.ts",
-      "dist": "_dist/js/core/tk-normativa.js",
+      "dist": "dist/js/core/tk-normativa.js",
       "bytesIn": 4183,
       "bytesOut": 1840
     },
     {
       "src": "js/core/tk-pantallazo-jun25-evidencias.test.ts",
-      "dist": "_dist/js/core/tk-pantallazo-jun25-evidencias.test.js",
+      "dist": "dist/js/core/tk-pantallazo-jun25-evidencias.test.js",
       "bytesIn": 6371,
       "bytesOut": 2996
     },
     {
       "src": "js/core/tk-pantallazo-jun25-evidencias.ts",
-      "dist": "_dist/js/core/tk-pantallazo-jun25-evidencias.js",
+      "dist": "dist/js/core/tk-pantallazo-jun25-evidencias.js",
       "bytesIn": 4622,
       "bytesOut": 2196
     },
     {
       "src": "js/core/tk-rich-text.ts",
-      "dist": "_dist/js/core/tk-rich-text.js",
+      "dist": "dist/js/core/tk-rich-text.js",
       "bytesIn": 1675,
       "bytesOut": 764
     },
     {
       "src": "js/core/tk-sequence.ts",
-      "dist": "_dist/js/core/tk-sequence.js",
+      "dist": "dist/js/core/tk-sequence.js",
       "bytesIn": 34402,
       "bytesOut": 16365
     },
     {
       "src": "js/core/tk-spaces.ts",
-      "dist": "_dist/js/core/tk-spaces.js",
+      "dist": "dist/js/core/tk-spaces.js",
       "bytesIn": 1233,
       "bytesOut": 569
     },
     {
       "src": "js/core/tk-stepper.ts",
-      "dist": "_dist/js/core/tk-stepper.js",
+      "dist": "dist/js/core/tk-stepper.js",
       "bytesIn": 3786,
       "bytesOut": 2002
     },
     {
       "src": "js/core/tk-table.ts",
-      "dist": "_dist/js/core/tk-table.js",
+      "dist": "dist/js/core/tk-table.js",
       "bytesIn": 7710,
       "bytesOut": 4509
     },
     {
       "src": "js/core/tk-timeline-chart.ts",
-      "dist": "_dist/js/core/tk-timeline-chart.js",
+      "dist": "dist/js/core/tk-timeline-chart.js",
       "bytesIn": 9962,
       "bytesOut": 4323
     },
     {
       "src": "js/core/tk-timeline-spec.ts",
-      "dist": "_dist/js/core/tk-timeline-spec.js",
+      "dist": "dist/js/core/tk-timeline-spec.js",
       "bytesIn": 5709,
       "bytesOut": 2596
     },
     {
       "src": "js/core/tk-timeline.ts",
-      "dist": "_dist/js/core/tk-timeline.js",
+      "dist": "dist/js/core/tk-timeline.js",
       "bytesIn": 21517,
       "bytesOut": 9880
     },
     {
       "src": "js/core/urlState.ts",
-      "dist": "_dist/js/core/urlState.js",
+      "dist": "dist/js/core/urlState.js",
       "bytesIn": 464,
       "bytesOut": 261
     },
     {
       "src": "js/core/useSession.ts",
-      "dist": "_dist/js/core/useSession.js",
+      "dist": "dist/js/core/useSession.js",
       "bytesIn": 1483,
       "bytesOut": 795
     },
     {
       "src": "js/editors/jsonEditor.jsx",
-      "dist": "_dist/js/editors/jsonEditor.js",
+      "dist": "dist/js/editors/jsonEditor.js",
       "bytesIn": 646,
       "bytesOut": 384
     },
     {
       "src": "js/main.jsx",
-      "dist": "_dist/js/main.js",
+      "dist": "dist/js/main.js",
       "bytesIn": 1097,
       "bytesOut": 684
     },
     {
       "src": "js/ui/CodeBlock.jsx",
-      "dist": "_dist/js/ui/CodeBlock.js",
+      "dist": "dist/js/ui/CodeBlock.js",
       "bytesIn": 2532,
       "bytesOut": 1566
     },
     {
       "src": "js/ui/CopyReportLinkButton.jsx",
-      "dist": "_dist/js/ui/CopyReportLinkButton.js",
+      "dist": "dist/js/ui/CopyReportLinkButton.js",
       "bytesIn": 2995,
       "bytesOut": 1704
     },
     {
       "src": "js/ui/DiagramLightbox.jsx",
-      "dist": "_dist/js/ui/DiagramLightbox.js",
+      "dist": "dist/js/ui/DiagramLightbox.js",
       "bytesIn": 7786,
       "bytesOut": 4823
     },
     {
       "src": "js/ui/EmpresaComparativoReport.jsx",
-      "dist": "_dist/js/ui/EmpresaComparativoReport.js",
+      "dist": "dist/js/ui/EmpresaComparativoReport.js",
       "bytesIn": 10957,
       "bytesOut": 7502
     },
     {
       "src": "js/ui/EmpresaDesfaseCard.jsx",
-      "dist": "_dist/js/ui/EmpresaDesfaseCard.js",
+      "dist": "dist/js/ui/EmpresaDesfaseCard.js",
       "bytesIn": 3822,
       "bytesOut": 2461
     },
     {
       "src": "js/ui/ImageLightbox.jsx",
-      "dist": "_dist/js/ui/ImageLightbox.js",
+      "dist": "dist/js/ui/ImageLightbox.js",
       "bytesIn": 688,
       "bytesOut": 508
     },
     {
       "src": "js/ui/SequenceTurtle.jsx",
-      "dist": "_dist/js/ui/SequenceTurtle.js",
+      "dist": "dist/js/ui/SequenceTurtle.js",
       "bytesIn": 9491,
       "bytesOut": 4257
     },
     {
       "src": "js/ui/TicketAnalysisTimeline.jsx",
-      "dist": "_dist/js/ui/TicketAnalysisTimeline.js",
+      "dist": "dist/js/ui/TicketAnalysisTimeline.js",
       "bytesIn": 13240,
       "bytesOut": 7796
     },
     {
       "src": "js/ui/TicketAssignmentTimeline.jsx",
-      "dist": "_dist/js/ui/TicketAssignmentTimeline.js",
+      "dist": "dist/js/ui/TicketAssignmentTimeline.js",
       "bytesIn": 15103,
       "bytesOut": 8381
     },
     {
       "src": "js/ui/TicketCatalogFooter.jsx",
-      "dist": "_dist/js/ui/TicketCatalogFooter.js",
+      "dist": "dist/js/ui/TicketCatalogFooter.js",
       "bytesIn": 6860,
       "bytesOut": 3566
     },
     {
       "src": "js/ui/TicketDocWebView.jsx",
-      "dist": "_dist/js/ui/TicketDocWebView.js",
+      "dist": "dist/js/ui/TicketDocWebView.js",
       "bytesIn": 134,
       "bytesOut": 94
     },
     {
       "src": "js/ui/TicketMetricsEvidencias.jsx",
-      "dist": "_dist/js/ui/TicketMetricsEvidencias.js",
+      "dist": "dist/js/ui/TicketMetricsEvidencias.js",
       "bytesIn": 3893,
       "bytesOut": 2111
     },
     {
       "src": "js/ui/TkCalificacionInfoModal.jsx",
-      "dist": "_dist/js/ui/TkCalificacionInfoModal.js",
+      "dist": "dist/js/ui/TkCalificacionInfoModal.js",
       "bytesIn": 4080,
       "bytesOut": 2737
     },
     {
       "src": "js/ui/TkCalificacionResumen.jsx",
-      "dist": "_dist/js/ui/TkCalificacionResumen.js",
+      "dist": "dist/js/ui/TkCalificacionResumen.js",
       "bytesIn": 5953,
       "bytesOut": 3827
     },
     {
       "src": "js/ui/TkDocBlockRenderer.jsx",
-      "dist": "_dist/js/ui/TkDocBlockRenderer.js",
+      "dist": "dist/js/ui/TkDocBlockRenderer.js",
       "bytesIn": 260,
       "bytesOut": 112
     },
     {
       "src": "js/ui/TkDocChart.jsx",
-      "dist": "_dist/js/ui/TkDocChart.js",
+      "dist": "dist/js/ui/TkDocChart.js",
       "bytesIn": 9976,
       "bytesOut": 6046
     },
     {
       "src": "js/ui/TkDocDiagram.jsx",
-      "dist": "_dist/js/ui/TkDocDiagram.js",
+      "dist": "dist/js/ui/TkDocDiagram.js",
       "bytesIn": 3682,
       "bytesOut": 1862
     },
     {
       "src": "js/ui/TkDocFileTree.jsx",
-      "dist": "_dist/js/ui/TkDocFileTree.js",
+      "dist": "dist/js/ui/TkDocFileTree.js",
       "bytesIn": 902,
       "bytesOut": 542
     },
     {
       "src": "js/ui/TkDocFlow.jsx",
-      "dist": "_dist/js/ui/TkDocFlow.js",
+      "dist": "dist/js/ui/TkDocFlow.js",
       "bytesIn": 11286,
       "bytesOut": 7237
     },
     {
       "src": "js/ui/TkDocMetricsTimeline.jsx",
-      "dist": "_dist/js/ui/TkDocMetricsTimeline.js",
+      "dist": "dist/js/ui/TkDocMetricsTimeline.js",
       "bytesIn": 1295,
       "bytesOut": 785
     },
     {
       "src": "js/ui/TkDocSequence.jsx",
-      "dist": "_dist/js/ui/TkDocSequence.js",
+      "dist": "dist/js/ui/TkDocSequence.js",
       "bytesIn": 17434,
       "bytesOut": 9375
     },
     {
       "src": "js/ui/TkDocStepper.jsx",
-      "dist": "_dist/js/ui/TkDocStepper.js",
+      "dist": "dist/js/ui/TkDocStepper.js",
       "bytesIn": 8447,
       "bytesOut": 4821
     },
     {
       "src": "js/ui/TkDocTable.jsx",
-      "dist": "_dist/js/ui/TkDocTable.js",
+      "dist": "dist/js/ui/TkDocTable.js",
       "bytesIn": 886,
       "bytesOut": 555
     },
     {
       "src": "js/ui/TkDocThemedImage.jsx",
-      "dist": "_dist/js/ui/TkDocThemedImage.js",
+      "dist": "dist/js/ui/TkDocThemedImage.js",
       "bytesIn": 1430,
       "bytesOut": 760
     },
     {
       "src": "js/ui/TkDocTimeline.jsx",
-      "dist": "_dist/js/ui/TkDocTimeline.js",
+      "dist": "dist/js/ui/TkDocTimeline.js",
       "bytesIn": 706,
       "bytesOut": 408
     },
     {
       "src": "js/ui/TkLightbox.jsx",
-      "dist": "_dist/js/ui/TkLightbox.js",
+      "dist": "dist/js/ui/TkLightbox.js",
       "bytesIn": 4224,
       "bytesOut": 2009
     },
     {
       "src": "js/ui/TkReportSwitch.jsx",
-      "dist": "_dist/js/ui/TkReportSwitch.js",
+      "dist": "dist/js/ui/TkReportSwitch.js",
       "bytesIn": 787,
       "bytesOut": 500
     },
     {
       "src": "js/ui/bootShimmer.ts",
-      "dist": "_dist/js/ui/bootShimmer.js",
+      "dist": "dist/js/ui/bootShimmer.js",
       "bytesIn": 4794,
       "bytesOut": 2459
     },
     {
       "src": "js/ui/diagram-kinds.ts",
-      "dist": "_dist/js/ui/diagram-kinds.js",
+      "dist": "dist/js/ui/diagram-kinds.js",
       "bytesIn": 603,
       "bytesOut": 177
     },
     {
       "src": "js/ui/glassSurface.ts",
-      "dist": "_dist/js/ui/glassSurface.js",
+      "dist": "dist/js/ui/glassSurface.js",
       "bytesIn": 5208,
       "bytesOut": 3508
     },
     {
       "src": "js/ui/parts.jsx",
-      "dist": "_dist/js/ui/parts.js",
+      "dist": "dist/js/ui/parts.js",
       "bytesIn": 21368,
       "bytesOut": 14514
     },
     {
       "src": "js/ui/realtime.ts",
-      "dist": "_dist/js/ui/realtime.js",
+      "dist": "dist/js/ui/realtime.js",
       "bytesIn": 1455,
       "bytesOut": 738
     },
     {
       "src": "js/ui/tkCodeHydrate.ts",
-      "dist": "_dist/js/ui/tkCodeHydrate.js",
+      "dist": "dist/js/ui/tkCodeHydrate.js",
       "bytesIn": 2885,
       "bytesOut": 1363
     },
     {
       "src": "js/ui/tkCommitGithub.ts",
-      "dist": "_dist/js/ui/tkCommitGithub.js",
+      "dist": "dist/js/ui/tkCommitGithub.js",
       "bytesIn": 3123,
       "bytesOut": 1631
     },
     {
       "src": "js/ui/tkDoc/BlockBody.jsx",
-      "dist": "_dist/js/ui/tkDoc/BlockBody.js",
+      "dist": "dist/js/ui/tkDoc/BlockBody.js",
       "bytesIn": 6765,
       "bytesOut": 4685
     },
     {
       "src": "js/ui/tkDoc/CommitsTable.jsx",
-      "dist": "_dist/js/ui/tkDoc/CommitsTable.js",
+      "dist": "dist/js/ui/tkDoc/CommitsTable.js",
       "bytesIn": 4975,
       "bytesOut": 2749
     },
     {
       "src": "js/ui/tkDoc/DataTable.jsx",
-      "dist": "_dist/js/ui/tkDoc/DataTable.js",
+      "dist": "dist/js/ui/tkDoc/DataTable.js",
       "bytesIn": 3013,
       "bytesOut": 1612
     },
     {
       "src": "js/ui/tkDoc/FileTree.jsx",
-      "dist": "_dist/js/ui/tkDoc/FileTree.js",
+      "dist": "dist/js/ui/tkDoc/FileTree.js",
       "bytesIn": 7532,
       "bytesOut": 4352
     },
     {
       "src": "js/ui/tkDoc/HeroHeader.jsx",
-      "dist": "_dist/js/ui/tkDoc/HeroHeader.js",
+      "dist": "dist/js/ui/tkDoc/HeroHeader.js",
       "bytesIn": 7200,
       "bytesOut": 4032
     },
     {
       "src": "js/ui/tkDoc/MdBody.jsx",
-      "dist": "_dist/js/ui/tkDoc/MdBody.js",
+      "dist": "dist/js/ui/tkDoc/MdBody.js",
       "bytesIn": 3590,
       "bytesOut": 2308
     },
     {
       "src": "js/ui/tkDoc/MdList.jsx",
-      "dist": "_dist/js/ui/tkDoc/MdList.js",
+      "dist": "dist/js/ui/tkDoc/MdList.js",
       "bytesIn": 1239,
       "bytesOut": 703
     },
     {
       "src": "js/ui/tkDoc/SectionCard.jsx",
-      "dist": "_dist/js/ui/tkDoc/SectionCard.js",
+      "dist": "dist/js/ui/tkDoc/SectionCard.js",
       "bytesIn": 2654,
       "bytesOut": 1647
     },
     {
       "src": "js/ui/tkDoc/SectionProgressDots.jsx",
-      "dist": "_dist/js/ui/tkDoc/SectionProgressDots.js",
+      "dist": "dist/js/ui/tkDoc/SectionProgressDots.js",
       "bytesIn": 4009,
       "bytesOut": 1925
     },
     {
       "src": "js/ui/tkDoc/SoftBadges.jsx",
-      "dist": "_dist/js/ui/tkDoc/SoftBadges.js",
+      "dist": "dist/js/ui/tkDoc/SoftBadges.js",
       "bytesIn": 1265,
       "bytesOut": 703
     },
     {
       "src": "js/ui/tkDoc/StepsBlock.jsx",
-      "dist": "_dist/js/ui/tkDoc/StepsBlock.js",
+      "dist": "dist/js/ui/tkDoc/StepsBlock.js",
       "bytesIn": 4076,
       "bytesOut": 2422
     },
     {
       "src": "js/ui/tkDoc/TicketDocWebView.jsx",
-      "dist": "_dist/js/ui/tkDoc/TicketDocWebView.js",
+      "dist": "dist/js/ui/tkDoc/TicketDocWebView.js",
       "bytesIn": 10845,
       "bytesOut": 5644
     },
     {
       "src": "js/ui/tkDoc/TimeSummary.jsx",
-      "dist": "_dist/js/ui/tkDoc/TimeSummary.js",
+      "dist": "dist/js/ui/tkDoc/TimeSummary.js",
       "bytesIn": 7462,
       "bytesOut": 4507
     },
     {
       "src": "js/ui/tkDoc/TkDocJsonEditorDialog.jsx",
-      "dist": "_dist/js/ui/tkDoc/TkDocJsonEditorDialog.js",
+      "dist": "dist/js/ui/tkDoc/TkDocJsonEditorDialog.js",
       "bytesIn": 3963,
       "bytesOut": 2401
     },
     {
       "src": "js/ui/tkDoc/TkHeroEditDialog.jsx",
-      "dist": "_dist/js/ui/tkDoc/TkHeroEditDialog.js",
+      "dist": "dist/js/ui/tkDoc/TkHeroEditDialog.js",
       "bytesIn": 6136,
       "bytesOut": 3920
     },
     {
       "src": "js/ui/tkDoc/blockUtils.ts",
-      "dist": "_dist/js/ui/tkDoc/blockUtils.js",
+      "dist": "dist/js/ui/tkDoc/blockUtils.js",
       "bytesIn": 2732,
       "bytesOut": 1651
     },
     {
       "src": "js/ui/tkDoc/constants.ts",
-      "dist": "_dist/js/ui/tkDoc/constants.js",
+      "dist": "dist/js/ui/tkDoc/constants.js",
       "bytesIn": 2261,
       "bytesOut": 2035
     },
     {
       "src": "js/ui/tkDocSurface.ts",
-      "dist": "_dist/js/ui/tkDocSurface.js",
+      "dist": "dist/js/ui/tkDocSurface.js",
       "bytesIn": 829,
       "bytesOut": 346
     },
     {
       "src": "js/ui/tkHeroAuthors.ts",
-      "dist": "_dist/js/ui/tkHeroAuthors.js",
+      "dist": "dist/js/ui/tkHeroAuthors.js",
       "bytesIn": 4151,
       "bytesOut": 1870
     },
     {
       "src": "js/ui/tkHtml.ts",
-      "dist": "_dist/js/ui/tkHtml.js",
+      "dist": "dist/js/ui/tkHtml.js",
       "bytesIn": 35116,
       "bytesOut": 22297
     },
     {
       "src": "js/views/IspSvelteView.jsx",
-      "dist": "_dist/js/views/IspSvelteView.js",
+      "dist": "dist/js/views/IspSvelteView.js",
       "bytesIn": 10262,
       "bytesOut": 6495
     },
     {
       "src": "js/views/TicketMetricsView.jsx",
-      "dist": "_dist/js/views/TicketMetricsView.js",
+      "dist": "dist/js/views/TicketMetricsView.js",
       "bytesIn": 8883,
       "bytesOut": 5796
     },
     {
       "src": "js/views/TicketsView.jsx",
-      "dist": "_dist/js/views/TicketsView.js",
-      "bytesIn": 21136,
-      "bytesOut": 12683
+      "dist": "dist/js/views/TicketsView.js",
+      "bytesIn": 21108,
+      "bytesOut": 12662
     }
   ]
 }

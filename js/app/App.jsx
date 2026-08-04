@@ -7,7 +7,7 @@ import { useRealtimeNotifications } from "../ui/realtime.ts";
 
 const { lazy, Suspense } = getReact();
 
-/** Vistas con export nombrado (esbuild no genera default en _dist). */
+/** Vistas con export nombrado (esbuild no genera default en dist). */
 function lazyNamed(loader, name) {
   return lazy(() => loader().then((m) => ({ default: m[name] })));
 }

@@ -1,5 +1,5 @@
 /**
- * Arranque jagudeloe — producción: _dist + __ISA_DIST__ (sin Babel en app).
+ * Arranque jagudeloe — producción: dist + __ISA_DIST__ (sin Babel en app).
  * Desarrollo: ?src=1 o sin __ISA_DIST__ → transpila js/ con module-graph + Babel.
  */
 import { asset, bootLoaderUrl, ensureLightboxZoom } from "./cdn.mjs";
@@ -32,14 +32,14 @@ function docPrefetch() {
 }
 docPrefetch();
 
-/** Bundle _dist (esbuild). Fuente isa/js/index.js importa .jsx y falla en el navegador. */
+/** Bundle dist (esbuild). Fuente isa/js/index.js importa .jsx y falla en el navegador. */
 async function loadIsaFrontPinned(h) {
   if (isDist) {
-    await import(asset("_dist/isa/js/index.min.js"));
+    await import(asset("dist/isa/js/index.min.js"));
   } else {
     await h.loadIsaFront();
     if (!globalThis.ISAFront?.ensureCodeMirrorLoaded) {
-      await import(asset("_dist/isa/js/index.min.js"));
+      await import(asset("dist/isa/js/index.min.js"));
     }
   }
   if (!globalThis.ISAFront?.ensureCodeMirrorLoaded) {

@@ -476,7 +476,6 @@ export function TicketsDiligenciaView(props) {
       hidePanelBelow="md"
       storageKey={`jagudeloe:tickets-nav:${props.project}`}
       defaultWidth={260}
-      panelTitle="Tickets"
       panelIcon="mdi:ticket-outline"
       UI={UI}
       panel={(
